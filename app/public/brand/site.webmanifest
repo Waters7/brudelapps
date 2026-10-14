@@ -1,0 +1,15 @@
+{
+  "name": "BRUDEL - Poltekkes Kemenkes Manado",
+  "short_name": "BRUDEL",
+  "description": "Bakat, Rekognisi, Unjuk Diri, dan Eksplorasi Lomba",
+  "icons": [
+    { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512x512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "theme_color": "#05B5A3",
+  "background_color": "#FFFFFF",
+  "display": "standalone",
+  "start_url": "/"
+}

@@ -1,0 +1,69 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    image: brudel-app:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      BRUDEL_DEMO: 'false'
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      target: web
+    image: brudel-web:local
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8080:80'
+    depends_on:
+      - app
+  queue:
+    image: brudel-app:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      BRUDEL_DEMO: 'false'
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+    command: ['php', 'artisan', 'queue:work', '--sleep=3', '--tries=3', '--timeout=60']
+    depends_on:
+      - app
+  scheduler:
+    image: brudel-app:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      BRUDEL_DEMO: 'false'
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+    command: ['php', 'artisan', 'schedule:work']
+    depends_on:
+      - app
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  postgres-data:
