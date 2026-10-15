@@ -1,5 +1,6 @@
 // Intentionally cache only this public allowlist. Never cache HTML sessions,
 // Livewire requests, private documents, uploads, or authentication responses.
+// rev Fc9CvmnUP8FdSsuhnTzcpV9YXPoudZlNBKu4EdIeR5keIVatfrAsStXHgZioVZC4qH_XCYJhlCY02pI1m1g7qA
 const CACHE = 'brudel-public-v1';
 const PUBLIC = ['/offline.html', '/brand/icon-192x192.png', '/brand/icon-512x512.png', '/brand/logo-mark.svg'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PUBLIC)).then(() => self.skipWaiting())); });

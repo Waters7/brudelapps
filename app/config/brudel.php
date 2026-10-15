@@ -2,6 +2,7 @@
 
 return [
     'demo' => env('BRUDEL_DEMO', false),
+    'build' => 'LUbzwN3GmXegmr8L6NKfIF_4Ls__TPciVDCqonCeeF2I9I701DNJg8zqLrmfnciyLDTT_uRRKdbMoDbLyS1ATw',
     'timezone' => 'Asia/Makassar',
     'multiple_clubs' => env('BRUDEL_MULTIPLE_CLUBS', true),
     'club_fee' => 0,
