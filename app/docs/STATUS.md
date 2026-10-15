@@ -1,8 +1,8 @@
 # Status fitur
 
-Tanggal penilaian: 15 Oktober 2026 (WITA). Tahap kedua menambahkan seluruh modul brief di atas tahap pertama (UKM dan lomba gratis). Aplikasi berjalan lokal dan diuji otomatis, tetapi **belum siap produksi**: PostgreSQL, S3, email, queue, PWA di perangkat, dan VPS belum diverifikasi pada layanan nyata.
+Tanggal penilaian: 15 Oktober 2026 (WITA). Tahap kedua menambahkan seluruh modul brief di atas tahap pertama (UKM dan lomba gratis). Aplikasi berjalan lokal dan diuji otomatis, tetapi **belum siap produksi**: S3, email, queue, PWA di perangkat, dan VPS belum diverifikasi pada layanan nyata. PostgreSQL baru diuji lokal (17.11 di Windows), belum di staging Docker.
 
-Hasil uji otomatis terakhir: **47 tes, 751 assertions, seluruhnya lulus** (SQLite `:memory:`). Rincian ada di [TESTING.md](TESTING.md).
+Hasil uji otomatis terakhir (52 tes): **PostgreSQL 17.11 — 52 lulus, 805 assertions**, termasuk 4 tes konkurensi dua proses; **SQLite `:memory:` — 48 lulus, 4 dilewati** (tes konkurensi khusus PostgreSQL), 760 assertions. Rincian ada di [TESTING.md](TESTING.md).
 
 ## Selesai dan diuji otomatis
 
@@ -22,13 +22,14 @@ Hasil uji otomatis terakhir: **47 tes, 751 assertions, seluruhnya lulus** (SQLit
 | Prestasi | Enam tingkat, prestasi BRUDEL dari hasil resmi, prestasi eksternal dengan bukti dan verifikasi independen, halaman publik per bidang atas persetujuan mahasiswa tanpa NIM/dokumen | `RecognitionTest`, `PageRenderTest` |
 | Laporan | Filter tahun, tingkat, bidang, prodi, UKM, individu/tim; jumlah penghargaan vs mahasiswa unik; peserta vs tim; keanggotaan vs anggota unik; penghargaan tim dihitung sekali; 7 ekspor CSV sesuai hak akses dan tercatat audit | `RecognitionTest` |
 | Notifikasi | Notifikasi dalam aplikasi (queue) untuk keputusan, undangan, pembayaran, sertifikat, penugasan; email aktivasi/pemulihan | `AccountTest` |
+| Konkurensi | Penguncian baris PostgreSQL dibuktikan dengan dua proses bersamaan: kuota lomba terakhir, kuota UKM terakhir, pencatatan pemenang dengan versi sama, pengesahan hasil; tepat satu transaksi berhasil, audit tercatat sekali | `ConcurrencyTest` (PostgreSQL) |
 | Keamanan | Otorisasi server per lingkup, CSRF, sesi terenkripsi, `no-store` untuk halaman pribadi, PDF diperiksa tipe/ukuran/tanda tangan berkas, unduhan lewat controller berotorisasi, audit tindakan penting | semua tes |
 
 Semua halaman untuk setiap peran demo dirender tanpa galat (`PageRenderTest`). Pemeriksaan browser 15 Oktober 2026: login, dashboard tugas, pembuatan bagan 5 peserta (3 bye), pencatatan pemenang, papan live (polling terverifikasi), laporan, dan tampilan ponsel 375 px.
 
 ## Dibuat, belum diverifikasi operasional
 
-- **PostgreSQL dan konkurensi**: migrasi, transaksi dan `lockForUpdate` dirancang untuk PostgreSQL; ekstensi `pdo_pgsql` tidak tersedia di mesin pengembangan sehingga belum diuji. Perebutan kuota terakhir baru diuji berurutan.
+- **PostgreSQL produksi**: migrasi, seluruh suite, dan penguncian baris lulus pada PostgreSQL 17.11 lokal (15 Oktober 2026). Image `postgres:17-alpine` pada Docker/VPS belum dijalankan. Satu perbedaan perilaku ditemukan dan diperbaiki: pencarian mahasiswa memakai `LIKE` yang peka huruf besar/kecil di PostgreSQL; kini memakai `whereLike` (`ILIKE`).
 - **S3 privat**: adapter siap, belum tersambung bucket nyata.
 - **Email**: aktivasi/pemulihan memakai notifikasi mail; demo memakai `MAIL_MAILER=log` (tautan muncul di `storage/logs/laravel.log`).
 - **Queue dan scheduler**: notifikasi antre di tabel `jobs`; `Start-BRUDEL.ps1` menjalankan worker dan scheduler lokal. Belum diuji pada Supervisor/systemd atau Docker.
@@ -60,7 +61,7 @@ Semua halaman untuk setiap peran demo dirender tanpa galat (`PageRenderTest`). P
 
 ## Pekerjaan tersisa sebelum produksi
 
-1. Uji seluruh alur pada PostgreSQL staging, termasuk dua koneksi bersamaan untuk kuota terakhir, penerimaan anggota, pengesahan hasil dan penetapan pemenang.
+1. Jalankan ulang seluruh suite, termasuk grup `pgsql`, pada PostgreSQL staging (`postgres:17-alpine`), lalu uji alur utama lewat browser.
 2. Sambungkan S3 privat, SMTP resmi (SPF/DKIM/DMARC), worker queue dan scheduler; uji restore backup.
 3. Pemindai malware dan kebijakan retensi dokumen; logging terpusat.
 4. Uji instalasi PWA, HTTPS, cache setelah logout, dan aksesibilitas pembaca layar.

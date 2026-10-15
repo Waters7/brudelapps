@@ -70,7 +70,7 @@ Keunikan penting: NIM, email, kode prodi, rekrutmen/pengguna, UKM/pengguna, nomo
 - Kuota UKM: kunci `recruitments` → aplikasi → mahasiswa, hitung yang diterima, buat keanggotaan.
 - Pendaftaran lomba: urutan kunci `competitions` → `registrations` → `participants`/`program_approvals`/`payment_proofs`. Kuota dihitung dari status `program_review`, `submitted`, `accepted`.
 - Pengesahan hasil dan penetapan pemenang mengunci `competitions` dan `matchups`. Live score memakai versi optimistik (`UPDATE … WHERE version = ?`) sehingga pembaruan bersamaan ditolak dengan pesan, bukan ditimpa.
-- Transaksi diulang hingga 3 kali saat deadlock. Semantik row lock baru dapat diverifikasi di PostgreSQL.
+- Transaksi diulang hingga 3 kali saat deadlock. Semantik row lock (READ COMMITTED + `SELECT … FOR UPDATE`) terverifikasi di PostgreSQL 17.11 dengan dua proses bersamaan (`ConcurrencyTest`).
 
 ## Matriks hak akses
 

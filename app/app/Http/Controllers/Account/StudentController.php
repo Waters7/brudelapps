@@ -19,7 +19,7 @@ class StudentController extends Controller
         abort_unless($request->user()->isStudentAffairs(), 403);
         $search = mb_substr(trim((string) $request->query('q')), 0, 80);
         $students = User::with('program')->whereNotNull('nim')
-            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('nim', 'like', '%'.$search.'%')->orWhereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])->orWhere('email', 'like', '%'.mb_strtolower($search).'%')))
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->whereLike('nim', '%'.$search.'%')->orWhereLike('name', '%'.$search.'%')->orWhereLike('email', '%'.$search.'%')))
             ->when($request->query('program'), fn ($q, $program) => $q->where('program_id', $program))
             ->when($request->query('status') === 'nonaktif', fn ($q) => $q->where('active', false))
             ->when($request->query('status') === 'belum', fn ($q) => $q->whereNull('email_verified_at'))

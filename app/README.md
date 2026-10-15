@@ -48,7 +48,7 @@ npm run build
 php artisan view:cache
 ```
 
-47 tes / 751 assertions lulus di SQLite (15 Oktober 2026). Hasil serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). Penguncian PostgreSQL, S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
+52 tes lulus di PostgreSQL 17.11 (805 assertions, termasuk uji konkurensi dua proses); di SQLite 48 lulus dan 4 tes khusus PostgreSQL dilewati (15 Oktober 2026). Hasil, cara menjalankan di PostgreSQL, serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
 
 ## Dokumentasi
 

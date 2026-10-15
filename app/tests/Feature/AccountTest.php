@@ -103,6 +103,14 @@ class AccountTest extends DemoTestCase
         $this->post('/login', ['email' => $student->email, 'password' => 'BrudelDemo!2026'])->assertSessionHasErrors('email');
     }
 
+    public function test_student_search_ignores_letter_case_on_every_database(): void
+    {
+        $this->actingAs($this->user('admin'));
+        foreach (['demo001', 'MAHASISWA@DEMO', 'bintang MANDAGI'] as $query) {
+            $this->get('/kelola/mahasiswa?q='.urlencode($query))->assertOk()->assertSee('Bintang Mandagi')->assertDontSee('Michelle Sumual');
+        }
+    }
+
     public function test_role_assignment_scope_rules(): void
     {
         $badminton = Club::where('name', 'Badminton')->first();
