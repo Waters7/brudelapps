@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Livewire\Discovery;
 use App\Models\Assignment;
+use App\Models\Club;
 use App\Models\ClubApplication;
 use App\Models\Competition;
 use App\Models\Event;
@@ -56,7 +57,7 @@ class EnrollmentTest extends TestCase
 
     public function test_all_student_pages_render_and_private_pages_are_not_cacheable(): void
     {
-        foreach (['/', '/ukm', '/lomba', '/pendaftaran', '/ukm-saya', '/rekomendasi', '/profil', '/ukm/1', '/lomba/1'] as $url) {
+        foreach (['/', '/ukm', '/lomba', '/pendaftaran', '/ukm-saya', '/rekomendasi', '/profil', '/ukm/'.Club::orderBy('id')->value('id'), '/lomba/'.Competition::orderBy('id')->value('id')] as $url) {
             $r = $this->actingAs($this->student)->get($url);
             $r->assertOk();
             $this->assertStringContainsString('no-store', $r->headers->get('Cache-Control'));

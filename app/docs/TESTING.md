@@ -19,6 +19,37 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 
 Data demo lain: 6 UKM, event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login), pengajuan event UKM Badminton yang menunggu keputusan, event seleksi delegasi, 2 prestasi terverifikasi (1 tim, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
+## Data trial bervolume (`TrialSeeder`)
+
+`TrialSeeder` menjalankan `DemoSeeder`, lalu menambahkan data uji coba bervolume. Semua data dibuat lewat service modul, sehingga audit, riwayat status, dan notifikasi terisi seperti pemakaian nyata. Seeder hanya berjalan pada `APP_ENV=local/testing` dengan `BRUDEL_DEMO=true`, dan menolak berjalan dua kali; mulai ulang dengan `php artisan migrate:fresh --seeder=TrialSeeder`.
+
+| Bagian | Isi |
+|---|---|
+| Akun | `trial001`–`trial100@demo.brudel.test` (NIM `TRIAL001`–`TRIAL100`, 5 prodi termasuk D-III Kebidanan dan D-III Farmasi): 001–093 aktif, 094–095 dinonaktifkan dengan alasan, 096–100 belum aktivasi. `penilai2@demo.brudel.test` sebagai penilai tamu. Kata sandi sama dengan akun demo. |
+| UKM | 14 pengajuan per UKM: diterima, daftar tunggu, revisi, ditolak, dan menunggu tinjauan; anggota berdivisi, sebagian nonaktif atau keluar |
+| Pekan Prestasi (berjalan) | Badminton Tunggal dengan semua status tinjauan; Poster dinilai 6 dari 8 peserta dengan status tampil; Karya Tulis Ilmiah dengan undangan tim yang belum dijawab; Futsal 4 tim; Debat (berbayar + persetujuan prodi) dengan satu tim per tahap: menunggu prodi, bukti bayar menunggu verifikasi, diterima, dan revisi. Bagan Tenis Meja sengaja belum dibuat. |
+| Rekening | "Bank Uji Coba 0000000000 — REKENING UJI COBA - JANGAN TRANSFER", hanya untuk alur pembayaran trial |
+| Event selesai (2 bulan lalu) | Cerdas Cermat (tim, 2 penilai), Video Edukasi (individu), dan Catur Cepat (bagan 8 peserta): hasil disahkan, Juara 1–3, dan sertifikat, termasuk 1 sertifikat versi 2 dan 1 yang dicabut |
+| Prestasi & delegasi | 10 prestasi eksternal (6 terverifikasi, 2 ditolak, 2 menunggu); 15 profil publik; delegasi menunggu pimpinan, delegasi selesai dengan prestasi menunggu verifikasi, dan satu draf |
+
+### Menjalankan trial lokal di PostgreSQL
+
+Sekali per server PostgreSQL (sebagai superuser), buat database trial yang terpisah dari database uji:
+
+```sql
+CREATE ROLE brudel_trial LOGIN PASSWORD 'BrudelTrial!2026';
+CREATE DATABASE brudel_trial OWNER brudel_trial;
+```
+
+Dari folder induk (PowerShell):
+
+```powershell
+.\Start-BRUDEL.ps1 -PostgresTrial -ResetData   # pertama kali / mengulang: kosongkan brudel_trial lalu isi TrialSeeder (±40 detik)
+.\Start-BRUDEL.ps1 -PostgresTrial              # berikutnya: data trial tetap, buka http://127.0.0.1:8000
+```
+
+`-PostgresTrial` menyalakan PostgreSQL lokal bila belum berjalan dan memuat `pdo_pgsql` per proses tanpa mengubah `php.ini`. Koneksi diarahkan ke `brudel_trial`; `.env` tidak diubah, dan setelah skrip selesai variabel lingkungan dikembalikan. `-ResetData` tidak menghapus PDF lama di `storage/app/private`.
+
 ## Tes otomatis
 
 ```sh
@@ -27,12 +58,18 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 15 Oktober 2026 (52 tes):
+Hasil 15 Oktober 2026 (56 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **52 lulus, 805 assertions**, termasuk 4 tes konkurensi dua proses |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **48 lulus, 4 dilewati, 760 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **56 lulus, 869 assertions**, termasuk 4 tes konkurensi dua proses |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **52 lulus, 4 dilewati, 824 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+
+Temuan khusus PostgreSQL yang sudah diperbaiki dan dikunci tes:
+
+- Pencarian mahasiswa: `LIKE` peka huruf besar/kecil, kini memakai `ILIKE`.
+- Zona waktu: koneksi kini memaksa zona sesi UTC. Sebelumnya, server yang zonanya bukan UTC (mesin ini `Asia/Kuala_Lumpur`) menggeser semua `timestampTz` sebanyak selisih zonanya (`CompetitionTest::test_times_are_stored_in_utc…`).
+- `DemoSeeder` tidak lagi menulis id prodi eksplisit. Id eksplisit membuat sequence PostgreSQL tertinggal, sehingga "tambah prodi" gagal (`ManagementTest::test_student_affairs_can_add_a_program…`). Tes tidak lagi mengandalkan id tetap, karena sequence PostgreSQL tidak ikut di-rollback antar tes.
 
 Jangan menjalankan dua suite bersamaan pada satu checkout: `Storage::fake('local')` memakai folder `storage/framework/testing` yang sama sehingga berkas tes saling terhapus.
 

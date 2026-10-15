@@ -31,22 +31,24 @@ class DemoSeeder extends Seeder
         }
 
         DB::transaction(function () {
-            foreach ([[1, 'D-III Keperawatan', 'Keperawatan', 'KEP'], [2, 'D-IV Gizi dan Dietetika', 'Gizi', 'GIZ'], [3, 'D-III Kesehatan Lingkungan', 'Kesehatan Lingkungan', 'KESLING']] as [$id, $name, $department, $code]) {
-                DB::table('programs')->updateOrInsert(['id' => $id], ['name' => $name, 'department' => $department, 'code' => $code]);
+            // Keyed by code, not by explicit id: explicit ids would leave the PostgreSQL sequence behind.
+            foreach ([['D-III Keperawatan', 'Keperawatan', 'KEP'], ['D-IV Gizi dan Dietetika', 'Gizi', 'GIZ'], ['D-III Kesehatan Lingkungan', 'Kesehatan Lingkungan', 'KESLING']] as [$name, $department, $code]) {
+                DB::table('programs')->updateOrInsert(['code' => $code], ['name' => $name, 'department' => $department]);
             }
+            $programs = DB::table('programs')->pluck('id', 'code');
 
             $people = [
-                ['Bintang Mandagi', 'mahasiswa', 'DEMO001', 1], ['Michelle Sumual', 'anggota', 'DEMO002', 2], ['Andre Runtuwene', 'pengurus', 'DEMO003', 1],
+                ['Bintang Mandagi', 'mahasiswa', 'DEMO001', 'KEP'], ['Michelle Sumual', 'anggota', 'DEMO002', 'GIZ'], ['Andre Runtuwene', 'pengurus', 'DEMO003', 'KEP'],
                 ['Pengelola Kemahasiswaan', 'admin', null, null], ['Admin Pekan Prestasi', 'event', null, null], ['Koordinator Prodi Keperawatan', 'prodi', null, null],
                 ['Juri Poster Kesehatan', 'juri', null, null], ['Operator Pertandingan', 'operator', null, null], ['Wakil Direktur III', 'pimpinan', null, null],
-                ['Pelatih Badminton', 'pembina', null, null], ['Rifky Lasut', 'atlet1', 'DEMO004', 3], ['Grace Wowor', 'atlet2', 'DEMO005', 2],
-                ['Yosua Pangemanan', 'atlet3', 'DEMO006', 1], ['Natalia Rumengan', 'atlet4', 'DEMO007', 3], ['Kevin Tumbel', 'atlet5', 'DEMO008', 2],
+                ['Pelatih Badminton', 'pembina', null, null], ['Rifky Lasut', 'atlet1', 'DEMO004', 'KESLING'], ['Grace Wowor', 'atlet2', 'DEMO005', 'GIZ'],
+                ['Yosua Pangemanan', 'atlet3', 'DEMO006', 'KEP'], ['Natalia Rumengan', 'atlet4', 'DEMO007', 'KESLING'], ['Kevin Tumbel', 'atlet5', 'DEMO008', 'GIZ'],
             ];
             $users = [];
             foreach ($people as [$name, $email, $nim, $program]) {
-                $users[$email] = User::firstOrCreate(['email' => $email.'@demo.brudel.test'], ['name' => $name, 'nim' => $nim, 'program_id' => $program, 'password' => Hash::make('BrudelDemo!2026'), 'email_verified_at' => now(), 'active' => true]);
+                $users[$email] = User::firstOrCreate(['email' => $email.'@demo.brudel.test'], ['name' => $name, 'nim' => $nim, 'program_id' => $program ? $programs[$program] : null, 'password' => Hash::make('BrudelDemo!2026'), 'email_verified_at' => now(), 'active' => true]);
             }
-            User::firstOrCreate(['email' => 'baru@demo.brudel.test'], ['name' => 'Mahasiswa Belum Aktivasi', 'nim' => 'DEMO009', 'program_id' => 1, 'password' => Hash::make(str()->random(40)), 'active' => true]);
+            User::firstOrCreate(['email' => 'baru@demo.brudel.test'], ['name' => 'Mahasiswa Belum Aktivasi', 'nim' => 'DEMO009', 'program_id' => $programs['KEP'], 'password' => Hash::make(str()->random(40)), 'active' => true]);
             $users['mahasiswa']->update(['publication_consent' => true, 'public_slug' => 'bintang-mandagi-demo']);
 
             $clubs = [
@@ -69,7 +71,7 @@ class DemoSeeder extends Seeder
             Assignment::firstOrCreate(['user_id' => $users['pembina']->id, 'role' => 'pembina', 'club_id' => $all[0]->id], $window);
             Assignment::firstOrCreate(['user_id' => $users['admin']->id, 'role' => 'kemahasiswaan'], $window);
             Assignment::firstOrCreate(['user_id' => $users['pimpinan']->id, 'role' => 'pimpinan'], $window);
-            Assignment::firstOrCreate(['user_id' => $users['prodi']->id, 'role' => 'prodi', 'program_id' => 1], $window);
+            Assignment::firstOrCreate(['user_id' => $users['prodi']->id, 'role' => 'prodi', 'program_id' => $programs['KEP']], $window);
 
             $event = Event::firstOrCreate(['name' => 'Pekan Prestasi Mahasiswa 2026 · Demo'], ['organizer' => 'Kemahasiswaan Poltekkes Kemenkes Manado (demo)', 'status' => 'approved', 'proposed_by' => $users['admin']->id, 'decided_by' => $users['admin']->id, 'decided_at' => now()]);
             Assignment::firstOrCreate(['user_id' => $users['event']->id, 'role' => 'admin_event', 'event_id' => $event->id], $window);

@@ -114,8 +114,8 @@ class ManagementTest extends DemoTestCase
         $this->assertSame(['program_review', 'unpaid', 25000], [$registration->status, $registration->payment_status, $registration->fee_snapshot]);
         $this->assertSame(2, $registration->approvals()->count());
 
-        $mine = ProgramApproval::where('registration_id', $registration->id)->where('program_id', 1)->first();
-        $other = ProgramApproval::where('registration_id', $registration->id)->where('program_id', 2)->first();
+        $mine = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $leader->program_id)->first();
+        $other = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $member->program_id)->first();
         $this->actingAs($this->user('prodi'))->get('/prodi')->assertOk()->assertSee('Tim Debat');
         $this->post('/prodi/'.$other->id, ['decision' => 'approved'])->assertForbidden();
         $this->post('/prodi/'.$mine->id, ['decision' => 'approved'])->assertSessionHasNoErrors();
@@ -143,6 +143,12 @@ class ManagementTest extends DemoTestCase
         $this->post('/tinjauan/lomba/'.$registration->id, ['decision' => 'accepted'])->assertSessionHasNoErrors();
         $this->assertSame('accepted', $registration->fresh()->status);
         $this->assertDatabaseHas('audit_logs', ['action' => 'payment.accepted', 'subject_id' => $payment->id]);
+    }
+
+    public function test_student_affairs_can_add_a_program_after_the_demo_programs(): void
+    {
+        $this->actingAs($this->user('admin'))->post('/kelola/prodi', ['name' => 'D-III Kebidanan', 'department' => 'Kebidanan', 'code' => 'KEB'])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('programs', ['code' => 'KEB', 'name' => 'D-III Kebidanan']);
     }
 
     public function test_program_rejection_returns_registration_for_revision(): void

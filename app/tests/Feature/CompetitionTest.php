@@ -13,6 +13,7 @@ use App\Models\ScoreUpdate;
 use App\Models\User;
 use App\Services\Match\BracketService;
 use App\Services\Scoring\ScoringService;
+use App\Services\Wita;
 use Livewire\Livewire;
 
 class CompetitionTest extends DemoTestCase
@@ -28,6 +29,14 @@ class CompetitionTest extends DemoTestCase
     private function match(Competition $competition, int $round, int $position): Matchup
     {
         return Matchup::where('competition_id', $competition->id)->where('round', $round)->where('position', $position)->firstOrFail();
+    }
+
+    public function test_times_are_stored_in_utc_and_shown_in_wita_whatever_the_database_timezone(): void
+    {
+        $tennis = $this->competition('Tenis Meja Tunggal');
+        $tennis->update(['closes_at' => Wita::toUtc('2026-10-20 23:59')]);
+        $this->assertSame('2026-10-20 15:59:00', $tennis->fresh()->closes_at->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame('20 Okt 2026, 23:59', Wita::show($tennis->fresh()->closes_at));
     }
 
     public function test_seed_order_places_top_seeds_apart(): void

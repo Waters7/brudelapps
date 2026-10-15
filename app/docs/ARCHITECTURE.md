@@ -1,6 +1,6 @@
 # Arsitektur BRUDEL
 
-Monolit modular Laravel 13 + Livewire 4 + Blade + Tailwind 4 (versi terkunci di `composer.lock` dan `package-lock.json`). PostgreSQL untuk VPS, SQLite untuk demo lokal dan tes. Waktu disimpan UTC, dimasukkan dan ditampilkan dalam WITA (Asia/Makassar) melalui `App\Services\Wita`.
+Monolit modular Laravel 13 + Livewire 4 + Blade + Tailwind 4 (versi terkunci di `composer.lock` dan `package-lock.json`). PostgreSQL untuk VPS, SQLite untuk demo lokal dan tes. Waktu disimpan UTC (koneksi PostgreSQL memaksa zona sesi UTC), dimasukkan dan ditampilkan dalam WITA (Asia/Makassar) melalui `App\Services\Wita`.
 
 ## Modul
 
