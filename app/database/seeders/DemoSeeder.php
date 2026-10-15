@@ -54,17 +54,19 @@ class DemoSeeder extends Seeder
             User::firstOrCreate(['email' => 'baru@demo.brudel.test'], ['name' => 'Mahasiswa Belum Aktivasi', 'nim' => 'DEMO009', 'program_id' => $programs['KEP'], 'password' => Hash::make(str()->random(40)), 'active' => true]);
             $users['mahasiswa']->update(['publication_consent' => true, 'public_slug' => 'bintang-mandagi-demo']);
 
+            // The official organizations come from a migration; the demo only describes six UKM and opens their recruitment.
             $clubs = [
-                ['Badminton', 'Olahraga', 'Temukan ritme permainanmu. Berlatih bersama, bangun sportivitas, dan bersiap menuju podium.', 'racket'],
-                ['Paduan Suara', 'Seni', 'Satukan suara, ciptakan harmoni. Ruang berkarya untuk kamu yang ingin tumbuh bersama musik.', 'music'],
-                ['Karya Tulis Ilmiah', 'Akademik', 'Dari rasa ingin tahu menjadi karya bermakna. Kembangkan ide, riset, dan kemampuan presentasimu.', 'book'],
-                ['Futsal', 'Olahraga', 'Bangun kerja sama dan ketangkasan di lapangan. Terbuka untuk pemain dari semua prodi.', 'ball'],
-                ['Seni Tari', 'Seni', 'Ekspresikan diri melalui tari tradisional dan kreasi. Rayakan keberagaman budaya bersama.', 'spark'],
-                ['English Club', 'Akademik', 'Asah debat, public speaking, dan bahasa Inggris bersama teman lintas prodi.', 'globe'],
+                ['UKM Olahraga', 'Badminton, futsal, dan cabang olahraga lain. Berlatih bersama, bangun sportivitas, dan bersiap menuju podium.'],
+                ['UKM Manado Poltekkes Choir', 'Satukan suara, ciptakan harmoni. Ruang berkarya untuk kamu yang ingin tumbuh bersama musik.'],
+                ['UKM Inovasi dan Pengabmas', 'Dari rasa ingin tahu menjadi karya bermakna. Kembangkan riset, inovasi, dan pengabdian masyarakat.'],
+                ['UKM Korps Sukarela PMI', 'Pertolongan pertama, donor darah, dan aksi kemanusiaan bersama relawan lintas jurusan.'],
+                ['UKM Kesenian', 'Ekspresikan diri melalui tari tradisional, teater, dan kreasi. Rayakan keberagaman budaya bersama.'],
+                ['UKM English Club', 'Asah debat, public speaking, dan bahasa Inggris bersama teman lintas jurusan.'],
             ];
             $all = [];
-            foreach ($clubs as $i => [$name, $field, $description, $symbol]) {
-                $club = Club::firstOrCreate(['name' => $name], ['field' => $field, 'description' => $description, 'mentor' => 'Pembina '.$name.' (demo)', 'contact' => 'Kontak resmi belum dikonfigurasi', 'symbol' => $symbol, 'activities' => 'Latihan rutin mingguan (jadwal demo).']);
+            foreach ($clubs as $i => [$name, $description]) {
+                $club = Club::where('name', $name)->firstOrFail();
+                $club->update(['description' => $description.' (demo)', 'mentor' => 'Pembina '.$name.' (demo)', 'contact' => 'Kontak resmi belum dikonfigurasi', 'activities' => 'Latihan rutin mingguan (jadwal demo).']);
                 $all[] = $club;
                 Recruitment::firstOrCreate(['club_id' => $club->id, 'name' => 'Rekrutmen semester ganjil 2026 · Demo'], ['opens_at' => now()->subDays(7), 'closes_at' => now()->addDays(14 + $i), 'quota' => 30, 'requirements' => 'Mahasiswa aktif Poltekkes Kemenkes Manado. Bersedia mengikuti latihan dan kegiatan UKM. Pendaftaran gratis.']);
             }
@@ -114,7 +116,7 @@ class DemoSeeder extends Seeder
                 Participant::firstOrCreate(['registration_id' => $registration->id, 'competition_id' => $registration->competition_id, 'user_id' => $users[$key]->id], ['status' => 'confirmed']);
             }
 
-            $proposal = Event::firstOrCreate(['name' => 'Badminton Open Internal 2026 · Demo'], ['organizer' => 'UKM Badminton', 'club_id' => $all[0]->id, 'pathway' => 'internal', 'field' => 'Olahraga', 'description' => 'Contoh pengajuan lomba oleh Ketua UKM yang menunggu keputusan kemahasiswaan.', 'status' => 'submitted', 'proposed_by' => $users['pengurus']->id, 'submitted_at' => now()->subDay()]);
+            $proposal = Event::firstOrCreate(['name' => 'Badminton Open Internal 2026 · Demo'], ['organizer' => 'UKM Olahraga', 'club_id' => $all[0]->id, 'pathway' => 'internal', 'field' => 'Olahraga', 'description' => 'Contoh pengajuan lomba oleh Ketua UKM yang menunggu keputusan kemahasiswaan.', 'status' => 'submitted', 'proposed_by' => $users['pengurus']->id, 'submitted_at' => now()->subDay()]);
             Competition::firstOrCreate(['event_id' => $proposal->id, 'name' => 'Ganda Campuran'], ['field' => 'Olahraga', 'format' => 'team', 'min_members' => 2, 'max_members' => 2, 'quota' => 16, 'location' => 'Lapangan kampus', 'description' => 'Nomor lomba usulan UKM (demo).', 'requirements' => 'Mahasiswa aktif.', 'opens_at' => now()->addDays(7), 'closes_at' => now()->addDays(20), 'starts_at' => now()->addDays(30), 'assessment_type' => 'bracket']);
 
             $selection = Event::firstOrCreate(['name' => 'Seleksi Delegasi Lomba Nasional 2026 · Demo'], ['organizer' => 'Kemahasiswaan Poltekkes Kemenkes Manado (demo)', 'pathway' => 'delegation', 'external_organizer' => 'Penyelenggara nasional (contoh)', 'status' => 'approved', 'proposed_by' => $users['admin']->id, 'decided_by' => $users['admin']->id, 'decided_at' => now()]);
@@ -125,7 +127,7 @@ class DemoSeeder extends Seeder
             $application = ClubApplication::firstOrCreate(['recruitment_id' => $recruitment->id, 'user_id' => $users['mahasiswa']->id], ['motivation' => 'Saya ingin mengembangkan riset kesehatan dan kemampuan menulis ilmiah.', 'status' => 'accepted']);
             Membership::firstOrCreate(['club_id' => $all[2]->id, 'user_id' => $users['mahasiswa']->id], ['club_application_id' => $application->id, 'joined_at' => now()->subDays(2), 'division' => 'Riset']);
             foreach (['atlet1', 'atlet2', 'atlet3'] as $key) {
-                Membership::firstOrCreate(['club_id' => $all[0]->id, 'user_id' => $users[$key]->id], ['joined_at' => now()->subMonths(2), 'division' => 'Tunggal']);
+                Membership::firstOrCreate(['club_id' => $all[0]->id, 'user_id' => $users[$key]->id], ['joined_at' => now()->subMonths(2), 'division' => 'Badminton']);
             }
 
             $this->awards($users, $all);
@@ -139,7 +141,7 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * One activity of each type for UKM Badminton: an ongoing training (attendance code can be opened now),
+     * One activity of each type for UKM Olahraga (badminton division): an ongoing training (attendance code can be opened now),
      * an upcoming friendly match, and a past internal meeting still waiting for its minutes.
      */
     private function activities(User $chair, Club $club): void

@@ -16,10 +16,15 @@ class Discovery extends Component
 
     public string $field = '';
 
+    public string $category = '';
+
     public function render()
     {
-        $q = $this->kind === 'ukm' ? Club::with('recruitments')->where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')]) : Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'));
-        $q->when($this->field, fn ($q) => $q->where('field', $this->field));
+        $q = $this->kind === 'ukm'
+            ? Club::with('recruitments')->where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
+                ->when($this->category, fn ($q) => $q->where('category', $this->category))->ordered()
+            : Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))
+                ->when($this->field, fn ($q) => $q->where('field', $this->field));
         $q->when($this->search, fn ($q) => $q->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(mb_substr($this->search, 0, 100)).'%']));
 
         return view('livewire.discovery', ['items' => $q->get()]);

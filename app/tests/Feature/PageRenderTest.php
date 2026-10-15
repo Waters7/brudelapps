@@ -11,7 +11,7 @@ class PageRenderTest extends DemoTestCase
 {
     public function test_every_role_sees_its_pages_without_errors(): void
     {
-        $club = Club::where('name', 'Badminton')->first();
+        $club = Club::where('name', 'UKM Olahraga')->first();
         $event = Event::where('name', 'Pekan Prestasi Mahasiswa 2026 · Demo')->first();
         $tennis = $this->competition('Tenis Meja Tunggal');
         $poster = $this->competition('Lomba Poster Kesehatan');

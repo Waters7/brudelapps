@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Club extends Model
 {
@@ -12,6 +15,46 @@ class Club extends Model
     protected function casts(): array
     {
         return ['active' => 'boolean'];
+    }
+
+    /**
+     * BEM & MPM first, then HIMAJU, then UKM; insertion order within each category.
+     */
+    public function scopeOrdered(Builder $query): void
+    {
+        $query->orderByRaw("case category when 'lembaga' then 1 when 'himaju' then 2 else 3 end")->orderBy('id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function isUkm(): bool
+    {
+        return $this->category === 'ukm';
+    }
+
+    public function categoryLabel(): string
+    {
+        return config('brudel.club_categories')[$this->category] ?? 'Unit Kegiatan Mahasiswa';
+    }
+
+    public function categoryShort(): string
+    {
+        return match ($this->category) {
+            'lembaga' => 'Lembaga',
+            'himaju' => 'HIMAJU',
+            default => 'UKM',
+        };
+    }
+
+    /**
+     * Color class: the field for UKM, otherwise the category.
+     */
+    public function tone(): string
+    {
+        return $this->field ? Str::slug($this->field) : (string) $this->category;
     }
 
     public function recruitments(): HasMany

@@ -61,7 +61,9 @@ class PortalController extends Controller
         $uid = $user->id;
 
         return view('dashboard', [
-            'clubs' => Club::where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])->limit(3)->get(),
+            'clubs' => Club::where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
+                ->withExists(['recruitments as recruiting' => fn ($q) => $q->where('opens_at', '<=', now())->where('closes_at', '>', now())])
+                ->orderByDesc('recruiting')->ordered()->limit(3)->get(),
             'competitions' => Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))->where('closes_at', '>', now())->orderBy('closes_at')->limit(3)->get(),
             'memberCount' => Membership::where('user_id', $uid)->where('status', 'active')->count(),
             'applicationCount' => ClubApplication::where('user_id', $uid)->count() + Registration::whereNot('status', 'cancelled')->whereHas('participants', fn ($q) => $q->where('user_id', $uid))->count(),

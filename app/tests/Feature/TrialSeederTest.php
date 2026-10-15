@@ -53,7 +53,7 @@ class TrialSeederTest extends DemoTestCase
             'jurusan' => ['/jurusan'],
             'juri' => ['/penilaian', '/penilaian/'.$poster->id],
             'pimpinan' => ['/delegasi', '/laporan'],
-            'pengurus' => ['/tinjauan', '/kelola/ukm/'.Club::where('name', 'Badminton')->value('id')],
+            'pengurus' => ['/tinjauan', '/kelola/ukm/'.Club::where('name', 'UKM Olahraga')->value('id')],
         ];
         foreach ($pages as $role => $urls) {
             foreach ($urls as $url) {

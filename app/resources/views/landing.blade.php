@@ -11,7 +11,7 @@
 </section>
 
 <div class="kpi-grid landing-stats">
-    <div class="kpi"><span>UKM aktif</span><strong>{{ $stats['clubs'] }}</strong></div>
+    <div class="kpi"><span>Organisasi & UKM aktif</span><strong>{{ $stats['clubs'] }}</strong></div>
     <div class="kpi"><span>Lomba membuka pendaftaran</span><strong>{{ $stats['open'] }}</strong></div>
     <div class="kpi"><span>Prestasi terverifikasi</span><strong>{{ $stats['awards'] }}</strong></div>
 </div>
@@ -54,7 +54,7 @@
     <div class="catalog-grid">
     @forelse($recruitments as $recruitment)
         <article class="panel landing-card">
-            <span class="large-icon {{ strtolower($recruitment->club->field) }}"><x-icon :name="$recruitment->club->symbol"/></span>
+            <span class="large-icon {{ $recruitment->club->tone() }}"><x-icon :name="$recruitment->club->symbol"/></span>
             <h3>{{ $recruitment->club->name }}</h3>
             <p>{{ \Illuminate\Support\Str::limit($recruitment->club->description, 120) }}</p>
             <p class="muted">{{ $recruitment->name }} · ditutup {{ \App\Services\Wita::show($recruitment->closes_at, 'd M Y') }}</p>

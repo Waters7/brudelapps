@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Club;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
+use App\Models\Department;
 use App\Models\Membership;
 use App\Models\Recruitment;
 use App\Services\Club\ClubService;
@@ -25,9 +26,9 @@ class ClubManageController extends Controller
         $clubs = Club::withCount([
             'memberships as active_members' => fn ($q) => $q->where('status', 'active'),
             'recruitments as open_recruitments' => fn ($q) => $q->where('opens_at', '<=', now())->where('closes_at', '>', now()),
-        ])->when(! $user->isStudentAffairs(), fn ($q) => $q->whereIn('id', $user->scopeIds('pengurus', 'club_id')))->orderBy('name')->get();
+        ])->when(! $user->isStudentAffairs(), fn ($q) => $q->whereIn('id', $user->scopeIds('pengurus', 'club_id')))->ordered()->get();
 
-        return view('clubs.manage-index', ['clubs' => $clubs]);
+        return view('clubs.manage-index', ['clubs' => $clubs, 'departments' => Department::orderBy('id')->get()]);
     }
 
     public function show(Request $request, Club $club): View
@@ -46,6 +47,7 @@ class ClubManageController extends Controller
             'officers' => $club->officers()->with('user')->latest('starts_at')->get(),
             'counts' => Membership::where('club_id', $club->id)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
             'canLead' => $request->user()->leadsClub($club->id),
+            'departments' => Department::orderBy('id')->get(),
         ]);
     }
 
@@ -107,12 +109,14 @@ class ClubManageController extends Controller
     {
         return $request->validate([
             'name' => ($full ? 'required' : 'nullable').'|string|max:120',
-            'field' => 'required|in:'.implode(',', config('brudel.fields')),
+            'category' => ($full ? 'required' : 'nullable').'|in:'.implode(',', array_keys(config('brudel.club_categories'))),
+            'department_id' => 'nullable|integer|exists:departments,id',
+            'field' => 'nullable|in:'.implode(',', config('brudel.fields')),
             'description' => 'required|string|max:3000',
             'mentor' => 'required|string|max:120',
             'contact' => 'required|string|max:190',
             'activities' => 'nullable|string|max:3000',
-            'symbol' => 'nullable|in:racket,music,book,ball,spark,globe,trophy,users',
+            'symbol' => 'nullable|in:'.implode(',', array_keys(config('brudel.club_symbols'))),
             'active' => 'nullable|boolean',
         ]);
     }

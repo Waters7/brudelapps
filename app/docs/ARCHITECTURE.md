@@ -67,11 +67,14 @@ erDiagram
     users ||--o| competition_accounts : is
     competitions ||--o{ score_logs : audits
     clubs ||--o{ club_activities : schedules
+    departments ||--o| clubs : himaju
     club_activities ||--o{ activity_attendances : records
     users ||--o{ activity_attendances : attends
 ```
 
 Tahap ketiga: `departments` (7 jurusan, diisi migrasi) mengelompokkan `programs`; persetujuan lomba disimpan per jurusan di `department_approvals` (menggantikan `program_approvals`, data lama dipetakan otomatis). `competition_accounts` menyimpan kata sandi akun lomba terenkripsi `APP_KEY` (cast `encrypted`) agar dapat dilihat pengaju/superadmin. `score_logs` adalah log append-only setiap nilai juri. `club_activities` + `activity_attendances` menyimpan kegiatan UKM, kode kehadiran berjangka, laporan, dan notulen privat.
+
+Organisasi kemahasiswaan memakai tabel `clubs` dengan `category`: `lembaga` (BEM, MPM), `himaju` (satu per jurusan, `department_id` wajib), dan `ukm` (bidang wajib). Migrasi `2026_10_17_000001` mengisi 22 organisasi resmi. Pendaftaran HIMAJU hanya untuk mahasiswa jurusannya; kebijakan satu UKM aktif hanya menghitung kategori `ukm`.
 
 `status_histories`, `audit_logs`, `student_imports` dan `settings` tidak memiliki relasi wajib ke modul tertentu. Satu `award_results` mewakili satu penghargaan; penerimanya di `award_recipients`, sehingga penghargaan tim tidak berlipat dalam statistik (unik `award_result_id + user_id`, serta `registration_id + award`).
 

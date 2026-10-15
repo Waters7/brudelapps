@@ -27,7 +27,7 @@ class DepartmentTest extends DemoTestCase
     {
         $reviewer = $this->user('jurusan');
         $this->actingAs($reviewer)->get('/jurusan')->assertOk()
-            ->assertSee('Bintang Mandagi')->assertSee('Karya Tulis Ilmiah')
+            ->assertSee('Bintang Mandagi')->assertSee('UKM Inovasi dan Pengabmas')
             ->assertSee('Yosua Pangemanan')->assertDontSee('Michelle Sumual')->assertDontSee('Grace Wowor');
         $this->get('/jurusan?ukm=tidak')->assertOk()->assertViewHas('students', fn ($students) => $students->pluck('name')->contains('Andre Runtuwene')
             && ! $students->pluck('name')->contains('Bintang Mandagi') && ! $students->pluck('name')->contains('Yosua Pangemanan'));

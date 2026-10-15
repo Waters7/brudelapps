@@ -16,7 +16,7 @@
 <div class="demo-login"><span class="demo-tag">LINGKUNGAN DEMONSTRASI</span><p>Semua akun demo memakai kata sandi <code>BrudelDemo!2026</code>:</p>
 <dl>
     <dt>Mahasiswa</dt><dd>mahasiswa@demo.brudel.test · anggota@demo.brudel.test</dd>
-    <dt>Ketua UKM Badminton · Pelatih</dt><dd>pengurus@demo.brudel.test · pembina@demo.brudel.test</dd>
+    <dt>Ketua UKM Olahraga · Pelatih</dt><dd>pengurus@demo.brudel.test · pembina@demo.brudel.test</dd>
     <dt>Kemahasiswaan (superadmin) · Admin event</dt><dd>admin@demo.brudel.test · event@demo.brudel.test</dd>
     <dt>Jurusan Keperawatan · Pimpinan</dt><dd>jurusan@demo.brudel.test · pimpinan@demo.brudel.test</dd>
     <dt>Juri · Operator</dt><dd>juri@demo.brudel.test · operator@demo.brudel.test</dd>

@@ -22,8 +22,8 @@ class ManagementTest extends DemoTestCase
 {
     public function test_club_officers_only_manage_their_own_club(): void
     {
-        $badminton = Club::where('name', 'Badminton')->first();
-        $choir = Club::where('name', 'Paduan Suara')->first();
+        $badminton = Club::where('name', 'UKM Olahraga')->first();
+        $choir = Club::where('name', 'UKM Manado Poltekkes Choir')->first();
         $recruitment = $badminton->recruitments()->first();
         $this->actingAs($this->user('pengurus'));
 
@@ -31,7 +31,7 @@ class ManagementTest extends DemoTestCase
         $this->post('/kelola/ukm/'.$choir->id, ['field' => 'Seni', 'description' => 'Ubah', 'mentor' => 'X', 'contact' => 'Y'])->assertForbidden();
         $this->get('/kelola/ukm/'.$choir->id.'/ekspor')->assertForbidden();
         $this->post('/kelola/ukm/'.$badminton->id, ['name' => 'Nama Baru', 'field' => 'Olahraga', 'description' => 'Deskripsi baru UKM.', 'mentor' => 'Pembina', 'contact' => 'kontak@kampus.test'])->assertSessionHasNoErrors();
-        $this->assertSame('Badminton', $badminton->fresh()->name, 'Pengurus tidak dapat mengganti nama UKM.');
+        $this->assertSame('UKM Olahraga', $badminton->fresh()->name, 'Pengurus tidak dapat mengganti nama UKM.');
 
         $window = ['opens_at' => now()->subDay()->format('Y-m-d\TH:i'), 'closes_at' => now()->addWeek()->format('Y-m-d\TH:i'), 'requirements' => 'Syarat'];
         app(EnrollmentService::class)->applyClub($this->user('mahasiswa'), $recruitment->id, 'Saya ingin bergabung dan berlatih badminton.');
@@ -54,7 +54,7 @@ class ManagementTest extends DemoTestCase
     public function test_club_document_is_required_when_configured_and_private(): void
     {
         Storage::fake('local');
-        $recruitment = Recruitment::whereHas('club', fn ($q) => $q->where('name', 'Seni Tari'))->first();
+        $recruitment = Recruitment::whereHas('club', fn ($q) => $q->where('name', 'UKM Kesenian'))->first();
         $recruitment->update(['requires_document' => true]);
         $this->actingAs($this->user('mahasiswa'))->post('/rekrutmen/'.$recruitment->id, ['motivation' => 'Saya ingin belajar tari tradisional Minahasa.'])->assertSessionHasErrors('action');
         $this->post('/rekrutmen/'.$recruitment->id, ['motivation' => 'Saya ingin belajar tari tradisional Minahasa.', 'document' => $this->pdf()])->assertRedirect('/pendaftaran');
@@ -68,7 +68,7 @@ class ManagementTest extends DemoTestCase
 
     public function test_ukm_chair_proposes_event_and_student_affairs_decides(): void
     {
-        $badminton = Club::where('name', 'Badminton')->first();
+        $badminton = Club::where('name', 'UKM Olahraga')->first();
         $chair = $this->user('pengurus');
         $this->actingAs($chair)->post('/kelola/event', ['name' => 'Kejuaraan Internal UKM', 'organizer' => 'UKM Badminton', 'pathway' => 'internal', 'club_id' => $badminton->id])->assertSessionHasNoErrors();
         $event = Event::where('name', 'Kejuaraan Internal UKM')->first();

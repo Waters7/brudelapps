@@ -24,12 +24,21 @@ class ClubService extends DomainService
     {
         abort_unless($club ? $actor->managesClub($club->id) : $actor->isStudentAffairs(), 403);
         if (! $actor->isStudentAffairs()) {
-            unset($data['name'], $data['active']);
+            unset($data['name'], $data['active'], $data['category'], $data['department_id']);
         }
 
         return DB::transaction(function () use ($actor, $club, $data) {
-            $club ??= new Club(['symbol' => 'spark', 'active' => true]);
-            $club->fill($data)->save();
+            $club ??= new Club(['symbol' => 'spark', 'active' => true, 'category' => 'ukm']);
+            $club->fill($data);
+            $this->ensure(array_key_exists($club->category, config('brudel.club_categories')), 'Kategori organisasi tidak valid.');
+            $this->ensure(! $club->isUkm() || $club->field, 'Bidang UKM wajib dipilih.');
+            if ($club->category === 'himaju') {
+                $this->ensure((bool) $club->department_id, 'HIMAJU wajib dikaitkan dengan satu jurusan.');
+                $this->ensure(! Club::where('category', 'himaju')->where('department_id', $club->department_id)->whereKeyNot($club->id)->exists(), 'Jurusan ini sudah memiliki HIMAJU.');
+            } else {
+                $club->department_id = null;
+            }
+            $club->save();
             $this->audit($actor, $club->wasRecentlyCreated ? 'club.created' : 'club.updated', $club);
 
             return $club;
@@ -84,8 +93,8 @@ class ClubService extends DomainService
             $changed = $from !== $data['status'];
             if ($changed) {
                 $this->ensure(mb_strlen(trim($data['reason'] ?? '')) >= 5, 'Alasan perubahan status minimal 5 karakter.');
-                if ($data['status'] === 'active' && ! config('brudel.multiple_clubs')) {
-                    $this->ensure(! Membership::where('user_id', $membership->user_id)->where('status', 'active')->exists(), 'Mahasiswa sudah memiliki UKM aktif.');
+                if ($data['status'] === 'active' && ! config('brudel.multiple_clubs') && $membership->club->isUkm()) {
+                    $this->ensure(! Membership::where('user_id', $membership->user_id)->where('status', 'active')->whereHas('club', fn ($q) => $q->where('category', 'ukm'))->exists(), 'Mahasiswa sudah memiliki UKM aktif.');
                 }
             }
             $membership->update([

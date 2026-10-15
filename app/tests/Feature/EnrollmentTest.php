@@ -118,7 +118,7 @@ class EnrollmentTest extends TestCase
 
     public function test_ukm_scope_self_approval_expiration_and_event_separation(): void
     {
-        $r = Recruitment::whereHas('club', fn ($q) => $q->where('name', 'Paduan Suara'))->first();
+        $r = Recruitment::whereHas('club', fn ($q) => $q->where('name', 'UKM Manado Poltekkes Choir'))->first();
         $a = $this->service->applyClub($this->student, $r->id, 'Saya ingin bergabung dan belajar bersama komunitas.');
         $this->actingAs($this->manager)->post('/tinjauan/ukm/'.$a->id, ['decision' => 'accepted'])->assertForbidden();
         $this->get('/tinjauan')->assertDontSee($a->motivation);
@@ -231,7 +231,9 @@ class EnrollmentTest extends TestCase
     public function test_database_prevents_duplicate_participant_and_livewire_filters_work(): void
     {
         $this->actingAs($this->student);
-        Livewire::test(Discovery::class, ['kind' => 'ukm'])->set('field', 'Seni')->assertSee('Paduan Suara')->assertDontSee('Badminton')->set('search', 'Tari')->assertSee('Seni Tari')->assertDontSee('Paduan Suara');
+        Livewire::test(Discovery::class, ['kind' => 'ukm'])->set('category', 'himaju')->assertSee('HIMAJU Farmasi')->assertDontSee('UKM Olahraga')->assertDontSee('Badan Eksekutif Mahasiswa')
+            ->set('category', '')->set('search', 'choir')->assertSee('UKM Manado Poltekkes Choir')->assertDontSee('HIMAJU Farmasi');
+        Livewire::test(Discovery::class, ['kind' => 'lomba'])->set('field', 'Seni')->assertSee('Lomba Poster Kesehatan')->assertDontSee('Badminton Tunggal');
         $r = $this->draft();
         $this->expectException(UniqueConstraintViolationException::class);
         Participant::create(['registration_id' => $r->id, 'competition_id' => $r->competition_id, 'user_id' => $this->student->id]);

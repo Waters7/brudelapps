@@ -1,6 +1,6 @@
 <x-layout :title="$club->name">
 <a class="back-link" href="/ukm">← Jelajahi UKM</a>
-<div class="detail-header"><span class="large-icon {{ strtolower($club->field) }}"><x-icon :name="$club->symbol"/></span><div><span class="eyebrow">UNIT KEGIATAN MAHASISWA · {{ strtoupper($club->field) }}</span><h1>{{ $club->name }}</h1><p>{{ $activeMembers }} anggota aktif · Poltekkes Kemenkes Manado @unless($club->active)· <strong>Sedang tidak menerima anggota</strong>@endunless</p></div></div>
+<div class="detail-header"><span class="large-icon {{ $club->tone() }}"><x-icon :name="$club->symbol"/></span><div><span class="eyebrow">{{ strtoupper($club->categoryLabel()) }}@if($club->field) · {{ strtoupper($club->field) }}@endif</span><h1>{{ $club->name }}</h1><p>{{ $activeMembers }} anggota aktif · Poltekkes Kemenkes Manado @unless($club->active)· <strong>Sedang tidak menerima anggota</strong>@endunless</p></div></div>
 <div class="detail-columns">
 <div>
 <section class="panel"><h2>Tumbuh bersama {{ $club->name }}</h2><p>{{ $club->description }}</p><hr>
@@ -9,7 +9,7 @@
         <dt>Kontak resmi</dt><dd>{{ $club->contact }}</dd>
         <dt>Pengurus aktif</dt><dd>@forelse($club->officers as $officer){{ $officer->user->name }} <span class="muted">({{ $officer->position }}{{ $officer->period ? ' · '.$officer->period : '' }})</span>@if(!$loop->last), @endif @empty <span class="muted">Belum ditetapkan</span>@endforelse</dd>
         @if($club->activities)<dt>Kegiatan</dt><dd class="prewrap">{{ $club->activities }}</dd>@endif
-        <dt>Keanggotaan</dt><dd>{{ config('brudel.multiple_clubs')?'Mahasiswa dapat mengikuti lebih dari satu UKM.':'Satu mahasiswa hanya dapat mengikuti satu UKM aktif.' }} Pendaftaran UKM gratis.</dd>
+        <dt>Keanggotaan</dt><dd>@if($club->category === 'himaju')Khusus mahasiswa Jurusan {{ $club->department?->name }}.@elseif($club->isUkm()){{ config('brudel.multiple_clubs')?'Mahasiswa dapat mengikuti lebih dari satu UKM.':'Satu mahasiswa hanya dapat mengikuti satu UKM aktif.' }}@else Terbuka bagi mahasiswa aktif sesuai ketentuan organisasi.@endif Pendaftaran gratis.</dd>
     </dl>
 </section>
 @if($club->awards->isNotEmpty())
@@ -29,6 +29,7 @@
 @endif
 </div>
 <div>
+@php($eligible = $club->category !== 'himaju' || auth()->user()->departmentId() === $club->department_id)
 @forelse($club->recruitments as $r)
 @php($mine = $applications->get($r->id))
 <section class="panel">
@@ -39,6 +40,8 @@
     <p class="muted">Kuota penerimaan: {{ $r->quota }} anggota · {{ $r->applications()->where('status','accepted')->count() }} diterima @if($r->requires_document)· Wajib PDF persyaratan @endif</p>
     @if($mine && $mine->status !== 'revision')
         <div class="alert {{ $mine->status === 'accepted' ? 'success' : 'warning' }}">Status pendaftaranmu: <x-status :value="$mine->status"/> @if($mine->reason)· {{ $mine->reason }}@endif</div>
+    @elseif($r->isOpen() && $club->active && auth()->user()->nim && ! $eligible)
+        <div class="alert warning">Pendaftaran {{ $club->name }} khusus mahasiswa Jurusan {{ $club->department?->name }}.</div>
     @elseif($r->isOpen() && $club->active && auth()->user()->nim)
         <form action="/rekrutmen/{{ $r->id }}" method="post" enctype="multipart/form-data">@csrf
             @if($mine)<div class="alert warning">Perbaikan diminta: {{ $mine->reason }}</div>@endif

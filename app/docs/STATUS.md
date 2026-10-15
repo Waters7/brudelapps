@@ -4,7 +4,7 @@ Tanggal penilaian: 15 Oktober 2026 (WITA). Tahap kedua menambahkan seluruh modul
 
 Tahap ketiga (16 Oktober 2026) menambahkan: 7 jurusan resmi dan persetujuan/pemantauan per jurusan, akun lomba otomatis, juri maksimal 5 dengan log penilaian, dashboard pimpinan dan IKU per jurusan, Jelajah Kegiatan dengan kode kehadiran, halaman depan publik, ubah kata sandi, foto profil, masuk dengan Google, dan Cloudflare Turnstile.
 
-Hasil uji otomatis terakhir (77 tes): **PostgreSQL 17.11 — 77 lulus**, termasuk 4 tes konkurensi dua proses; **SQLite `:memory:` — 73 lulus, 4 dilewati** (tes konkurensi khusus PostgreSQL), 1.092 assertions. Rincian ada di [TESTING.md](TESTING.md). Trial lokal di PostgreSQL dengan data bervolume: `.\Start-BRUDEL.ps1 -PostgresTrial -ResetData` (lihat `TrialSeeder` di TESTING.md).
+Hasil uji otomatis terakhir (80 tes): **PostgreSQL 17.11 — 80 lulus**, termasuk 4 tes konkurensi dua proses; **SQLite `:memory:` — 76 lulus, 4 dilewati** (tes konkurensi khusus PostgreSQL), 1.125 assertions. Rincian ada di [TESTING.md](TESTING.md). Trial lokal di PostgreSQL dengan data bervolume: `.\Start-BRUDEL.ps1 -PostgresTrial -ResetData` (lihat `TrialSeeder` di TESTING.md).
 
 ## Selesai dan diuji otomatis
 

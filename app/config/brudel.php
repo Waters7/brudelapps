@@ -10,7 +10,19 @@ return [
     'max_upload_kb' => 5120,
     'activation_expire_minutes' => 60 * 24 * 3,
 
-    'fields' => ['Olahraga', 'Seni', 'Akademik'],
+    'fields' => ['Olahraga', 'Seni', 'Akademik', 'Kerohanian', 'Sosial'],
+
+    /** Student organization categories; keys are stored in clubs.category. HIMAJU belongs to one jurusan. */
+    'club_categories' => [
+        'lembaga' => 'Lembaga Kemahasiswaan',
+        'himaju' => 'Himpunan Mahasiswa Jurusan',
+        'ukm' => 'Unit Kegiatan Mahasiswa',
+    ],
+
+    'club_symbols' => [
+        'spark' => 'Bintang', 'racket' => 'Raket', 'ball' => 'Bola', 'music' => 'Musik', 'book' => 'Buku',
+        'globe' => 'Globe', 'trophy' => 'Piala', 'users' => 'Komunitas', 'flag' => 'Bendera', 'shield' => 'Perisai',
+    ],
 
     /** Six achievement levels in ascending scope. Keys are stored in the database. */
     'levels' => [

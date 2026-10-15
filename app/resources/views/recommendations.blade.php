@@ -3,7 +3,7 @@
 @php($groups=[
 ['01','Berjalan & diuji otomatis','Fitur aplikasi','accepted',[
 ['user','Akun mahasiswa','Impor CSV dengan validasi per baris, aktivasi email, lupa kata sandi, status aktif/nonaktif, profil & persetujuan publikasi.'],
-['users','UKM & keanggotaan','Profil UKM, periode rekrutmen, kuota, dokumen, revisi/daftar tunggu, anggota & divisi, status aktif/keluar/alumni, pengurus per periode, ekspor CSV.'],
+['users','Organisasi & keanggotaan','BEM, MPM, 7 HIMAJU (khusus mahasiswa jurusannya), dan 13 UKM resmi. Profil, periode rekrutmen, kuota, dokumen, revisi/daftar tunggu, anggota & divisi, status aktif/keluar/alumni, pengurus per periode, ekspor CSV.'],
 ['calendar','Event & nomor lomba','Pengajuan Ketua UKM, keputusan kemahasiswaan, nomor lomba dengan syarat, format, biaya, penilaian, live score, admin event berjangka.'],
 ['trophy','Pendaftaran individu & tim','Draf, undangan NIM, konfirmasi, hapus anggota, batal draf, kuota, persetujuan jurusan lintas jurusan, riwayat status.'],
 ['file','Pembayaran manual','Nominal tersimpan saat dikirim, rekening resmi, bukti transfer privat, verifikasi tanpa konflik kepentingan, kebijakan refund.'],

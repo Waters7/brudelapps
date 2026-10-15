@@ -16,7 +16,7 @@ class ActivityTest extends DemoTestCase
 
     public function test_coach_creates_activities_and_members_are_notified(): void
     {
-        $badminton = Club::where('name', 'Badminton')->first();
+        $badminton = Club::where('name', 'UKM Olahraga')->first();
         $data = ['club_id' => $badminton->id, 'type' => 'latihan', 'title' => 'Latihan fisik', 'location' => 'GOR', 'starts_at' => now()->addDay()->format('Y-m-d\TH:i'), 'ends_at' => now()->addDay()->addHours(2)->format('Y-m-d\TH:i'), 'is_public' => 1];
         $this->actingAs($this->user('mahasiswa'))->post('/kegiatan', $data)->assertForbidden();
         $this->actingAs($this->user('pembina'))->post('/kegiatan', $data)->assertRedirect();
@@ -94,7 +94,7 @@ class ActivityTest extends DemoTestCase
     {
         $this->get('/')->assertOk()->assertSee('Info lomba mahasiswa')->assertSee('Tenis Meja Tunggal')
             ->assertSee('Latihan rutin tunggal · Demo')->assertDontSee('Rapat evaluasi semester')
-            ->assertSee('Kegiatan UKM baru')->assertSee('Paduan Suara')->assertSee('href="/login"', false)
+            ->assertSee('Kegiatan UKM baru')->assertSee('UKM Manado Poltekkes Choir')->assertSee('href="/login"', false)
             ->assertDontSee('DEMO001')->assertDontSee('@demo.brudel.test');
         $this->actingAs($this->user('mahasiswa'))->get('/kegiatan')->assertOk()->assertSee('Latihan rutin tunggal')->assertDontSee('Rapat evaluasi semester')->assertSee('Kode kehadiran');
         $this->actingAs($this->user('atlet1'))->get('/kegiatan')->assertSee('Persahabatan vs UKM Badminton Unsrat');

@@ -465,7 +465,7 @@ class TrialSeeder extends Seeder
         $this->delegations->propose($admin, [
             'title' => 'Delegasi Pekan Olahraga Mahasiswa Wilayah · Demo', 'destination_event' => 'Pekan Olahraga Mahasiswa Wilayah (contoh)', 'organizer' => 'Penyelenggara wilayah (contoh)',
             'level' => 4, 'field' => 'Olahraga', 'location' => 'Makassar', 'starts_at' => now()->addMonths(3)->format('Y-m-d\TH:i'),
-            'reason' => 'Atlet UKM Badminton dengan hasil latihan terbaik.', 'participants' => collect($this->take(2))->pluck('id')->all(),
+            'reason' => 'Atlet UKM Olahraga (badminton) dengan hasil latihan terbaik.', 'participants' => collect($this->take(2))->pluck('id')->all(),
         ] + $common);
     }
 

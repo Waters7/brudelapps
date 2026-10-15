@@ -94,3 +94,6 @@ table.compact{min-width:0;font-size:11px}table.compact th{padding:9px 12px}table
 @media print{.sidebar,.topbar,.footer,.page-heading .button,.back-link{display:none!important}.main-shell{margin:0;width:100%}.account-card form{display:none}}
 @media(max-width:760px){.landing-hero{padding:30px 22px}.landing-hero h1{font-size:32px}.landing-art{display:none}.account-name{display:none}.checkin-form input{width:100%}.attendance-code{font-size:34px;letter-spacing:6px}}
 @media(max-width:760px){.page-heading{flex-direction:column;align-items:stretch}.page-heading>.button{display:inline-flex;align-self:flex-start}.page-heading>.badge{align-self:flex-start;max-width:none}.form-grid{grid-template-columns:1fr}.filters label{max-width:none}.bar-row{grid-template-columns:100px 1fr 28px}.public-header{padding:12px 16px}.public-header .brand small{display:none}.inline-form{align-items:stretch}.inline-form .button{width:100%}.kpi strong{font-size:22px}}
+/* Organization categories and extra fields */
+.kerohanian{background:#faf0e4;color:#9a6424}.sosial{background:#fdeeee;color:#b2443f}.lembaga{background:#e8edf5;color:#3d5a80}.himaju{background:#eef4e2;color:#58771d}.bar.kerohanian i{background:#9a6424}.bar.sosial i{background:#b2443f}
+@media(max-width:760px){.filter-tabs{overflow-x:auto;justify-content:flex-start}.filter-tab{flex-shrink:0}}

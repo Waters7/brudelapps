@@ -1,6 +1,6 @@
 <x-layout :title="'Kelola '.$club->name">
 <a class="back-link" href="/kelola/ukm">← Kelola UKM</a>
-<div class="page-heading"><div><p class="eyebrow">DASHBOARD UKM · {{ strtoupper($club->field) }}</p><h1>{{ $club->name }}</h1><p>Keanggotaan dipisahkan dari jabatan pengurus. Pergantian ketua tidak menghapus riwayat anggota.</p></div>
+<div class="page-heading"><div><p class="eyebrow">DASHBOARD {{ strtoupper($club->categoryShort()) }}@if($club->field) · {{ strtoupper($club->field) }}@endif</p><h1>{{ $club->name }}</h1><p>Keanggotaan dipisahkan dari jabatan pengurus. Pergantian ketua tidak menghapus riwayat anggota.</p></div>
 <div class="inline-actions"><a class="button outline" href="/ukm/{{ $club->id }}">Lihat profil publik</a><a class="button outline" href="/kelola/ukm/{{ $club->id }}/ekspor">CSV anggota ↓</a><a class="button outline" href="/tinjauan">Tinjau pendaftar</a></div></div>
 
 <div class="kpi-grid">
@@ -10,17 +10,21 @@
 
 <div class="detail-columns">
 <section class="panel">
-    <h2>Profil UKM</h2>
+    <h2>Profil organisasi</h2>
     <form method="post" action="/kelola/ukm/{{ $club->id }}">@csrf
-        @if(auth()->user()->isStudentAffairs())<label>Nama UKM<input name="name" required maxlength="120" value="{{ $club->name }}"></label>@endif
+        @if(auth()->user()->isStudentAffairs())<label>Nama<input name="name" required maxlength="120" value="{{ $club->name }}"></label>
         <div class="form-grid">
-            <label>Bidang<select name="field" required>@foreach(config('brudel.fields') as $field)<option @selected($club->field === $field)>{{ $field }}</option>@endforeach</select></label>
+            <label>Kategori<select name="category" required>@foreach(config('brudel.club_categories') as $value => $label)<option value="{{ $value }}" @selected($club->category === $value)>{{ $label }}</option>@endforeach</select></label>
+            <label>Jurusan (khusus HIMAJU)<select name="department_id"><option value="">—</option>@foreach($departments as $department)<option value="{{ $department->id }}" @selected($club->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select></label>
+        </div>@endif
+        <div class="form-grid">
+            <label>Bidang<select name="field" @required($club->isUkm())><option value="">— Tanpa bidang</option>@foreach(config('brudel.fields') as $field)<option @selected($club->field === $field)>{{ $field }}</option>@endforeach</select></label>
             <label>Pembina<input name="mentor" required maxlength="120" value="{{ $club->mentor }}"></label>
             <label class="span-2">Kontak resmi<input name="contact" required maxlength="190" value="{{ $club->contact }}"></label>
         </div>
         <label>Deskripsi<textarea name="description" required maxlength="3000" rows="3">{{ $club->description }}</textarea></label>
         <label>Kegiatan rutin<textarea name="activities" maxlength="3000" rows="3" placeholder="Jadwal latihan, kegiatan tahunan, dsb.">{{ $club->activities }}</textarea></label>
-        @if(auth()->user()->isStudentAffairs())<label class="checkbox-label"><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" @checked($club->active)><span>UKM aktif menerima anggota</span></label>@endif
+        @if(auth()->user()->isStudentAffairs())<label class="checkbox-label"><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" @checked($club->active)><span>Aktif menerima anggota</span></label>@endif
         <button class="button primary">Simpan profil</button>
     </form>
 </section>

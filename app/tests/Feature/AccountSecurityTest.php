@@ -41,7 +41,7 @@ class AccountSecurityTest extends DemoTestCase
         $this->assertSame([320, 320], array_slice(getimagesizefromstring(Storage::disk('local')->get($student->photo_path)), 0, 2));
 
         $this->actingAs($this->user('anggota'))->get('/foto/'.$student->id)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
-        $this->get('/ukm/'.Club::where('name', 'Badminton')->value('id'))->assertOk();
+        $this->get('/ukm/'.Club::where('name', 'UKM Olahraga')->value('id'))->assertOk();
         $this->post('/logout');
         $this->get('/foto/'.$student->id)->assertRedirect('/login');
         $this->get('/mahasiswa/bintang-mandagi-demo')->assertOk()->assertDontSee('/foto/'.$student->id);

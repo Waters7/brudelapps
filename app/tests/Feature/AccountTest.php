@@ -113,8 +113,8 @@ class AccountTest extends DemoTestCase
 
     public function test_role_assignment_scope_rules(): void
     {
-        $badminton = Club::where('name', 'Badminton')->first();
-        $choir = Club::where('name', 'Paduan Suara')->first();
+        $badminton = Club::where('name', 'UKM Olahraga')->first();
+        $choir = Club::where('name', 'UKM Manado Poltekkes Choir')->first();
         $window = ['starts_at' => now()->format('Y-m-d\TH:i'), 'ends_at' => now()->addMonths(6)->format('Y-m-d\TH:i')];
         $chair = $this->user('pengurus');
 
@@ -150,7 +150,7 @@ class AccountTest extends DemoTestCase
 
     public function test_expired_assignment_removes_access(): void
     {
-        $badminton = Club::where('name', 'Badminton')->first();
+        $badminton = Club::where('name', 'UKM Olahraga')->first();
         $chair = $this->user('pengurus');
         $this->actingAs($chair)->get('/kelola/ukm/'.$badminton->id)->assertOk();
         Assignment::where('user_id', $chair->id)->update(['ends_at' => now()->subMinute()]);

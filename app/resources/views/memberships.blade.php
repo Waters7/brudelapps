@@ -3,7 +3,7 @@
 <div class="catalog-grid">
 @forelse($memberships as $m)
 <article class="panel">
-    <span class="large-icon {{ strtolower($m->club->field) }}"><x-icon :name="$m->club->symbol"/></span>
+    <span class="large-icon {{ $m->club->tone() }}"><x-icon :name="$m->club->symbol"/></span>
     <h2>{{ $m->club->name }}</h2><p>{{ \Illuminate\Support\Str::limit($m->club->description, 140) }}</p>
     <div class="inline-actions"><x-status :value="$m->status"/>@if($m->division)<span class="chip">Divisi {{ $m->division }}</span>@endif</div>
     <p class="muted">Bergabung {{ \App\Services\Wita::show($m->joined_at, 'd M Y') }}@if($m->left_at) · berakhir {{ \App\Services\Wita::show($m->left_at, 'd M Y') }}@endif</p>

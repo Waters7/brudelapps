@@ -4,21 +4,21 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 
 | Email | NIM | Peran / lingkup |
 |---|---|---|
-| mahasiswa@demo.brudel.test | DEMO001 | Bintang Mandagi, D-III Keperawatan; anggota UKM Karya Tulis Ilmiah; profil publik aktif |
+| mahasiswa@demo.brudel.test | DEMO001 | Bintang Mandagi, D-III Keperawatan; anggota UKM Inovasi dan Pengabmas; profil publik aktif |
 | anggota@demo.brudel.test | DEMO002 | Michelle Sumual, D-IV Gizi dan Dietetika (jurusan lain, untuk tim lintas jurusan) |
-| pengurus@demo.brudel.test | DEMO003 | Andre Runtuwene; Ketua UKM Badminton 2026/2027 |
+| pengurus@demo.brudel.test | DEMO003 | Andre Runtuwene; Ketua UKM Olahraga 2026/2027 |
 | admin@demo.brudel.test | — | Kemahasiswaan (superadmin, semua lingkup); pengaju event Pekan Prestasi sehingga dapat melihat akun lombanya |
 | event@demo.brudel.test | — | Admin event Pekan Prestasi dan Seleksi Delegasi |
 | jurusan@demo.brudel.test | — | Peninjau Jurusan Keperawatan saja (menggantikan akun prodi lama) |
 | juri@demo.brudel.test | — | Juri Lomba Poster Kesehatan (penugasan manual) |
 | operator@demo.brudel.test | — | Operator Tenis Meja Tunggal (penugasan manual) |
 | pimpinan@demo.brudel.test | — | Pimpinan, jabatan Wakil Direktur III (dashboard pimpinan, keputusan delegasi, laporan) |
-| pembina@demo.brudel.test | — | Pelatih/pembina UKM Badminton (dapat membuat kegiatan dan kode kehadiran) |
-| atlet1…atlet5@demo.brudel.test | DEMO004–008 | Peserta diterima Tenis Meja (bagan 5 peserta); atlet1–3 juga anggota UKM Badminton |
+| pembina@demo.brudel.test | — | Pelatih/pembina UKM Olahraga (dapat membuat kegiatan dan kode kehadiran) |
+| atlet1…atlet5@demo.brudel.test | DEMO004–008 | Peserta diterima Tenis Meja (bagan 5 peserta); atlet1–3 juga anggota UKM Olahraga divisi Badminton |
 | baru@demo.brudel.test | DEMO009 | Akun hasil impor yang **belum diaktivasi** |
 | `lomba{id}-pengelola`, `-operator`, `-juri{n}@lomba.brudel.invalid` | — | Akun lomba otomatis; kata sandinya acak dan dilihat di Kelola Event → Akun lomba (pengaju/kemahasiswaan) |
 
-Data demo lain: 7 jurusan resmi; 6 UKM; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Badminton yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Badminton (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
+Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
 ### Skenario tahap ketiga (browser)
 
@@ -70,12 +70,12 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 16 Oktober 2026 (77 tes):
+Hasil 16 Oktober 2026 (80 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **77 lulus**, termasuk 4 tes konkurensi dua proses |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **73 lulus, 4 dilewati, 1.092 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **80 lulus**, termasuk 4 tes konkurensi dua proses |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **76 lulus, 4 dilewati, 1.125 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
 
 Tes tahap ketiga: `DepartmentTest` (7 jurusan, isolasi jurusan, unduhan sertifikat juara/bukti prestasi jurusan sendiri, IKU per jurusan, dashboard pimpinan), `CompetitionAccountTest` (akun otomatis, hanya pengaju/superadmin, ganti kata sandi, lingkup pengelola, juri maks. 5, log nilai), `AccountSecurityTest` (ubah kata sandi, foto, Google SSO dengan respons tiruan, Turnstile), `ActivityTest` (kode kehadiran, anggota saja, laporan per jenis, halaman depan).
 
@@ -152,7 +152,7 @@ Jalankan `./Start-BRUDEL.ps1` dari folder induk (menjalankan migrasi, worker que
 
 1. **Mahasiswa** (`mahasiswa@`): Jelajahi UKM → daftar; Jelajahi Lomba → Karya Tulis Ilmiah → simpan draf → undang `DEMO002` → kirim setelah dikonfirmasi; Sertifikat Saya; Prestasi Saya → ajukan prestasi eksternal dengan PDF.
 2. **Anggota** (`anggota@`): Pendaftaran Saya → terima undangan; Notifikasi.
-3. **Ketua UKM** (`pengurus@`): Kelola UKM → Badminton: buka rekrutmen, ubah status/divisi anggota (alasan wajib), tambah pengurus; Kelola Event → ajukan lomba UKM.
+3. **Ketua UKM** (`pengurus@`): Kelola UKM → UKM Olahraga: buka rekrutmen, ubah status/divisi anggota (alasan wajib), tambah pengurus; Kelola Event → ajukan lomba UKM.
 4. **Kemahasiswaan** (`admin@`): Kelola Event → putuskan "Badminton Open Internal"; tugaskan admin event; Mahasiswa & Impor → pratinjau/impor CSV; Penugasan Peran; Pengaturan Kampus → rekening uji; Verifikasi Prestasi.
 5. **Admin event** (`event@`): Tinjau Pengajuan; Operasional lomba Tenis Meja → buat bagan → catat pemenang → sahkan hasil → tetapkan penghargaan; Kelola Sertifikat → terbitkan PDF per penerima.
 6. **Jurusan** (`jurusan@`): Debat Bahasa Inggris memerlukan persetujuan jurusan dan berbayar. Daftarkan tim lintas jurusan, lalu Jurusan Keperawatan hanya dapat memutuskan unitnya.

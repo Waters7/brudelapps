@@ -3,7 +3,7 @@
 **Bakat, Rekognisi, Unjuk Diri, dan Eksplorasi Lomba**  
 Sportif Berkompetisi, Unggul Berprestasi.
 
-Mengelola UKM, kompetisi, seleksi delegasi, sertifikat, dan prestasi mahasiswa: akun dari impor resmi, UKM dan keanggotaan, event dan nomor lomba, pendaftaran individu/tim, persetujuan prodi, pembayaran manual, bagan gugur, rubrik penilaian, live score, delegasi dan surat tugas, sertifikat, prestasi, serta laporan. Baca [status](docs/STATUS.md) untuk fitur yang selesai, yang belum diverifikasi operasional, dan pekerjaan tersisa. Aplikasi belum siap produksi.
+Mengelola organisasi kemahasiswaan (BEM, MPM, HIMAJU, UKM), kompetisi, seleksi delegasi, sertifikat, dan prestasi mahasiswa: akun dari impor resmi, UKM dan keanggotaan, event dan nomor lomba, pendaftaran individu/tim, persetujuan prodi, pembayaran manual, bagan gugur, rubrik penilaian, live score, delegasi dan surat tugas, sertifikat, prestasi, serta laporan. Baca [status](docs/STATUS.md) untuk fitur yang selesai, yang belum diverifikasi operasional, dan pekerjaan tersisa. Aplikasi belum siap produksi.
 
 ## Teknologi
 
@@ -48,7 +48,7 @@ npm run build
 php artisan view:cache
 ```
 
-77 tes lulus di PostgreSQL 17.11 (termasuk uji konkurensi dua proses); di SQLite 73 lulus dan 4 tes khusus PostgreSQL dilewati (16 Oktober 2026). Hasil, cara menjalankan di PostgreSQL, trial lokal dengan `TrialSeeder`, serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
+80 tes lulus di PostgreSQL 17.11 (termasuk uji konkurensi dua proses); di SQLite 76 lulus dan 4 tes khusus PostgreSQL dilewati (16 Oktober 2026). Hasil, cara menjalankan di PostgreSQL, trial lokal dengan `TrialSeeder`, serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
 
 ## Dokumentasi
 
