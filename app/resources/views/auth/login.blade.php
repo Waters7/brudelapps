@@ -1,1 +1,19 @@
-<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#00B9AD"><title>Masuk · BRUDEL</title><link rel="icon" href="/brand/favicon.ico"><link rel="manifest" href="/site.webmanifest">@vite(['resources/css/app.css','resources/js/app.js'])</head><body class="login-page"><main class="login-layout"><section class="login-story"><img class="login-logo" src="/brand/logo-mark.svg" alt="Logo BRUDEL"><span class="eyebrow">POLTEKKES KEMENKES MANADO</span><h1>Potensi hebat.<br>Perjalanan baru.<br><em>Mulai di sini.</em></h1><p>Bakat, Rekognisi, Unjuk Diri,<br>dan Eksplorasi Lomba.</p><div class="login-slogan">Sportif Berkompetisi, Unggul Berprestasi.</div></section><section class="login-form"><a class="brand login-brand" href="/login"><img src="/brand/logo-mark.svg" alt=""><strong>BRUDEL<span class="brand-dot">.</span></strong></a><h2>Selamat datang kembali.</h2><p>Masuk dengan akun kampus untuk melanjutkan perjalananmu.</p>@if($errors->any())<div class="alert error" role="alert">{{ $errors->first() }}</div>@endif<form method="post" action="/login">@csrf<label>Email terdaftar<input type="email" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="nama@email.kampus"></label><label>Kata sandi<input type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi"></label><button class="button primary full">Masuk ke BRUDEL <x-icon name="arrow"/></button></form><p class="form-note">Akun berasal dari data resmi kampus. Untuk aktivasi dan pemulihan akun, hubungi pengelola kemahasiswaan melalui kanal resmi kampus.</p>@if(config('brudel.demo'))<div class="demo-login"><span class="demo-tag">LINGKUNGAN DEMONSTRASI</span><p>Gunakan akun berikut untuk mencoba alur:</p><dl><dt>Mahasiswa</dt><dd>mahasiswa@demo.brudel.test</dd><dt>Pengurus Badminton</dt><dd>pengurus@demo.brudel.test</dd><dt>Admin event</dt><dd>event@demo.brudel.test</dd><dt>Kata sandi demo</dt><dd><code>BrudelDemo!2026</code></dd></dl><small>Semua nama dan kegiatan pada demo bersifat ilustratif.</small></div>@endif</section></main></body></html>
+<x-guest title="Masuk" heading="Selamat datang kembali." intro="Masuk dengan akun kampus untuk melanjutkan perjalananmu.">
+<form method="post" action="/login">@csrf
+    <label>Email terdaftar<input type="email" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="nama@email.kampus"></label>
+    <label>Kata sandi<input type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi"></label>
+    <button class="button primary full">Masuk ke BRUDEL <x-icon name="arrow"/></button>
+</form>
+<div class="login-links"><a class="text-link" href="/aktivasi">Aktivasi akun baru</a><a class="text-link" href="/lupa-sandi">Lupa kata sandi?</a></div>
+<p class="form-note">Akun mahasiswa berasal dari data resmi kampus. Aktivasi dilakukan melalui email yang terdaftar di kemahasiswaan.</p>
+@if(config('brudel.demo'))
+<div class="demo-login"><span class="demo-tag">LINGKUNGAN DEMONSTRASI</span><p>Semua akun demo memakai kata sandi <code>BrudelDemo!2026</code>:</p>
+<dl>
+    <dt>Mahasiswa</dt><dd>mahasiswa@demo.brudel.test · anggota@demo.brudel.test</dd>
+    <dt>Pengurus (Ketua) Badminton</dt><dd>pengurus@demo.brudel.test</dd>
+    <dt>Admin event · Kemahasiswaan</dt><dd>event@demo.brudel.test · admin@demo.brudel.test</dd>
+    <dt>Prodi · Penilai · Operator</dt><dd>prodi@demo.brudel.test · juri@demo.brudel.test · operator@demo.brudel.test</dd>
+    <dt>Pimpinan · Pembina</dt><dd>pimpinan@demo.brudel.test · pembina@demo.brudel.test</dd>
+</dl><small>Semua nama, kegiatan dan nilai pada demo bersifat ilustratif.</small></div>
+@endif
+</x-guest>

@@ -1,50 +1,170 @@
 <?php
+
 namespace App\Http\Controllers;
-use App\Models\{Club,Competition,ClubApplication,Membership,Registration,Participant};
+
+use App\Models\AwardRecipient;
+use App\Models\AwardResult;
+use App\Models\Certificate;
+use App\Models\Club;
+use App\Models\ClubApplication;
+use App\Models\Competition;
+use App\Models\Delegation;
+use App\Models\Event;
+use App\Models\Membership;
+use App\Models\Participant;
+use App\Models\PaymentAccount;
+use App\Models\PaymentProof;
+use App\Models\ProgramApproval;
+use App\Models\Registration;
+use App\Models\Setting;
+use App\Models\User;
+use App\Services\Achievement\AchievementService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-class PortalController extends Controller {
-    public function dashboard(Request $q) {
-        $uid=$q->user()->id;
-        return view('dashboard',[
-            'clubs'=>Club::withCount(['memberships'=>fn($q)=>$q->where('status','active')])->limit(3)->get(),
-            'competitions'=>Competition::with('event')->whereHas('event',fn($q)=>$q->where('status','approved'))->where('closes_at','>',now())->orderBy('closes_at')->limit(3)->get(),
-            'memberCount'=>Membership::where('user_id',$uid)->where('status','active')->count(),
-            'applicationCount'=>ClubApplication::where('user_id',$uid)->count()+Registration::whereHas('participants',fn($q)=>$q->where('user_id',$uid))->count(),
-            'invitationCount'=>Participant::where('user_id',$uid)->where('status','invited')->count(),
-            'openCount'=>Competition::whereHas('event',fn($q)=>$q->where('status','approved'))->where('opens_at','<=',now())->where('closes_at','>',now())->count(),
-            'recent'=>ClubApplication::with('recruitment.club')->where('user_id',$uid)->latest('updated_at')->limit(3)->get(),
+use Illuminate\View\View;
+
+class PortalController extends Controller
+{
+    public function dashboard(Request $request): View
+    {
+        $uid = $request->user()->id;
+
+        return view('dashboard', [
+            'clubs' => Club::where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])->limit(3)->get(),
+            'competitions' => Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))->where('closes_at', '>', now())->orderBy('closes_at')->limit(3)->get(),
+            'memberCount' => Membership::where('user_id', $uid)->where('status', 'active')->count(),
+            'applicationCount' => ClubApplication::where('user_id', $uid)->count() + Registration::whereNot('status', 'cancelled')->whereHas('participants', fn ($q) => $q->where('user_id', $uid))->count(),
+            'invitationCount' => Participant::where('user_id', $uid)->where('status', 'invited')->count(),
+            'openCount' => Competition::whereHas('event', fn ($q) => $q->where('status', 'approved'))->where('opens_at', '<=', now())->where('closes_at', '>', now())->count(),
+            'certificateCount' => Certificate::where('user_id', $uid)->where('status', 'valid')->count(),
+            'awardCount' => AwardRecipient::where('user_id', $uid)->whereHas('award', fn ($q) => $q->where('status', 'verified'))->count(),
+            'recent' => ClubApplication::with('recruitment.club')->where('user_id', $uid)->latest('updated_at')->limit(3)->get(),
+            'notifications' => $request->user()->unreadNotifications()->limit(4)->get(),
+            'tasks' => $this->staffTasks($request->user()),
         ]);
     }
-    public function club(int $id) { return view('club',['club'=>Club::with(['recruitments'=>fn($q)=>$q->latest(),'memberships'])->findOrFail($id)]); }
-    public function competition(int $id) { return view('competition',['competition'=>Competition::with('event')->whereHas('event',fn($q)=>$q->where('status','approved'))->findOrFail($id),'draft'=>Registration::where('competition_id',$id)->where('user_id',auth()->id())->first()]); }
-    public function applications(Request $q) {
-        $uid=$q->user()->id;
-        return view('applications',[
-            'applications'=>ClubApplication::with('recruitment.club')->where('user_id',$uid)->latest()->get(),
-            'registrations'=>Registration::with('competition','participants.user')->whereHas('participants',fn($q)=>$q->where('user_id',$uid))->latest()->get(),
-            'invitations'=>Participant::with('registration.competition','registration.user')->where('user_id',$uid)->where('status','invited')->get(),
-        ]);
-    }
-    public function memberships(Request $q) { return view('memberships',['memberships'=>Membership::with('club')->where('user_id',$q->user()->id)->get()]); }
-    public function review(Request $q) {
-        $u=$q->user(); abort_unless($u->isReviewer(),403);
-        $clubs=ClubApplication::with('user','recruitment.club')->whereIn('status',['submitted','waitlisted']);
-        $regs=Registration::with('user','competition','participants.user')->where('status','submitted');
-        if (!$u->assigned('kemahasiswaan')) {
-            $a=$u->assignments()->where('starts_at','<=',now())->where('ends_at','>',now());
-            $clubs->whereHas('recruitment',fn($q)=>$q->whereIn('club_id',(clone $a)->where('role','pengurus')->pluck('club_id')));
-            $regs->whereHas('competition',fn($q)=>$q->whereIn('event_id',(clone $a)->where('role','admin_event')->pluck('event_id')));
+
+    /**
+     * Pending work in the user's assignment scope, shown on the dashboard.
+     *
+     * @return list<array{0: string, 1: int, 2: string}>
+     */
+    private function staffTasks(User $user): array
+    {
+        $all = $user->isStudentAffairs();
+        $clubs = $user->scopeIds('pengurus', 'club_id');
+        $events = $user->scopeIds('admin_event', 'event_id');
+        $programs = $user->scopeIds('prodi', 'program_id');
+        $inEvents = fn ($q) => $all ? $q : $q->whereIn('event_id', $events);
+        $tasks = [];
+        if ($all || $clubs->isNotEmpty()) {
+            $tasks[] = ['Pendaftar UKM menunggu', ClubApplication::whereIn('status', ['submitted', 'waitlisted'])->when(! $all, fn ($q) => $q->whereHas('recruitment', fn ($r) => $r->whereIn('club_id', $clubs)))->count(), '/tinjauan'];
         }
-        return view('review',['applications'=>$clubs->oldest()->get(),'registrations'=>$regs->oldest()->get()]);
+        if ($all || $events->isNotEmpty()) {
+            $tasks[] = ['Pendaftaran lomba menunggu', Registration::where('status', 'submitted')->whereHas('competition', $inEvents)->count(), '/tinjauan'];
+            $tasks[] = ['Bukti pembayaran menunggu', PaymentProof::where('status', 'pending')->whereHas('registration.competition', $inEvents)->count(), '/pembayaran'];
+        }
+        if ($all || $programs->isNotEmpty()) {
+            $tasks[] = ['Persetujuan prodi menunggu', ProgramApproval::where('status', 'pending')->when(! $all, fn ($q) => $q->whereIn('program_id', $programs))->count(), '/prodi'];
+        }
+        if ($all) {
+            $tasks[] = ['Pengajuan event menunggu', Event::where('status', 'submitted')->count(), '/kelola/event'];
+            $tasks[] = ['Prestasi menunggu verifikasi', AwardResult::where('status', 'pending')->count(), '/kelola/prestasi'];
+        }
+        if ($user->isLeadership()) {
+            $tasks[] = ['Usulan delegasi menunggu keputusan', Delegation::where('status', 'submitted')->count(), '/delegasi'];
+        }
+        if ($user->assigned('penilai')) {
+            $tasks[] = ['Nomor lomba untuk dinilai', $user->scopeIds('penilai', 'competition_id')->count(), '/penilaian'];
+        }
+
+        return $tasks;
     }
-    public function profile(Request $q) { return view('profile',['program'=>DB::table('programs')->find($q->user()->program_id)]); }
-    public function saveProfile(Request $q) {
-        $q->validate(['publication_consent'=>'nullable|boolean']);
-        DB::transaction(function () use ($q) {
-            $q->user()->update(['publication_consent'=>$q->boolean('publication_consent')]);
-            app(\App\Services\EnrollmentService::class)->audit($q->user(),'profile.consent',$q->user(),['consent'=>$q->boolean('publication_consent')]);
-        });
-        return back()->with('success','Preferensi publikasi tersimpan.');
+
+    public function club(int $id): View
+    {
+        $club = Club::with([
+            'recruitments' => fn ($q) => $q->latest('opens_at'),
+            'officers' => fn ($q) => $q->where('starts_at', '<=', now())->where('ends_at', '>', now())->with('user'),
+            'events' => fn ($q) => $q->where('status', 'approved')->latest(),
+            'awards' => fn ($q) => $q->latest('awarded_on')->limit(6),
+        ])->findOrFail($id);
+
+        return view('club', [
+            'club' => $club,
+            'activeMembers' => $club->memberships()->where('status', 'active')->count(),
+            'applications' => ClubApplication::where('user_id', auth()->id())->whereIn('recruitment_id', $club->recruitments->pluck('id'))->get()->keyBy('recruitment_id'),
+        ]);
+    }
+
+    public function competition(int $id): View
+    {
+        $competition = Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))->findOrFail($id);
+
+        return view('competition', [
+            'competition' => $competition,
+            'draft' => Registration::where('competition_id', $id)->where('user_id', auth()->id())->first(),
+            'holding' => $competition->registrations()->whereIn('status', Registration::HOLDING)->count(),
+            'accounts' => $competition->isPaid() ? PaymentAccount::where('active', true)->get() : collect(),
+            'refundPolicy' => Setting::value('refund_policy'),
+        ]);
+    }
+
+    public function applications(Request $request): View
+    {
+        $uid = $request->user()->id;
+
+        return view('applications', [
+            'applications' => ClubApplication::with('recruitment.club', 'histories')->where('user_id', $uid)->latest()->get(),
+            'registrations' => Registration::with('competition.event', 'participants.user', 'approvals.program', 'payments', 'histories')
+                ->whereNot('status', 'cancelled')->whereHas('participants', fn ($q) => $q->where('user_id', $uid))->latest()->get(),
+            'invitations' => Participant::with('registration.competition', 'registration.user')->where('user_id', $uid)->where('status', 'invited')->get(),
+            'accounts' => PaymentAccount::where('active', true)->get(),
+            'refundPolicy' => Setting::value('refund_policy'),
+        ]);
+    }
+
+    public function memberships(Request $request): View
+    {
+        return view('memberships', ['memberships' => Membership::with('club', 'histories')->where('user_id', $request->user()->id)->orderByRaw("status = 'active' desc")->latest('joined_at')->get()]);
+    }
+
+    public function review(Request $request): View
+    {
+        $user = $request->user();
+        abort_unless($user->isReviewer(), 403);
+        $clubs = ClubApplication::with('user.program', 'recruitment.club')->whereIn('status', ['submitted', 'waitlisted']);
+        $registrations = Registration::with('user', 'competition', 'participants.user.program', 'approvals.program')->where('status', 'submitted');
+        if (! $user->isStudentAffairs()) {
+            $clubs->whereHas('recruitment', fn ($q) => $q->whereIn('club_id', $user->scopeIds('pengurus', 'club_id')));
+            $registrations->whereHas('competition', fn ($q) => $q->whereIn('event_id', $user->scopeIds('admin_event', 'event_id')));
+        }
+
+        return view('review', ['applications' => $clubs->oldest()->get(), 'registrations' => $registrations->oldest()->get()]);
+    }
+
+    public function profile(Request $request): View
+    {
+        return view('profile', ['user' => $request->user()->load('program')]);
+    }
+
+    public function saveProfile(Request $request, AchievementService $achievements): RedirectResponse
+    {
+        $request->validate(['publication_consent' => 'nullable|boolean']);
+        $achievements->setConsent($request->user(), $request->boolean('publication_consent'));
+
+        return back()->with('success', 'Preferensi publikasi tersimpan.');
+    }
+
+    public function notifications(Request $request): View
+    {
+        return view('notifications', ['notifications' => $request->user()->notifications()->latest()->paginate(20)]);
+    }
+
+    public function readNotifications(Request $request): RedirectResponse
+    {
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        return back()->with('success', 'Semua notifikasi ditandai sudah dibaca.');
     }
 }

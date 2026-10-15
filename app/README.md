@@ -3,7 +3,7 @@
 **Bakat, Rekognisi, Unjuk Diri, dan Eksplorasi Lomba**  
 Sportif Berkompetisi, Unggul Berprestasi.
 
-Tahap pertama yang dapat dijalankan: UKM dan pendaftaran lomba gratis individu/tim. Baca [status](docs/STATUS.md) untuk fitur tersedia, yang belum diuji, dan yang belum dibangun. Aplikasi belum siap produksi.
+Mengelola UKM, kompetisi, seleksi delegasi, sertifikat, dan prestasi mahasiswa: akun dari impor resmi, UKM dan keanggotaan, event dan nomor lomba, pendaftaran individu/tim, persetujuan prodi, pembayaran manual, bagan gugur, rubrik penilaian, live score, delegasi dan surat tugas, sertifikat, prestasi, serta laporan. Baca [status](docs/STATUS.md) untuk fitur yang selesai, yang belum diverifikasi operasional, dan pekerjaan tersisa. Aplikasi belum siap produksi.
 
 ## Teknologi
 
@@ -30,13 +30,15 @@ npm run build
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Pada komputer ini semuanya telah diinstal. Dari folder induk jalankan `./Start-BRUDEL.ps1`. PHP Laragon ditemukan pada `C:\laragon\bin\php\php-8.4.25-Win32-vs17-x64\php.exe`. Server lokal hanya terikat ke loopback.
+Notifikasi dan email dikirim melalui queue, jadi jalankan juga `php artisan queue:work` dan `php artisan schedule:work` (atau gunakan `Start-BRUDEL.ps1`).
 
-## Demo dan rekomendasi
+Pada komputer ini semuanya telah diinstal. Dari folder induk jalankan `./Start-BRUDEL.ps1`: skrip menjalankan migrasi, worker queue, scheduler, dan server. PHP Laragon ditemukan pada `C:\laragon\bin\php\php-8.4.25-Win32-vs17-x64\php.exe`; Node pada `C:\laragon\bin\nodejs\node-v22`. Server lokal hanya terikat ke loopback.
 
-Login `mahasiswa@demo.brudel.test` / `BrudelDemo!2026`. Akun pengurus, anggota tim, dan admin berada di [panduan pengujian](docs/TESTING.md). Data demo sengaja diberi label; DemoSeeder menolak produksi dan DatabaseSeeder tidak memuat fixture.
+## Demo
 
-Menu **Rekomendasi Fitur** menampilkan tahapan: fondasi & partisipasi → kesiapan operasional → kompetisi & rekognisi → dampak & pengembangan. Pembayaran, persetujuan prodi, penilaian, live score, delegasi, sertifikat dan prestasi belum aktif.
+Login `mahasiswa@demo.brudel.test` / `BrudelDemo!2026`. Akun untuk kesembilan peran (kemahasiswaan, pengurus, admin event, prodi, penilai, pembina, pimpinan, operator) berada di [panduan pengujian](docs/TESTING.md). Data demo sengaja diberi label; tidak ada rekening atau pembayaran yang dibuat; DemoSeeder menolak produksi dan DatabaseSeeder tidak memuat fixture.
+
+Menu **Status Fitur** di aplikasi merangkum fitur yang berjalan, yang belum diverifikasi operasional, dan pekerjaan tersisa.
 
 ## Validasi
 
@@ -46,12 +48,12 @@ npm run build
 php artisan view:cache
 ```
 
-18 tes / 105 assertions lulus di SQLite pada pemeriksaan awal. Hasil serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). Penguncian PostgreSQL, S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
+47 tes / 751 assertions lulus di SQLite (15 Oktober 2026). Hasil serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). Penguncian PostgreSQL, S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
 
 ## Dokumentasi
 
 - [Arsitektur, ERD, matriks peran, alur](docs/ARCHITECTURE.md)
-- [Status dan peta jalan](docs/STATUS.md)
+- [Status fitur, asumsi yang dapat diubah, keterbatasan](docs/STATUS.md)
 - [Akun demo dan pengujian](docs/TESTING.md)
 - [VPS, S3, email, queue, scheduler, backup/restore](docs/DEPLOYMENT.md)
 

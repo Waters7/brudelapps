@@ -1,18 +1,25 @@
 # Akun demo dan pengujian
 
-Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo lokal.
+Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo lokal. Data dibuat oleh `php artisan db:seed --class=DemoSeeder` (hanya `APP_ENV=local/testing` dan `BRUDEL_DEMO=true`). Seeder produksi kosong.
 
 | Email | NIM | Peran / lingkup |
 |---|---|---|
-| mahasiswa@demo.brudel.test | DEMO001 | Bintang Mandagi; mahasiswa, anggota Karya Tulis Ilmiah |
-| anggota@demo.brudel.test | DEMO002 | Michelle Sumual; mahasiswa prodi lain, calon anggota tim |
-| pengurus@demo.brudel.test | DEMO003 | Andre Runtuwene; mahasiswa + pengurus Badminton saja |
-| event@demo.brudel.test | — | Admin Pekan Prestasi Mahasiswa saja |
-| admin@demo.brudel.test | — | Kemahasiswaan; semua UKM/event |
+| mahasiswa@demo.brudel.test | DEMO001 | Bintang Mandagi, D-III Keperawatan; anggota UKM Karya Tulis Ilmiah; profil publik aktif |
+| anggota@demo.brudel.test | DEMO002 | Michelle Sumual, D-IV Gizi (prodi lain, untuk tim lintas prodi) |
+| pengurus@demo.brudel.test | DEMO003 | Andre Runtuwene; Ketua UKM Badminton 2026/2027 |
+| admin@demo.brudel.test | — | Pengelola kemahasiswaan (semua lingkup) |
+| event@demo.brudel.test | — | Admin event Pekan Prestasi dan Seleksi Delegasi |
+| prodi@demo.brudel.test | — | Peninjau prodi D-III Keperawatan saja |
+| juri@demo.brudel.test | — | Penilai Lomba Poster Kesehatan |
+| operator@demo.brudel.test | — | Operator Tenis Meja Tunggal |
+| pimpinan@demo.brudel.test | — | Pimpinan (keputusan delegasi, laporan) |
+| pembina@demo.brudel.test | — | Pelatih/pembina UKM Badminton |
+| atlet1…atlet5@demo.brudel.test | DEMO004–008 | Peserta diterima Tenis Meja (bagan 5 peserta) |
+| baru@demo.brudel.test | DEMO009 | Akun hasil impor yang **belum diaktivasi** |
 
-Nama, prodi, pembina, kegiatan dan periode adalah ilustrasi. Akun dan fixture dibuat melalui `php artisan db:seed --class=DemoSeeder` dengan `APP_ENV=local` dan `BRUDEL_DEMO=true`. Seeder produksi kosong. DemoSeeder menolak produksi.
+Data demo lain: 6 UKM, event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login), pengajuan event UKM Badminton yang menunggu keputusan, event seleksi delegasi, 2 prestasi terverifikasi (1 tim, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
-## Jalankan tes otomatis
+## Tes otomatis
 
 ```sh
 php artisan test --compact
@@ -20,46 +27,50 @@ npm run build
 php artisan view:cache
 ```
 
-PHPUnit menggunakan SQLite `:memory:` yang terisolasi dari database demo. Hasil awal: **18 tes, 105 assertions, seluruhnya lulus**. Pengujian mencakup render halaman, login/logout/nonaktif, UKM diterima/audit, duplikat, kuota UKM dan lomba secara berurutan, isolasi UKM/event/CSV, masa penugasan, larangan self-review, alasan revisi/resubmit, konfirmasi tim/roster lock, reservasi peserta/penolakan undangan, file privat dan tipe file, periode/dokumen wajib, blok alur pembayaran yang belum tersedia, constraint unik, serta filter Livewire.
+Hasil 15 Oktober 2026: **47 tes, 751 assertions, lulus** pada SQLite `:memory:`.
 
-## UKM dari awal sampai akhir
+| Skenario wajib brief | Tes |
+|---|---|
+| Isolasi akses antar-UKM/event/prodi | `EnrollmentTest::test_ukm_scope…`, `test_event_scope…`, `ManagementTest::test_club_officers_only…`, `test_program_approval_isolation…`, `RecognitionTest::test_exports_follow_assignment_scope` |
+| Pendaftaran ganda | `EnrollmentTest::test_duplicate_ukm…`, `test_pending_invitee…`, `test_database_prevents_duplicate_participant…` |
+| Perebutan kuota terakhir | `EnrollmentTest::test_last_ukm_place…`, `test_individual_flow_and_quota_validation` (berurutan; konkurensi PostgreSQL belum diuji) |
+| Konfirmasi anggota tim | `EnrollmentTest::test_team_needs_confirmation…`, `ManagementTest::test_leader_can_remove_member…`, `test_unanswered_invitations_expire…` |
+| Verifikasi pembayaran | `ManagementTest::test_program_approval_isolation_and_manual_payment_flow` |
+| Penilaian lengkap | `CompetitionTest::test_rubric_requires_100_percent…`, `test_tie_break…`, `test_reopening_results…` |
+| Bagan dengan bye | `CompetitionTest::test_bracket_with_byes…`, `test_seed_order…` |
+| Live score sementara/final | `CompetitionTest::test_live_score_versions…`, `test_auth_only_live_score…` |
+| Unduhan sertifikat milik pengguna lain | `RecognitionTest::test_certificates_are_private…` |
+| Penghitungan prestasi tim | `RecognitionTest::test_team_award_counts_once…`, `test_external_achievement…` |
+| Akun, aktivasi, impor, peran | `AccountTest` |
+| Semua halaman tiap peran | `PageRenderTest` |
 
-1. Login mahasiswa, buka Jelajahi UKM → Badminton.
-2. Isi motivasi minimal 20 karakter, kirim. Periksa status Menunggu tinjauan.
-3. Logout, login pengurus. Buka Tinjau Pengajuan, pilih Terima. Alternatif: Minta revisi dengan alasan, lalu mahasiswa mengirim perbaikan.
-4. Login mahasiswa kembali, UKM Saya menampilkan Badminton.
-5. Pengurus Badminton tidak melihat pendaftaran Paduan Suara. Mahasiswa biasa tidak dapat membuka `/tinjauan` atau `/ekspor/ukm`.
+## Menguji per peran (browser)
 
-## Lomba individu
+Jalankan `./Start-BRUDEL.ps1` dari folder induk (menjalankan migrasi, worker queue, scheduler, dan server di http://127.0.0.1:8000).
 
-1. Mahasiswa buka Badminton Tunggal, isi motivasi, simpan draf.
-2. Buka Pendaftaran Saya, kirim pendaftaran.
-3. Admin event buka Tinjau Pengajuan, terima atau minta revisi.
-4. Mahasiswa melihat keputusan. Percobaan kirim dua kali ditolak.
+1. **Mahasiswa** (`mahasiswa@`): Jelajahi UKM → daftar; Jelajahi Lomba → Karya Tulis Ilmiah → simpan draf → undang `DEMO002` → kirim setelah dikonfirmasi; Sertifikat Saya; Prestasi Saya → ajukan prestasi eksternal dengan PDF.
+2. **Anggota** (`anggota@`): Pendaftaran Saya → terima undangan; Notifikasi.
+3. **Ketua UKM** (`pengurus@`): Kelola UKM → Badminton: buka rekrutmen, ubah status/divisi anggota (alasan wajib), tambah pengurus; Kelola Event → ajukan lomba UKM.
+4. **Kemahasiswaan** (`admin@`): Kelola Event → putuskan "Badminton Open Internal"; tugaskan admin event; Mahasiswa & Impor → pratinjau/impor CSV; Penugasan Peran; Pengaturan Kampus → rekening uji; Verifikasi Prestasi.
+5. **Admin event** (`event@`): Tinjau Pengajuan; Operasional lomba Tenis Meja → buat bagan → catat pemenang → sahkan hasil → tetapkan penghargaan; Kelola Sertifikat → terbitkan PDF per penerima.
+6. **Prodi** (`prodi@`): Debat Bahasa Inggris memerlukan persetujuan prodi dan berbayar. Daftarkan tim lintas prodi, lalu prodi Keperawatan hanya dapat memutuskan unitnya.
+7. **Penilai** (`juri@`): Penilaian Juri → isi nilai Poster setelah ada peserta diterima.
+8. **Operator** (`operator@`): Operator Live Score → perbarui skor; buka `/live/{id}` di jendela lain (publik untuk Tenis Meja) untuk melihat pembaruan berkala.
+9. **Pimpinan** (`pimpinan@`): Delegasi → putuskan usulan; Laporan dengan filter.
 
-## Lomba tim
+### Aktivasi akun (demo)
 
-1. Mahasiswa pilih Karya Tulis Ilmiah, simpan nama tim dan motivasi.
-2. Undang `DEMO002`. Kirim sebelum konfirmasi harus ditolak.
-3. Login akun anggota, Pendaftaran Saya → Terima undangan.
-4. Login ketua, kirim. Susunan tim kini terkunci; admin event dapat meninjau.
-5. Tolak undangan pada tim draf untuk menguji pelepasan reservasi peserta. Pemilik undangan saja yang boleh menanggapi.
+Buka `/aktivasi`, isi `baru@demo.brudel.test`. Dengan `MAIL_MAILER=log`, tautan tertulis di `storage/logs/laravel.log` (notifikasi diproses worker queue). Buka tautan, buat kata sandi ≥10 karakter berisi huruf dan angka.
 
-## PDF
+### Impor CSV
 
-Lomba Poster Kesehatan memerlukan PDF: unggah PDF ≤5 MB, kirim, unduh lewat halaman sendiri. Salin URL dokumen ke sesi mahasiswa berbeda: harus 403. Pengurus UKM yang bukan admin event juga harus 403. File HTML dan PDF >5 MB ditolak. Gunakan dokumen uji tanpa data pribadi.
+```csv
+nim;nama;email;prodi;status
+2026001;Nama Mahasiswa;nama@kampus.ac.id;KEP;aktif
+```
 
-## Pengujian yang masih wajib
+Prodi diisi kode (`KEP`, `GIZ`, `KESLING`) atau nama prodi. Gunakan "Pratinjau validasi" sebelum "Impor baris valid".
 
-Belum diuji: perebutan kuota dengan dua proses/koneksi PostgreSQL; race upload-submit dan konfirmasi-submit; isolasi prodi; verifikasi pembayaran; rubrik tidak lengkap; bye/pengundian; live score sementara/final; sertifikat lintas pengguna; agregasi penghargaan tim. Lima kelompok terakhir belum diimplementasikan sehingga tidak boleh dinyatakan lulus.
+## Pengujian yang masih wajib sebelum produksi
 
-Sebelum produksi, jalankan tes pada database PostgreSQL khusus pengujian (jangan database produksi), uji konkurensi dua worker terhadap satu kuota tersisa dengan barrier yang sama, periksa hanya satu transaksi berhasil dan audit konsisten. Uji restore backup, link dokumen pada bucket S3 privat, SMTP, queue restart/retry, HTTPS, instalasi PWA, offline setelah logout, serta aksesibilitas keyboard dan pembaca layar.
-
-
-## Pemeriksaan browser 15 Oktober 2026
-
-Login, filter Livewire, pengajuan Badminton, penerimaan oleh pengurus, dan keanggotaan setelah login ulang telah diperiksa melalui browser. Layout desktop 1440 px serta navigasi dan rekomendasi pada viewport ponsel 390 px diperiksa. Halaman offline publik tampil saat server berhenti; koneksi kembali memerlukan login ulang setelah sesi kedaluwarsa. Instalasi PWA perangkat dan keseluruhan siklus cache belum diuji. Tinjauan tambahan memperbaiki logout akun nonaktif serta konfigurasi pcntl, timeout queue, dan pengecualian public/hot pada Docker.
-
-
-Pemeriksaan kontras pada kombinasi utama: teks sekunder #586e62 pada putih 5,49:1 dan latar #f6f8f7 5,15:1; teks putih pada tombol #007f78 4,88:1; teks #233b27 pada tombol #cddc29 8,03:1. Ini pemeriksaan pasangan warna, belum audit aksesibilitas menyeluruh.
-
+Jalankan ulang seluruh tes pada database PostgreSQL khusus pengujian, lalu uji konkurensi dua worker terhadap satu kuota tersisa, penerimaan anggota terakhir, pengesahan hasil, dan penetapan pemenang secara bersamaan. Uji bucket S3 privat, SMTP, restart/retry queue, scheduler, HTTPS, instalasi PWA, cache setelah logout, restore backup, serta aksesibilitas keyboard dan pembaca layar.

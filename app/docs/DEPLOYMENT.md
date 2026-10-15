@@ -72,11 +72,15 @@ Gunakan bucket berbeda untuk staging dan produksi. Uji unggah PDF, unduh sebagai
 
 ## Email, queue, scheduler
 
-SMTP harus memakai akun resmi dan TLS sesuai provider, dengan SPF/DKIM/DMARC domain kampus. `MAIL_MAILER=log` pada demo tidak mengirim keluar. Aktivasi email/reset password dan notifikasi belum diimplementasikan; konfigurasi ini fondasi, bukan bukti email terkirim.
+SMTP harus memakai akun resmi dan TLS sesuai provider, dengan SPF/DKIM/DMARC domain kampus. `MAIL_MAILER=log` pada demo tidak mengirim keluar (tautan tertulis di log). Email aktivasi akun dan pemulihan kata sandi dikirim melalui queue; tautan aktivasi berlaku 3 hari, pemulihan 60 menit, satu tautan aktif per email. `APP_URL` wajib berisi domain HTTPS resmi karena dipakai untuk membuat tautan. Pengiriman email nyata belum diuji.
+
+Notifikasi dalam aplikasi (keputusan, undangan, pembayaran, sertifikat, penugasan) juga melalui queue, sehingga worker wajib berjalan.
 
 Queue menggunakan tabel Laravel `jobs` dan `failed_jobs`; Compose menjalankan worker dengan timeout 60 detik (lebih kecil dari retry_after 90 detik), tiga percobaan. Pada VPS tanpa Docker gunakan Supervisor/systemd untuk `php artisan queue:work --sleep=3 --tries=3 --timeout=60`; restart worker setiap deploy. Tinjau `queue:failed` sebelum retry, jangan mengulang side effect tanpa idempotensi.
 
-Scheduler pada Compose menggunakan `schedule:work`; tanpa Docker gunakan cron tiap menit `php /path/brudel/artisan schedule:run`. Jangan menjalankan keduanya sekaligus. Belum ada pekerjaan bisnis terjadwal pada tahap pertama.
+Scheduler pada Compose menggunakan `schedule:work`; tanpa Docker gunakan cron tiap menit `php /path/brudel/artisan schedule:run`. Jangan menjalankan keduanya sekaligus. Pekerjaan terjadwal: `brudel:expire-invitations` (tiap jam, melepas undangan tim yang tidak ditanggapi setelah pendaftaran ditutup) dan `queue:prune-failed` (harian, 30 hari).
+
+Rekening resmi, kebijakan pembatalan/pengembalian dana, definisi regional, dan awalan nomor sertifikat diatur dari menu Pengaturan Kampus oleh kemahasiswaan setelah deploy, bukan dari `.env`.
 
 ## Backup dan pemulihan
 

@@ -1,52 +1,67 @@
-# Status dan rekomendasi fitur
+# Status fitur
 
-Tanggal penilaian: 15 Oktober 2026 (WITA). Prioritas pengguna: UKM dan pendaftaran lomba. Versi ini adalah tahap pertama yang dapat dijalankan lokal, bukan seluruh cakupan brief dan bukan siap produksi.
+Tanggal penilaian: 15 Oktober 2026 (WITA). Tahap kedua menambahkan seluruh modul brief di atas tahap pertama (UKM dan lomba gratis). Aplikasi berjalan lokal dan diuji otomatis, tetapi **belum siap produksi**: PostgreSQL, S3, email, queue, PWA di perangkat, dan VPS belum diverifikasi pada layanan nyata.
 
-## Selesai dan diuji lokal
+Hasil uji otomatis terakhir: **47 tes, 751 assertions, seluruhnya lulus** (SQLite `:memory:`). Rincian ada di [TESTING.md](TESTING.md).
 
-- Brand BRUDEL dari aset pengguna; halaman login, dashboard, katalog UKM/lomba, detail, keanggotaan, pendaftaran, tinjauan, profil, dan peta jalan.
-- Laravel/Livewire/Blade/Tailwind dengan lockfile dependensi.
-- Login/logout session, akun aktif/teraktivasi, pembatasan login, CSRF framework, cache pribadi no-store.
-- Filter katalog interaktif dan pencarian nama.
-- Rekrutmen UKM gratis, validasi periode, motivasi, larangan duplikat/anggota aktif, keputusan/revisi/alasan/daftar tunggu, penerimaan menjadi anggota.
-- Akun rangkap peran dan penugasan UKM/event berjangka; penolakan tinjauan diri/tim sendiri.
-- Lomba gratis individu/tim: draf, nama tim, NIM, konfirmasi/penolakan undangan, jumlah anggota, kuota, status mahasiswa, persyaratan PDF, penguncian roster, tinjauan dan revisi.
-- Dokumen privat: batas 5 MB, PDF, unduhan hanya pemilik atau pengelola event terkait.
-- Audit mutasi dan CSV sesuai lingkup; perlindungan formula injection CSV.
-- Persetujuan publikasi disimpan, belum ada profil publik.
-- SQLite demo terpisah secara konfigurasi dan seeder; data demo diberi label dan tidak di-seed oleh DatabaseSeeder produksi.
+## Selesai dan diuji otomatis
+
+| Modul | Fitur | Tes utama |
+|---|---|---|
+| Akun | Impor CSV (pratinjau/impor, validasi NIM, email, prodi, duplikasi, ringkasan dan kesalahan per baris); aktivasi lewat email; lupa kata sandi; login/logout; status aktif/nonaktif dengan alasan; pembatasan percobaan login per akun | `AccountTest` |
+| Peran | 9 peran rangkap dengan masa berlaku dan lingkup UKM/event/prodi/nomor lomba; Ketua UKM mengelola pengurus UKM sendiri; admin event menugaskan penilai/operator; tidak boleh mengubah hak sendiri; kemahasiswaan terakhir tidak bisa diakhiri | `AccountTest` |
+| UKM | Profil (pembina, kontak, kegiatan, pengurus, prestasi), periode rekrutmen dengan kuota, syarat, seleksi, dokumen PDF opsional; tinjau/revisi/tolak/daftar tunggu; anggota, divisi, status aktif/nonaktif/keluar/alumni beserta riwayat; kepengurusan per periode; dashboard dan ekspor CSV UKM sendiri | `ManagementTest`, `EnrollmentTest` |
+| Event | Event induk dan nomor lomba; pengajuan oleh Ketua UKM, keputusan kemahasiswaan beralasan; Ketua UKM tidak otomatis menjadi admin event; pengaturan tingkat, jadwal, kuota, syarat, format, min/maks anggota, biaya, penilaian, persetujuan prodi, live score dan akses publik | `ManagementTest` |
+| Pendaftaran | Individu/tim, undangan NIM, konfirmasi, hapus anggota, batal draf, kuota, cegah peserta ganda, dokumen privat, revisi beralasan, riwayat status, persetujuan prodi per unit (tim lintas prodi), undangan kedaluwarsa dilepas terjadwal | `EnrollmentTest`, `ManagementTest` |
+| Pembayaran | Biaya per tim/peserta tampil sebelum kirim dan disimpan; rekening resmi diatur kemahasiswaan; bukti transfer PDF privat; nominal harus sama dengan tagihan; status belum dibayar/menunggu/diterima/ditolak; petugas tidak memverifikasi pembayarannya sendiri; penerimaan pendaftaran menunggu pembayaran | `ManagementTest` |
+| Pertandingan | Sistem gugur, unggulan, bye, jadwal/lokasi, pemenang resmi, propagasi ke babak berikutnya, koreksi beralasan dengan pemeriksaan dampak | `CompetitionTest` |
+| Penilaian | Rubrik total 100%, penugasan penilai, nilai dan catatan per kriteria, rumus rekap, nilai sama (kriteria terberat atau peringkat bersama), larangan menilai diri/tim, hasil tidak dapat disahkan bila belum lengkap, kunci setelah pengesahan, buka koreksi oleh kemahasiswaan dengan audit | `CompetitionTest` |
+| Live score | Skor sementara vs resmi, set/babak, status tampil seni/akademik, peringkat sementara opsional, waktu pembaruan terakhir, penanda koneksi terputus, polling 10 detik, versi optimistik untuk mencegah penimpaan, akses publik/khusus login | `CompetitionTest` |
+| Delegasi | Usulan dari peserta seleksi yang diterima, pendamping, keputusan pimpinan (tanpa konflik kepentingan), surat tugas PDF privat setelah disetujui, hasil keikutsertaan → prestasi menunggu verifikasi | `RecognitionTest` |
+| Sertifikat | Sertifikat Saya, PDF per penerima, terbit hanya setelah hasil disahkan/lomba terlaksana, unduhan privat, verifikasi publik minimum, penggantian dengan versi, pencabutan beralasan | `RecognitionTest` |
+| Prestasi | Enam tingkat, prestasi BRUDEL dari hasil resmi, prestasi eksternal dengan bukti dan verifikasi independen, halaman publik per bidang atas persetujuan mahasiswa tanpa NIM/dokumen | `RecognitionTest`, `PageRenderTest` |
+| Laporan | Filter tahun, tingkat, bidang, prodi, UKM, individu/tim; jumlah penghargaan vs mahasiswa unik; peserta vs tim; keanggotaan vs anggota unik; penghargaan tim dihitung sekali; 7 ekspor CSV sesuai hak akses dan tercatat audit | `RecognitionTest` |
+| Notifikasi | Notifikasi dalam aplikasi (queue) untuk keputusan, undangan, pembayaran, sertifikat, penugasan; email aktivasi/pemulihan | `AccountTest` |
+| Keamanan | Otorisasi server per lingkup, CSRF, sesi terenkripsi, `no-store` untuk halaman pribadi, PDF diperiksa tipe/ukuran/tanda tangan berkas, unduhan lewat controller berotorisasi, audit tindakan penting | semua tes |
+
+Semua halaman untuk setiap peran demo dirender tanpa galat (`PageRenderTest`). Pemeriksaan browser 15 Oktober 2026: login, dashboard tugas, pembuatan bagan 5 peserta (3 bye), pencatatan pemenang, papan live (polling terverifikasi), laporan, dan tampilan ponsel 375 px.
 
 ## Dibuat, belum diverifikasi operasional
 
-- Skema migration kompatibel API PostgreSQL, row lock dan transaksi: baru diuji SQLite; belum diuji pada PostgreSQL atau beban serentak.
-- Adapter S3, konfigurasi privat: belum terhubung bucket nyata atau scanner malware.
-- Manifest, ikon, service worker, halaman offline: fallback offline telah diamati saat server berhenti; instalasi perangkat dan siklus upgrade cache belum diuji.
-- Dockerfile, Compose, Nginx dan petunjuk VPS: belum dibangun/dijalankan dengan Docker atau dideploy.
-- Konfigurasi SMTP, queue dan scheduler: belum terhubung layanan nyata.
+- **PostgreSQL dan konkurensi**: migrasi, transaksi dan `lockForUpdate` dirancang untuk PostgreSQL; ekstensi `pdo_pgsql` tidak tersedia di mesin pengembangan sehingga belum diuji. Perebutan kuota terakhir baru diuji berurutan.
+- **S3 privat**: adapter siap, belum tersambung bucket nyata.
+- **Email**: aktivasi/pemulihan memakai notifikasi mail; demo memakai `MAIL_MAILER=log` (tautan muncul di `storage/logs/laravel.log`).
+- **Queue dan scheduler**: notifikasi antre di tabel `jobs`; `Start-BRUDEL.ps1` menjalankan worker dan scheduler lokal. Belum diuji pada Supervisor/systemd atau Docker.
+- **PWA**: manifest dan service worker hanya menyimpan aset publik. Instalasi di perangkat belum diuji.
+- **Docker/VPS**: Dockerfile, Compose dan Nginx tersedia, belum dibangun.
 
-## Prioritas 1 — sebelum penggunaan kampus
+## Asumsi bisnis sebagai pengaturan
 
-1. Impor data resmi: preview, validasi NIM/email/prodi/duplikasi, rollback, hasil per baris; aktivasi email dan pemulihan kata sandi.
-2. CRUD UKM, rekrutmen, anggota/divisi, periode pengurus, event/nomor lomba, persetujuan event, penugasan dan pengaturan kampus. Saat ini data katalog/periode berasal dari seeder atau pengelolaan database oleh pengembang; belum ada UI pengaturan.
-3. Review prodi termasuk tim lintas unit; isolasi akses prodi beserta tesnya. Fitur yang mewajibkan persetujuan prodi sengaja belum menerima pendaftaran.
-4. Pembayaran manual: rekening resmi, nominal terkunci, bukti, verifikasi independen, kebijakan batal/refund. Lomba berbayar sengaja belum menerima pendaftaran.
-5. Pembatalan draf, penggantian anggota sebelum penguncian, pemberitahuan revisi, riwayat status yang dapat dilihat mahasiswa.
-6. Queue notifikasi dan ekspor besar, paginasi, sanitasi file dengan scanner, retensi dokumen lama, pemantauan error, backup/restore aktual, pengujian concurrent PostgreSQL.
+| Asumsi | Nilai awal | Tempat mengubah |
+|---|---|---|
+| Mahasiswa boleh mengikuti beberapa UKM | Ya | `BRUDEL_MULTIPLE_CLUBS` |
+| Biaya pendaftaran UKM | Gratis; biaya lomba tidak berlaku untuk UKM | Kebijakan tetap (tidak ada alur pembayaran UKM) |
+| Definisi tingkat regional | Lintas provinsi dalam negeri | Pengaturan Kampus |
+| Kebijakan pembatalan/refund | Belum ditetapkan kampus (teks peringatan) | Pengaturan Kampus |
+| Rekening resmi | Tidak ada (lomba berbayar terkunci sampai diisi) | Pengaturan Kampus |
+| Awalan nomor sertifikat | `BRUDEL` | Pengaturan Kampus |
+| Penanganan nilai sama | Kriteria berbobot terbesar | Per nomor lomba |
+| Penguncian susunan tim | Saat pendaftaran dikirim | Tetap (dibuka kembali hanya lewat revisi) |
+| Hasil gugur | Juara 1, finalis 2, semifinal bersama 3, babak sebelumnya bersama | Tetap |
 
-## Prioritas 2 — jalannya kompetisi
+## Keterbatasan yang diketahui
 
-Bagan gugur/seed/bye dan propagasi pemenang; rubrik bobot 100%, penugasan penilai, kelengkapan nilai, tie-break, pengesahan; live score sementara/final dan deteksi konflik update; usulan delegasi/keputusan pimpinan/surat tugas.
+- Unggahan hanya diperiksa tipe, ekstensi, ukuran dan tanda tangan `%PDF-`; belum ada pemindai malware/karantina.
+- Dokumen lama yang diganti tetap tersimpan privat; belum ada kebijakan retensi.
+- Ekspor CSV berjalan sinkron (streaming); belum ada ekspor besar melalui queue.
+- Penguncian roster bertahap (mis. dikunci saat diterima) belum dapat dikonfigurasi.
+- Pemilihan peserta delegasi tanpa seleksi BRUDEL hanya untuk kemahasiswaan, memakai NIM.
+- Belum ada audit aksesibilitas menyeluruh; baru pemeriksaan kontras pasangan warna utama.
 
-## Prioritas 3 — rekognisi dan laporan
+## Pekerjaan tersisa sebelum produksi
 
-Sertifikat Saya PDF resmi per penerima dengan verifikasi minimum dan riwayat pencabutan; prestasi eksternal terverifikasi dan enam tingkat; publikasi profil berdasarkan consent; laporan pimpinan dengan perhitungan penghargaan tim tidak berganda.
-
-## Rekomendasi tambahan
-
-Pengingat tenggat, kalender kegiatan, checklist kesiapan delegasi, evaluasi kegiatan, panduan mahasiswa baru, dan audit aksesibilitas. Prioritaskan kebutuhan operasional dan keamanan sebelum personalisasi atau rekomendasi otomatis.
-
-## Batasan yang disengaja
-
-Tidak ada rekening atau pembayaran fiktif; tidak ada tombol modul mendatang yang berpura-pura berfungsi. Semua kegiatan demo bersifat ilustratif. Upload PDF belum membuktikan file bebas malware. Undangan yang tidak ditanggapi masih menahan keikutsertaan di nomor yang sama sampai ditolak; pembersihan undangan kadaluarsa direncanakan. Dokumen yang diganti masih disimpan privat untuk menghindari kehilangan tanpa kebijakan retensi; job pembersihan belum ada. Ekspor sinkron dan listing belum dipaginasi.
-
-
+1. Uji seluruh alur pada PostgreSQL staging, termasuk dua koneksi bersamaan untuk kuota terakhir, penerimaan anggota, pengesahan hasil dan penetapan pemenang.
+2. Sambungkan S3 privat, SMTP resmi (SPF/DKIM/DMARC), worker queue dan scheduler; uji restore backup.
+3. Pemindai malware dan kebijakan retensi dokumen; logging terpusat.
+4. Uji instalasi PWA, HTTPS, cache setelah logout, dan aksesibilitas pembaca layar.
+5. Impor data resmi kampus, isi rekening resmi dan kebijakan refund, tetapkan petugas tiap peran, hapus akun demo.

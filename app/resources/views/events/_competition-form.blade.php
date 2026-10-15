@@ -1,0 +1,32 @@
+@php($c = $competition)
+@php($levelKey = $c ? \App\Services\Achievement\AchievementService::levelKey($c->level) : 1)
+<form class="form-grid" method="post" action="/kelola/event/{{ $event->id }}/lomba{{ $c ? '/'.$c->id : '' }}" x-data="{ format: '{{ $c->format ?? 'individual' }}', fee: {{ $c->fee ?? 0 }}, live: {{ $c?->live_score ? 'true' : 'false' }}, assessment: '{{ $c->assessment_type ?? 'none' }}' }">@csrf
+    <label class="span-2">Nama nomor lomba<input name="name" required maxlength="150" value="{{ $c?->name }}"></label>
+    <label>Bidang<select name="field">@foreach(config('brudel.fields') as $field)<option @selected(($c->field ?? $event->field) === $field)>{{ $field }}</option>@endforeach</select></label>
+    <label>Tingkat<select name="level">@foreach(config('brudel.levels') as $key => $label)<option value="{{ $key }}" @selected($levelKey === $key)>{{ $label }}</option>@endforeach</select></label>
+    <label class="span-2">Deskripsi<textarea name="description" required maxlength="3000" rows="2">{{ $c?->description }}</textarea></label>
+    <label class="span-2">Persyaratan & dokumen wajib<textarea name="requirements" required maxlength="3000" rows="2">{{ $c?->requirements }}</textarea></label>
+    <label>Format peserta<select name="format" x-model="format"><option value="individual">Individu</option><option value="team">Tim</option></select></label>
+    <label>Kuota (tim/peserta)<input type="number" name="quota" required min="1" value="{{ $c->quota ?? 20 }}"></label>
+    <label x-show="format === 'team'">Minimum anggota<input type="number" name="min_members" min="1" max="50" value="{{ $c->min_members ?? 2 }}"></label>
+    <label x-show="format === 'team'">Maksimum anggota<input type="number" name="max_members" min="1" max="50" value="{{ $c->max_members ?? 3 }}"></label>
+    <label>Pendaftaran dibuka (WITA)<input type="datetime-local" name="opens_at" required value="{{ \App\Services\Wita::input($c?->opens_at) }}"></label>
+    <label>Pendaftaran ditutup (WITA)<input type="datetime-local" name="closes_at" required value="{{ \App\Services\Wita::input($c?->closes_at) }}"></label>
+    <label>Mulai lomba (WITA)<input type="datetime-local" name="starts_at" required value="{{ \App\Services\Wita::input($c?->starts_at) }}"></label>
+    <label>Selesai lomba (WITA, opsional)<input type="datetime-local" name="ends_at" value="{{ \App\Services\Wita::input($c?->ends_at) }}"></label>
+    <label class="span-2">Lokasi<input name="location" required maxlength="190" value="{{ $c?->location }}"></label>
+    <label>Biaya (Rp, 0 = gratis)<input type="number" name="fee" required min="0" x-model.number="fee" value="{{ $c->fee ?? 0 }}"></label>
+    <label>Dasar biaya<select name="fee_basis"><option value="team" @selected(($c->fee_basis ?? 'team') === 'team')>Per tim / pendaftaran</option><option value="participant" @selected(($c->fee_basis ?? '') === 'participant')>Per peserta</option></select></label>
+    <label class="span-2" x-show="fee > 0">Dasar perhitungan biaya<input name="fee_notes" maxlength="1000" value="{{ $c?->fee_notes }}" placeholder="Contoh: biaya konsumsi dan perlengkapan sesuai SK kegiatan"></label>
+    <label>Format penilaian<select name="assessment_type" x-model="assessment"><option value="none">Tanpa penilaian di BRUDEL</option><option value="bracket">Pertandingan sistem gugur</option><option value="rubric">Rubrik penilaian juri</option></select></label>
+    <label x-show="assessment === 'rubric'">Penanganan nilai sama<select name="tie_break"><option value="criteria" @selected(($c->tie_break ?? 'criteria') === 'criteria')>Diputus kriteria berbobot terbesar</option><option value="shared" @selected(($c->tie_break ?? '') === 'shared')>Peringkat bersama</option></select></label>
+    <div class="checks span-2">
+        <label class="checkbox-label"><input type="hidden" name="requires_document" value="0"><input type="checkbox" name="requires_document" value="1" @checked($c?->requires_document)><span>Wajib unggah PDF persyaratan</span></label>
+        <label class="checkbox-label"><input type="hidden" name="requires_program_approval" value="0"><input type="checkbox" name="requires_program_approval" value="1" @checked($c?->requires_program_approval)><span>Wajib persetujuan prodi (tim lintas prodi: tiap unit)</span></label>
+        <label class="checkbox-label"><input type="hidden" name="live_score" value="0"><input type="checkbox" name="live_score" value="1" x-model="live" @checked($c?->live_score)><span>Aktifkan live score</span></label>
+    </div>
+    <label x-show="live">Akses live score<select name="live_visibility"><option value="auth" @selected(($c->live_visibility ?? 'auth') === 'auth')>Khusus pengguna masuk</option><option value="public" @selected(($c->live_visibility ?? '') === 'public')>Publik</option></select></label>
+    <label class="checkbox-label" x-show="live && assessment === 'rubric'"><input type="hidden" name="live_show_provisional" value="0"><input type="checkbox" name="live_show_provisional" value="1" @checked($c?->live_show_provisional)><span>Tampilkan peringkat sementara</span></label>
+    <label class="span-2">Informasi penyelenggara eksternal (opsional)<textarea name="external_info" maxlength="2000" rows="2">{{ $c?->external_info }}</textarea></label>
+    <div class="span-2"><button class="button primary">{{ $c ? 'Simpan nomor lomba' : 'Tambah nomor lomba' }}</button></div>
+</form>

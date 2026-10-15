@@ -18,6 +18,10 @@
 @case('ball') <circle cx="12" cy="12" r="10"/><path d="m12 7 5 4-2 6H9l-2-6Zm0 0V2m5 9 4-3m-6 9 3 3m-9-3-3 3m1-9L3 8"/> @break
 @case('globe') <circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4" ry="10"/><path d="M2 12h20"/> @break
 @case('menu') <path d="M3 6h18M3 12h18M3 18h18"/> @break
+@case('bell') <path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8m4 12a2 2 0 0 0 4 0"/> @break
+@case('download') <path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/> @break
+@case('shield') <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/><path d="m9 12 2 2 4-4"/> @break
+@case('flag') <path d="M5 21V4m0 0h11l-2 4 2 4H5"/> @break
 @default <path d="m12 3 2.7 6.3L21 12l-6.3 2.7L12 21l-2.7-6.3L3 12l6.3-2.7ZM20 2v4m-2-2h4"/>
 @endswitch
 </svg>

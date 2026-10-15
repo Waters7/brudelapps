@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Http\Controllers\Account;
+
+use App\Http\Controllers\Controller;
+use App\Models\Assignment;
+use App\Models\Club;
+use App\Models\Competition;
+use App\Models\Event;
+use App\Models\Program;
+use App\Services\Account\AssignmentService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\View\View;
+
+class AssignmentController extends Controller
+{
+    public function index(Request $request): View
+    {
+        abort_unless($request->user()->isStudentAffairs(), 403);
+
+        return view('manage.assignments', [
+            'assignments' => Assignment::with('user', 'club', 'event', 'program', 'competition')
+                ->when($request->query('role'), fn ($q, $role) => $q->where('role', $role))
+                ->when($request->query('aktif') !== '0', fn ($q) => $q->where('ends_at', '>', now()))
+                ->latest()->paginate(30)->withQueryString(),
+            'scopes' => self::scopes(),
+        ]);
+    }
+
+    public function store(Request $request, AssignmentService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'user' => 'required|string|max:190',
+            'role' => 'required|string|in:'.implode(',', array_keys(config('brudel.roles'))),
+            'scope_id' => 'nullable|integer',
+            'position' => 'nullable|string|max:60',
+            'period' => 'nullable|string|max:30',
+            'starts_at' => 'required|date',
+            'ends_at' => 'required|date',
+        ]);
+        $service->grant($request->user(), $data);
+
+        return back()->with('success', 'Penugasan disimpan dan tercatat pada audit.');
+    }
+
+    public function end(Request $request, Assignment $assignment, AssignmentService $service): RedirectResponse
+    {
+        $data = $request->validate(['reason' => 'required|string|min:5|max:500']);
+        $service->end($request->user(), $assignment, $data['reason']);
+
+        return back()->with('success', 'Penugasan diakhiri. Riwayat tetap tersimpan.');
+    }
+
+    /**
+     * Options for each scope column used by role assignments.
+     *
+     * @return array<string, Collection<int, string>>
+     */
+    public static function scopes(): array
+    {
+        return [
+            'club_id' => Club::orderBy('name')->pluck('name', 'id'),
+            'event_id' => Event::where('status', 'approved')->orderBy('name')->pluck('name', 'id'),
+            'program_id' => Program::orderBy('name')->pluck('name', 'id'),
+            'competition_id' => Competition::with('event')->get()->mapWithKeys(fn ($c) => [$c->id => $c->name.' · '.$c->event->name]),
+        ];
+    }
+}
