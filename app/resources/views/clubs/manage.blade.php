@@ -51,6 +51,20 @@
 </section>
 </div>
 
+@if($club->category === 'himaju')
+<div class="alert success">Anggota HIMAJU otomatis: seluruh mahasiswa aktif Jurusan {{ $club->department?->name }} menjadi anggota tanpa rekrutmen. Pengurus dapat mengatur divisi dan status Nonaktif/Alumni.</div>
+@elseif(! $club->isUkm())
+<section class="panel">
+    <h2>Tetapkan anggota terpilih</h2>
+    <p class="muted">Anggota {{ $club->name }} berasal dari hasil pemilihan, bukan rekrutmen terbuka. Setiap penetapan dicatat beserta dasarnya.</p>
+    <form class="form-grid" method="post" action="/kelola/ukm/{{ $club->id }}/anggota">@csrf
+        <label>NIM/email mahasiswa<input name="user" required maxlength="190"></label>
+        <label>Jabatan/komisi<input name="division" maxlength="80" placeholder="Mis. Menteri Kesehatan, Komisi A"></label>
+        <label class="span-2">Dasar penetapan<input name="basis" required minlength="5" maxlength="500" placeholder="Mis. Hasil Pemilihan Raya Mahasiswa 2026"></label>
+        <div class="span-2"><button class="button primary">Tetapkan sebagai anggota</button></div>
+    </form>
+</section>
+@else
 <section class="section-block">
 <div class="section-heading"><h2>Periode rekrutmen</h2></div>
 @foreach($club->recruitments as $r)
@@ -61,6 +75,7 @@
 @endforeach
 <details class="panel collapsible" @if($club->recruitments->isEmpty()) open @endif><summary><strong>+ Buka periode rekrutmen baru</strong></summary>@include('clubs._recruitment-form', ['club' => $club, 'recruitment' => null])</details>
 </section>
+@endif
 
 <section class="section-block">
 <div class="section-heading"><h2>Anggota <span class="count-pill">{{ $members->count() }}</span></h2>
@@ -69,7 +84,7 @@
 @forelse($members as $m)
 <tr><td><strong>{{ $m->user->name }}</strong><small>{{ $m->user->nim }} · {{ $m->user->program?->name }}</small><x-history :items="$m->histories"/></td><td>{{ \App\Services\Wita::show($m->joined_at, 'd M Y') }}@if($m->left_at)<small>Berakhir {{ \App\Services\Wita::show($m->left_at, 'd M Y') }}</small>@endif</td>
 <td><form class="inline-form" method="post" action="/kelola/anggota/{{ $m->id }}">@csrf
-    <select name="status">@foreach(config('brudel.membership_statuses') as $key => $label)<option value="{{ $key }}" @selected($m->status === $key)>{{ $label }}</option>@endforeach</select>
+    <select name="status">@foreach(config('brudel.membership_statuses') as $key => $label)@continue($club->category === 'himaju' && $key === 'left' && $m->status !== 'left')<option value="{{ $key }}" @selected($m->status === $key)>{{ $label }}</option>@endforeach</select>
     <input name="division" value="{{ $m->division }}" maxlength="80" placeholder="Divisi">
     <input name="reason" maxlength="500" placeholder="Alasan bila status berubah">
     <button class="button outline small">Simpan</button></form></td></tr>

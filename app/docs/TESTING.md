@@ -18,7 +18,7 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 | baru@demo.brudel.test | DEMO009 | Akun hasil impor yang **belum diaktivasi** |
 | `lomba{id}-pengelola`, `-operator`, `-juri{n}@lomba.brudel.invalid` | — | Akun lomba otomatis; kata sandinya acak dan dilihat di Kelola Event → Akun lomba (pengaju/kemahasiswaan) |
 
-Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
+Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; setiap mahasiswa demo otomatis anggota HIMAJU jurusannya; Michelle Sumual anggota BEM terpilih; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
 ### Skenario tahap ketiga (browser)
 
@@ -70,12 +70,12 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 16 Oktober 2026 (80 tes):
+Hasil 16 Oktober 2026 (82 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **80 lulus**, termasuk 4 tes konkurensi dua proses |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **76 lulus, 4 dilewati, 1.125 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **82 lulus**, termasuk 4 tes konkurensi dua proses |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **78 lulus, 4 dilewati, 1.160 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
 
 Tes tahap ketiga: `DepartmentTest` (7 jurusan, isolasi jurusan, unduhan sertifikat juara/bukti prestasi jurusan sendiri, IKU per jurusan, dashboard pimpinan), `CompetitionAccountTest` (akun otomatis, hanya pengaju/superadmin, ganti kata sandi, lingkup pengelola, juri maks. 5, log nilai), `AccountSecurityTest` (ubah kata sandi, foto, Google SSO dengan respons tiruan, Turnstile), `ActivityTest` (kode kehadiran, anggota saja, laporan per jenis, halaman depan).
 

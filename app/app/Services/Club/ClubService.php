@@ -3,7 +3,9 @@
 namespace App\Services\Club;
 
 use App\Models\Club;
+use App\Models\ClubApplication;
 use App\Models\Membership;
+use App\Models\Program;
 use App\Models\Recruitment;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
@@ -52,6 +54,9 @@ class ClubService extends DomainService
     {
         abort_unless($actor->managesClub($club->id), 403);
         abort_if($recruitment && $recruitment->club_id !== $club->id, 404);
+        $this->ensure($club->isUkm(), $club->category === 'himaju'
+            ? 'Anggota HIMAJU otomatis dari data mahasiswa jurusan; rekrutmen tidak diperlukan.'
+            : 'Anggota BEM dan MPM ditetapkan dari hasil pemilihan, bukan rekrutmen terbuka.');
         $opens = Wita::toUtc($data['opens_at']);
         $closes = Wita::toUtc($data['closes_at']);
         $this->ensure($opens && $closes && $closes->gt($opens), 'Tanggal tutup harus setelah tanggal buka.');
@@ -93,8 +98,9 @@ class ClubService extends DomainService
             $changed = $from !== $data['status'];
             if ($changed) {
                 $this->ensure(mb_strlen(trim($data['reason'] ?? '')) >= 5, 'Alasan perubahan status minimal 5 karakter.');
-                if ($data['status'] === 'active' && ! config('brudel.multiple_clubs') && $membership->club->isUkm()) {
-                    $this->ensure(! Membership::where('user_id', $membership->user_id)->where('status', 'active')->whereHas('club', fn ($q) => $q->where('category', 'ukm'))->exists(), 'Mahasiswa sudah memiliki UKM aktif.');
+                $this->ensure($membership->club->category !== 'himaju' || $data['status'] !== 'left', 'Keanggotaan HIMAJU wajib bagi mahasiswa jurusannya; gunakan status Nonaktif atau Alumni.');
+                if ($data['status'] === 'active') {
+                    $this->ensure(! $this->choiceConflict($membership->user_id, $membership->club), 'Mahasiswa sudah aktif di UKM '.$membership->club->field.' lain; hanya satu yang dapat dipilih.');
                 }
             }
             $membership->update([
@@ -108,6 +114,80 @@ class ClubService extends DomainService
                 $membership->user->notify(new BrudelNotice('Keanggotaan '.$membership->club->name, 'Status keanggotaan: '.$this->label($data['status']).'.', '/ukm-saya'));
             }
             $this->audit($actor, 'membership.updated', $membership, ['from' => $from, 'to' => $data['status'], 'division' => $membership->division]);
+        });
+    }
+
+    /**
+     * True when joining $club would give the student a second UKM in a single-choice field (Kerohanian).
+     * With $pending, a waiting application to another UKM of that field also counts.
+     */
+    public function choiceConflict(int $userId, Club $club, bool $pending = false): bool
+    {
+        if (! $club->isUkm() || ! in_array($club->field, config('brudel.single_choice_fields'), true)) {
+            return false;
+        }
+        $sameField = fn ($q) => $q->where('category', 'ukm')->where('field', $club->field)->whereKeyNot($club->id);
+        $member = Membership::where('user_id', $userId)->where('status', 'active')->whereHas('club', $sameField)->exists();
+
+        return $member || ($pending && ClubApplication::where('user_id', $userId)->whereIn('status', ['submitted', 'waitlisted', 'revision'])
+            ->whereHas('recruitment.club', $sameField)->exists());
+    }
+
+    /**
+     * Every active student is a member of their own jurusan's HIMAJU. A move to another jurusan ends the old
+     * membership; a deactivated student account makes it inactive. Runs whenever a student's program or status changes.
+     */
+    public function syncHimaju(User $student): void
+    {
+        if (! $student->nim) {
+            return;
+        }
+        $department = $student->program_id ? Program::whereKey($student->program_id)->value('department_id') : null;
+        $target = $student->active && $department ? Club::where('category', 'himaju')->where('department_id', $department)->value('id') : null;
+
+        DB::transaction(function () use ($student, $target) {
+            $others = Membership::where('user_id', $student->id)->where('status', 'active')
+                ->whereHas('club', fn ($q) => $q->where('category', 'himaju'))->when($target, fn ($q) => $q->where('club_id', '!=', $target))->get();
+            foreach ($others as $old) {
+                [$status, $reason] = $student->active ? ['left', 'Pindah jurusan'] : ['inactive', 'Status mahasiswa nonaktif'];
+                $old->update(['status' => $status, 'left_at' => $status === 'left' ? now() : null, 'status_reason' => $reason]);
+                $this->history($old, 'active', $status, null, $reason);
+            }
+            if (! $target) {
+                return;
+            }
+            $membership = Membership::firstOrNew(['club_id' => $target, 'user_id' => $student->id]);
+            if ($membership->exists && $membership->status === 'active') {
+                return;
+            }
+            $from = $membership->exists ? $membership->status : null;
+            $membership->fill(['status' => 'active', 'joined_at' => $membership->joined_at ?? now(), 'left_at' => null, 'status_reason' => 'Anggota otomatis HIMAJU jurusan'])->save();
+            $this->history($membership, $from, 'active', null, 'Anggota otomatis HIMAJU jurusan');
+        });
+    }
+
+    /**
+     * BEM and MPM have no open recruitment: their members are appointed from the election result.
+     */
+    public function appointMember(User $actor, Club $club, string $identifier, ?string $division, string $basis): Membership
+    {
+        abort_unless($actor->managesClub($club->id), 403);
+        $this->ensure($club->category === 'lembaga', 'Penetapan anggota terpilih hanya untuk BEM dan MPM.');
+        $this->ensure(mb_strlen(trim($basis)) >= 5, 'Dasar penetapan (mis. hasil pemilihan) minimal 5 karakter.');
+
+        return DB::transaction(function () use ($actor, $club, $identifier, $division, $basis) {
+            $student = User::whereNotNull('nim')->where(fn ($q) => $q->where('nim', $identifier)->orWhere('email', mb_strtolower($identifier)))->lockForUpdate()->first();
+            $this->ensure($student !== null && $student->active, 'Mahasiswa aktif dengan NIM/email tersebut tidak ditemukan.');
+            abort_if($student->id === $actor->id, 403, 'Tidak dapat menetapkan diri sendiri.');
+            $membership = Membership::lockForUpdate()->firstOrNew(['club_id' => $club->id, 'user_id' => $student->id]);
+            $this->ensure(! ($membership->exists && $membership->status === 'active'), $student->name.' sudah menjadi anggota aktif '.$club->name.'.');
+            $from = $membership->exists ? $membership->status : null;
+            $membership->fill(['status' => 'active', 'joined_at' => now(), 'left_at' => null, 'division' => $division, 'status_reason' => $basis])->save();
+            $this->history($membership, $from, 'active', $actor, $basis);
+            $this->audit($actor, 'membership.appointed', $membership, ['basis' => $basis, 'division' => $division]);
+            $student->notify(new BrudelNotice('Anda ditetapkan sebagai anggota '.$club->name, $basis.($division ? ' · '.$division : '').'.', '/ukm-saya'));
+
+            return $membership;
         });
     }
 }

@@ -12,9 +12,9 @@ use App\Models\Recruitment;
 use App\Models\Registration;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
+use App\Services\Club\ClubService;
 use App\Services\DomainService;
 use App\Services\PrivateFiles;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -25,21 +25,11 @@ use Illuminate\Support\Facades\Notification;
  */
 class EnrollmentService extends DomainService
 {
-    public function __construct(private PrivateFiles $files) {}
+    public function __construct(private PrivateFiles $files, private ClubService $clubs) {}
 
     private function student(User $user): void
     {
         $this->ensure($user->active && $user->nim && $user->email_verified_at, 'Akun mahasiswa harus aktif dan sudah diaktivasi.');
-    }
-
-    /**
-     * The single-UKM policy counts UKM only; BEM, MPM, and HIMAJU memberships do not use up the slot.
-     *
-     * @param  Builder<Membership>  $members
-     */
-    private function hasActiveUkm(Builder $members): bool
-    {
-        return (clone $members)->whereHas('club', fn ($q) => $q->where('category', 'ukm'))->exists();
     }
 
     public function applyClub(User $user, int $id, string $motivation, ?UploadedFile $document = null): ClubApplication
@@ -53,11 +43,9 @@ class EnrollmentService extends DomainService
                 User::whereKey($user->id)->lockForUpdate()->first();
                 $this->ensure($recruitment->isOpen(), 'Periode pendaftaran UKM telah ditutup atau belum dimulai.');
                 $club = $recruitment->club;
-                $this->ensure($club->active, 'UKM ini sedang tidak menerima anggota.');
-                $this->ensure($club->category !== 'himaju' || $user->departmentId() === $club->department_id, $club->name.' hanya untuk mahasiswa Jurusan '.$club->department?->name.'.');
-                $members = Membership::where('user_id', $user->id)->where('status', 'active');
-                $this->ensure(! (clone $members)->where('club_id', $recruitment->club_id)->exists(), 'Anda sudah menjadi anggota aktif UKM ini.');
-                $this->ensure(config('brudel.multiple_clubs') || ! $club->isUkm() || ! $this->hasActiveUkm($members), 'Kebijakan kampus hanya mengizinkan satu UKM aktif.');
+                $this->ensure($club->active && $club->isUkm(), 'Organisasi ini sedang tidak menerima pendaftaran.');
+                $this->ensure(! Membership::where('user_id', $user->id)->where('status', 'active')->where('club_id', $recruitment->club_id)->exists(), 'Anda sudah menjadi anggota aktif UKM ini.');
+                $this->ensure(! $this->clubs->choiceConflict($user->id, $club, true), 'Kamu hanya dapat memilih satu UKM '.$club->field.'; kamu sudah aktif atau sedang mendaftar di UKM '.$club->field.' lain.');
                 $application = ClubApplication::where('recruitment_id', $id)->where('user_id', $user->id)->first();
                 $this->ensure(! $application || $application->status === 'revision', 'Anda sudah mengajukan pendaftaran pada periode ini.');
                 $this->ensure(! $recruitment->requires_document || $stored || $application?->document_path, 'Dokumen persyaratan UKM wajib diunggah.');
@@ -92,9 +80,8 @@ class EnrollmentService extends DomainService
                 $student = User::whereKey($application->user_id)->lockForUpdate()->firstOrFail();
                 $this->student($student);
                 $this->ensure($recruitment->applications()->where('status', 'accepted')->count() < $recruitment->quota, 'Kuota UKM sudah penuh.');
-                $members = Membership::where('user_id', $application->user_id)->where('status', 'active');
-                $this->ensure(! (clone $members)->where('club_id', $recruitment->club_id)->exists(), 'Mahasiswa sudah menjadi anggota aktif.');
-                $this->ensure(config('brudel.multiple_clubs') || ! $recruitment->club->isUkm() || ! $this->hasActiveUkm($members), 'Mahasiswa sudah memiliki UKM aktif.');
+                $this->ensure(! Membership::where('user_id', $application->user_id)->where('status', 'active')->where('club_id', $recruitment->club_id)->exists(), 'Mahasiswa sudah menjadi anggota aktif.');
+                $this->ensure(! $this->clubs->choiceConflict($application->user_id, $recruitment->club), 'Mahasiswa sudah aktif di UKM '.$recruitment->club->field.' lain; hanya satu yang dapat dipilih.');
                 $membership = Membership::where('club_id', $recruitment->club_id)->where('user_id', $application->user_id)->first();
                 $membership = Membership::updateOrCreate(
                     ['club_id' => $recruitment->club_id, 'user_id' => $application->user_id],

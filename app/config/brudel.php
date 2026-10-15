@@ -4,13 +4,19 @@ return [
     'demo' => env('BRUDEL_DEMO', false),
     'build' => 'LUbzwN3GmXegmr8L6NKfIF_4Ls__TPciVDCqonCeeF2I9I701DNJg8zqLrmfnciyLDTT_uRRKdbMoDbLyS1ATw',
     'timezone' => 'Asia/Makassar',
-    'multiple_clubs' => env('BRUDEL_MULTIPLE_CLUBS', true),
     'club_fee' => 0,
     'document_disk' => env('BRUDEL_DOCUMENT_DISK', 'local'),
     'max_upload_kb' => 5120,
     'activation_expire_minutes' => 60 * 24 * 3,
 
     'fields' => ['Olahraga', 'Seni', 'Akademik', 'Kerohanian', 'Sosial'],
+
+    /**
+     * Membership rules: every active student belongs to their own jurusan's HIMAJU automatically, BEM and MPM
+     * members are appointed after an election, a student picks at most one UKM in each field listed here,
+     * and any number of the other UKM.
+     */
+    'single_choice_fields' => ['Kerohanian'],
 
     /** Student organization categories; keys are stored in clubs.category. HIMAJU belongs to one jurusan. */
     'club_categories' => [

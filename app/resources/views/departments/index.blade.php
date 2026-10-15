@@ -1,5 +1,5 @@
 <x-layout title="Jurusan">
-<div class="page-heading"><div><p class="eyebrow">RUANG JURUSAN</p><h1>{{ $selected ? 'Jurusan '.$selected->name : 'Jurusan' }}</h1><p>Persetujuan lomba, keaktifan UKM, sertifikat juara, dan prestasi mahasiswa jurusan Anda saja.</p></div>
+<div class="page-heading"><div><p class="eyebrow">RUANG JURUSAN</p><h1>{{ $selected ? 'Jurusan '.$selected->name : 'Jurusan' }}</h1><p>Persetujuan lomba, keaktifan UKM (selain HIMAJU yang otomatis), sertifikat juara, dan prestasi mahasiswa jurusan Anda saja.</p></div>
 @if($selected)<div class="inline-actions"><a class="button outline" href="/jurusan/{{ $selected->id }}/ekspor?data=ukm">CSV UKM mahasiswa ↓</a><a class="button outline" href="/jurusan/{{ $selected->id }}/ekspor?data=prestasi">CSV prestasi ↓</a></div>@endif</div>
 
 @if($departments->count() > 1)
@@ -8,8 +8,8 @@
 
 <div class="kpi-grid">
     <a class="kpi" href="?jurusan={{ $selected?->id }}"><span>Mahasiswa aktif</span><strong>{{ $counts['total'] }}</strong></a>
-    <a class="kpi" href="?jurusan={{ $selected?->id }}&ukm=aktif"><span>Aktif di UKM</span><strong>{{ $counts['active'] }}</strong></a>
-    <a class="kpi {{ $counts['inactive'] ? 'has-task' : '' }}" href="?jurusan={{ $selected?->id }}&ukm=tidak"><span>Tidak aktif di UKM mana pun</span><strong>{{ $counts['inactive'] }}</strong></a>
+    <a class="kpi" href="?jurusan={{ $selected?->id }}&ukm=aktif"><span>Aktif di UKM/BEM/MPM</span><strong>{{ $counts['active'] }}</strong></a>
+    <a class="kpi {{ $counts['inactive'] ? 'has-task' : '' }}" href="?jurusan={{ $selected?->id }}&ukm=tidak"><span>Tidak aktif di UKM, BEM, maupun MPM</span><strong>{{ $counts['inactive'] }}</strong></a>
     <div class="kpi"><span>Menunggu persetujuan</span><strong>{{ $pending->count() }}</strong></div>
 </div>
 
@@ -32,7 +32,7 @@
 <section class="section-block">
 <div class="section-heading"><h2>Mahasiswa & UKM</h2>
 <form method="get" class="inline-form"><input type="hidden" name="jurusan" value="{{ $selected?->id }}"><select name="ukm" onchange="this.form.submit()"><option value="">Semua mahasiswa</option><option value="aktif" @selected($filter === 'aktif')>Aktif di UKM</option><option value="tidak" @selected($filter === 'tidak')>Tidak aktif di UKM</option></select></form></div>
-<div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Mahasiswa</th><th>Prodi</th><th>UKM aktif</th><th>Riwayat</th></tr></thead><tbody>
+<div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Mahasiswa</th><th>Prodi</th><th>UKM/BEM/MPM aktif</th><th>Riwayat</th></tr></thead><tbody>
 @forelse($students as $student)
 <tr><td><div class="person"><x-avatar :user="$student"/><span><strong>{{ $student->name }}</strong><small>{{ $student->nim }}</small></span></div></td><td>{{ $student->program?->name }}</td>
 <td>@forelse($student->memberships->where('status', 'active') as $m)<span class="chip">{{ $m->club->name }}{{ $m->division ? ' · '.$m->division : '' }}</span>@empty<span class="badge status-inactive">Tidak aktif di UKM</span>@endforelse</td>

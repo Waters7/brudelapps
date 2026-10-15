@@ -28,15 +28,18 @@ class DepartmentController extends Controller
         $departments = $this->departments($request);
         $selected = $departments->firstWhere('id', (int) $request->query('jurusan')) ?? $departments->first();
         $filter = $request->query('ukm');
-        $students = User::with(['program', 'memberships' => fn ($q) => $q->with('club')->orderByRaw("status = 'active' desc")])
+        // Every student is in their HIMAJU automatically, so participation means an active UKM, BEM, or MPM membership.
+        $elective = fn ($q) => $q->whereHas('club', fn ($c) => $c->where('category', '!=', 'himaju'));
+        $activeElective = fn ($m) => $m->where('status', 'active')->where($elective);
+        $students = User::with(['program', 'memberships' => fn ($q) => $q->where($elective)->with('club')->orderByRaw("status = 'active' desc")])
             ->whereNotNull('nim')->where('active', true)
             ->whereHas('program', fn ($q) => $q->where('department_id', $selected?->id))
-            ->when($filter === 'aktif', fn ($q) => $q->whereHas('memberships', fn ($m) => $m->where('status', 'active')))
-            ->when($filter === 'tidak', fn ($q) => $q->whereDoesntHave('memberships', fn ($m) => $m->where('status', 'active')))
+            ->when($filter === 'aktif', fn ($q) => $q->whereHas('memberships', $activeElective))
+            ->when($filter === 'tidak', fn ($q) => $q->whereDoesntHave('memberships', $activeElective))
             ->orderBy('name')->paginate(30)->withQueryString();
         $inDepartment = fn ($q) => $q->whereHas('program', fn ($p) => $p->where('department_id', $selected?->id));
         $total = User::whereNotNull('nim')->where('active', true)->where($inDepartment)->count();
-        $activeInClub = User::whereNotNull('nim')->where('active', true)->where($inDepartment)->whereHas('memberships', fn ($m) => $m->where('status', 'active'))->count();
+        $activeInClub = User::whereNotNull('nim')->where('active', true)->where($inDepartment)->whereHas('memberships', $activeElective)->count();
 
         return view('departments.index', [
             'departments' => $departments,
@@ -77,13 +80,14 @@ class DepartmentController extends Controller
             return ReportService::csv('prestasi-jurusan-'.$department->code.'.csv', ['Kegiatan', 'Penghargaan', 'Tingkat', 'Bidang', 'Tanggal', 'Format', 'Mahasiswa jurusan'], $rows);
         }
 
-        $rows = User::with(['program', 'memberships.club'])->whereNotNull('nim')->where('active', true)->where($inDepartment)->orderBy('name')->cursor()
+        $elective = fn ($q) => $q->whereHas('club', fn ($c) => $c->where('category', '!=', 'himaju'))->with('club');
+        $rows = User::with(['program', 'memberships' => $elective])->whereNotNull('nim')->where('active', true)->where($inDepartment)->orderBy('name')->lazy()
             ->map(fn ($student) => [$student->nim, $student->name, $student->program?->name,
-                $student->memberships->where('status', 'active')->map(fn ($m) => $m->club->name.($m->division ? ' ('.$m->division.')' : ''))->join('; ') ?: 'Tidak aktif di UKM',
+                $student->memberships->where('status', 'active')->map(fn ($m) => $m->club->name.($m->division ? ' ('.$m->division.')' : ''))->join('; ') ?: 'Tidak aktif di UKM, BEM, maupun MPM',
                 $student->memberships->where('status', '!=', 'active')->map(fn ($m) => $m->club->name.' – '.(config('brudel.status_labels')[$m->status] ?? $m->status))->join('; '),
                 Wita::show($student->memberships->max('joined_at'), 'd/m/Y')]);
 
-        return ReportService::csv('ukm-mahasiswa-jurusan-'.$department->code.'.csv', ['NIM', 'Nama', 'Prodi', 'UKM aktif', 'Riwayat UKM lain', 'Bergabung terakhir'], $rows);
+        return ReportService::csv('ukm-mahasiswa-jurusan-'.$department->code.'.csv', ['NIM', 'Nama', 'Prodi', 'UKM/BEM/MPM aktif', 'Riwayat lain', 'Bergabung terakhir'], $rows);
     }
 
     /**

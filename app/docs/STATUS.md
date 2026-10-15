@@ -4,7 +4,7 @@ Tanggal penilaian: 15 Oktober 2026 (WITA). Tahap kedua menambahkan seluruh modul
 
 Tahap ketiga (16 Oktober 2026) menambahkan: 7 jurusan resmi dan persetujuan/pemantauan per jurusan, akun lomba otomatis, juri maksimal 5 dengan log penilaian, dashboard pimpinan dan IKU per jurusan, Jelajah Kegiatan dengan kode kehadiran, halaman depan publik, ubah kata sandi, foto profil, masuk dengan Google, dan Cloudflare Turnstile.
 
-Hasil uji otomatis terakhir (80 tes): **PostgreSQL 17.11 — 80 lulus**, termasuk 4 tes konkurensi dua proses; **SQLite `:memory:` — 76 lulus, 4 dilewati** (tes konkurensi khusus PostgreSQL), 1.125 assertions. Rincian ada di [TESTING.md](TESTING.md). Trial lokal di PostgreSQL dengan data bervolume: `.\Start-BRUDEL.ps1 -PostgresTrial -ResetData` (lihat `TrialSeeder` di TESTING.md).
+Hasil uji otomatis terakhir (82 tes): **PostgreSQL 17.11 — 82 lulus**, termasuk 4 tes konkurensi dua proses; **SQLite `:memory:` — 78 lulus, 4 dilewati** (tes konkurensi khusus PostgreSQL), 1.160 assertions. Rincian ada di [TESTING.md](TESTING.md). Trial lokal di PostgreSQL dengan data bervolume: `.\Start-BRUDEL.ps1 -PostgresTrial -ResetData` (lihat `TrialSeeder` di TESTING.md).
 
 ## Selesai dan diuji otomatis
 
@@ -50,7 +50,7 @@ Semua halaman untuk setiap peran demo dirender tanpa galat (`PageRenderTest`). P
 
 | Asumsi | Nilai awal | Tempat mengubah |
 |---|---|---|
-| Mahasiswa boleh mengikuti beberapa UKM | Ya | `BRUDEL_MULTIPLE_CLUBS` |
+| Aturan keanggotaan organisasi | HIMAJU wajib dan otomatis sesuai jurusan; BEM/MPM ditetapkan dari hasil pemilihan; maksimal satu UKM kerohanian; UKM lain bebas | Kebijakan tetap; bidang pilihan tunggal di `brudel.single_choice_fields` |
 | Biaya pendaftaran UKM | Gratis; biaya lomba tidak berlaku untuk UKM | Kebijakan tetap (tidak ada alur pembayaran UKM) |
 | Definisi tingkat regional | Lintas provinsi dalam negeri | Pengaturan Kampus |
 | Kebijakan pembatalan/refund | Belum ditetapkan kampus (teks peringatan) | Pengaturan Kampus |

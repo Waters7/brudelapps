@@ -100,7 +100,7 @@ class EnrollmentTest extends TestCase
         $data = ['motivation' => 'Motivasi bergabung dengan UKM pilihan untuk pengembangan diri.'];
         $this->actingAs($this->student)->post('/rekrutmen/'.$r->id, $data)->assertSessionHasNoErrors();
         $this->post('/rekrutmen/'.$r->id, $data)->assertSessionHasErrors('action');
-        $existing = Recruitment::where('club_id', Membership::where('user_id', $this->student->id)->first()->club_id)->first();
+        $existing = Recruitment::where('club_id', Membership::where('user_id', $this->student->id)->whereHas('club', fn ($q) => $q->where('category', 'ukm'))->first()->club_id)->first();
         $this->post('/rekrutmen/'.$existing->id, $data)->assertSessionHasErrors('action');
     }
 

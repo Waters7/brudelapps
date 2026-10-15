@@ -123,6 +123,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/kelola/ukm/{club}', [ClubManageController::class, 'show']);
     Route::post('/kelola/ukm/{club}', [ClubManageController::class, 'update']);
     Route::post('/kelola/ukm/{club}/rekrutmen/{recruitment?}', [ClubManageController::class, 'saveRecruitment']);
+    Route::post('/kelola/ukm/{club}/anggota', [ClubManageController::class, 'appointMember']);
     Route::post('/kelola/anggota/{membership}', [ClubManageController::class, 'updateMember']);
     Route::get('/kelola/ukm/{club}/ekspor', [ClubManageController::class, 'export']);
 

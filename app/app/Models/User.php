@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\Club\ClubService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -20,6 +21,19 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * HIMAJU membership is mandatory, so it follows every change of a student's program or active status,
+     * whichever code path (import, status change, seeder) saved it.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (User $user) {
+            if ($user->nim && ($user->wasRecentlyCreated || $user->wasChanged(['program_id', 'active', 'nim']))) {
+                app(ClubService::class)->syncHimaju($user);
+            }
+        });
+    }
 
     public function assignments(): HasMany
     {

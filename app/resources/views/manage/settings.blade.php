@@ -12,7 +12,7 @@
     </form>
     <hr>
     <h3>Kebijakan lain dari konfigurasi lingkungan</h3>
-    <dl><dt>Mahasiswa boleh mengikuti beberapa UKM</dt><dd>{{ config('brudel.multiple_clubs') ? 'Ya' : 'Tidak' }} <small class="muted">(BRUDEL_MULTIPLE_CLUBS)</small></dd><dt>Biaya pendaftaran UKM</dt><dd>Gratis — biaya lomba tidak berlaku untuk UKM</dd><dt>Penyimpanan dokumen</dt><dd>{{ config('brudel.document_disk') }} (privat)</dd></dl>
+    <dl><dt>Aturan keanggotaan</dt><dd>HIMAJU wajib dan otomatis sesuai jurusan; BEM/MPM ditetapkan dari hasil pemilihan; maksimal satu UKM {{ strtolower(implode(', ', config('brudel.single_choice_fields'))) }}; UKM lain bebas.</dd><dt>Biaya pendaftaran UKM</dt><dd>Gratis — biaya lomba tidak berlaku untuk UKM</dd><dt>Penyimpanan dokumen</dt><dd>{{ config('brudel.document_disk') }} (privat)</dd></dl>
 </section>
 
 <section class="panel">

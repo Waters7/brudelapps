@@ -160,7 +160,7 @@ class TrialSeeder extends Seeder
         }
 
         $divisions = ['Inti', 'Pelatihan', 'Humas', 'Logistik'];
-        $trialMembers = Membership::whereIn('user_id', collect($this->students)->pluck('id'))->orderBy('id')->get();
+        $trialMembers = Membership::whereIn('user_id', collect($this->students)->pluck('id'))->whereHas('club', fn ($q) => $q->where('category', 'ukm'))->orderBy('id')->get();
         foreach ($trialMembers as $index => $membership) {
             $status = match ($index % 12) {
                 5 => 'inactive',

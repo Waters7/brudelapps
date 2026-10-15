@@ -81,6 +81,18 @@ class ClubManageController extends Controller
         return back()->with('success', 'Periode rekrutmen disimpan.');
     }
 
+    public function appointMember(Request $request, Club $club): RedirectResponse
+    {
+        $data = $request->validate([
+            'user' => 'required|string|max:190',
+            'division' => 'nullable|string|max:80',
+            'basis' => 'required|string|max:500',
+        ]);
+        $membership = $this->clubs->appointMember($request->user(), $club, trim($data['user']), $data['division'] ?? null, $data['basis']);
+
+        return back()->with('success', $membership->user->name.' ditetapkan sebagai anggota '.$club->name.'.');
+    }
+
     public function updateMember(Request $request, Membership $membership): RedirectResponse
     {
         $data = $request->validate([

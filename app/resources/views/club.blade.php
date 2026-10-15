@@ -9,7 +9,7 @@
         <dt>Kontak resmi</dt><dd>{{ $club->contact }}</dd>
         <dt>Pengurus aktif</dt><dd>@forelse($club->officers as $officer){{ $officer->user->name }} <span class="muted">({{ $officer->position }}{{ $officer->period ? ' · '.$officer->period : '' }})</span>@if(!$loop->last), @endif @empty <span class="muted">Belum ditetapkan</span>@endforelse</dd>
         @if($club->activities)<dt>Kegiatan</dt><dd class="prewrap">{{ $club->activities }}</dd>@endif
-        <dt>Keanggotaan</dt><dd>@if($club->category === 'himaju')Khusus mahasiswa Jurusan {{ $club->department?->name }}.@elseif($club->isUkm()){{ config('brudel.multiple_clubs')?'Mahasiswa dapat mengikuti lebih dari satu UKM.':'Satu mahasiswa hanya dapat mengikuti satu UKM aktif.' }}@else Terbuka bagi mahasiswa aktif sesuai ketentuan organisasi.@endif Pendaftaran gratis.</dd>
+        <dt>Keanggotaan</dt><dd>@if($club->category === 'himaju')Wajib dan otomatis untuk seluruh mahasiswa aktif Jurusan {{ $club->department?->name }}.@elseif(! $club->isUkm())Anggota ditetapkan dari hasil pemilihan, bukan pendaftaran terbuka.@elseif(in_array($club->field, config('brudel.single_choice_fields'), true))Mahasiswa hanya dapat memilih satu UKM {{ strtolower($club->field) }}. Pendaftaran gratis.@else Mahasiswa bebas bergabung dengan UKM ini dan UKM lain. Pendaftaran gratis.@endif</dd>
     </dl>
 </section>
 @if($club->awards->isNotEmpty())
@@ -29,7 +29,11 @@
 @endif
 </div>
 <div>
-@php($eligible = $club->category !== 'himaju' || auth()->user()->departmentId() === $club->department_id)
+@if($club->category === 'himaju')
+<section class="panel"><h2>Keanggotaan otomatis</h2><p>Seluruh mahasiswa aktif Jurusan {{ $club->department?->name }} otomatis menjadi anggota {{ $club->name }}, tanpa pendaftaran. Pindah jurusan memindahkan keanggotaan ke HIMAJU jurusan baru.</p>@if(auth()->user()->departmentId() === $club->department_id && auth()->user()->nim)<div class="alert success">Kamu anggota {{ $club->name }}.</div>@endif</section>
+@elseif(! $club->isUkm())
+<section class="panel"><h2>Anggota terpilih</h2><p>Anggota {{ $club->name }} ditetapkan oleh kemahasiswaan atau ketua organisasi dari hasil pemilihan mahasiswa. Setiap mahasiswa aktif dapat terpilih.</p></section>
+@else
 @forelse($club->recruitments as $r)
 @php($mine = $applications->get($r->id))
 <section class="panel">
@@ -40,8 +44,6 @@
     <p class="muted">Kuota penerimaan: {{ $r->quota }} anggota · {{ $r->applications()->where('status','accepted')->count() }} diterima @if($r->requires_document)· Wajib PDF persyaratan @endif</p>
     @if($mine && $mine->status !== 'revision')
         <div class="alert {{ $mine->status === 'accepted' ? 'success' : 'warning' }}">Status pendaftaranmu: <x-status :value="$mine->status"/> @if($mine->reason)· {{ $mine->reason }}@endif</div>
-    @elseif($r->isOpen() && $club->active && auth()->user()->nim && ! $eligible)
-        <div class="alert warning">Pendaftaran {{ $club->name }} khusus mahasiswa Jurusan {{ $club->department?->name }}.</div>
     @elseif($r->isOpen() && $club->active && auth()->user()->nim)
         <form action="/rekrutmen/{{ $r->id }}" method="post" enctype="multipart/form-data">@csrf
             @if($mine)<div class="alert warning">Perbaikan diminta: {{ $mine->reason }}</div>@endif
@@ -53,6 +55,7 @@
     @endif
 </section>
 @empty<div class="panel empty">Belum ada periode rekrutmen.</div>@endforelse
+@endif
 </div>
 </div>
 </x-layout>
