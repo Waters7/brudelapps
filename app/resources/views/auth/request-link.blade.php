@@ -3,6 +3,7 @@
     :intro="$mode === 'activation' ? 'Masukkan email yang terdaftar pada data resmi kampus. Kami kirim tautan untuk membuat kata sandi.' : 'Masukkan email akun yang sudah aktif. Kami kirim tautan pemulihan yang berlaku 60 menit.'">
 <form method="post" action="{{ $mode === 'activation' ? '/aktivasi' : '/lupa-sandi' }}">@csrf
     <label>Email terdaftar<input type="email" name="email" required autocomplete="email" value="{{ old('email') }}" placeholder="nama@email.kampus"></label>
+    <x-turnstile/>
     <button class="button primary full">Kirim tautan <x-icon name="arrow"/></button>
 </form>
 <div class="login-links"><a class="text-link" href="/login">← Kembali ke halaman masuk</a></div>

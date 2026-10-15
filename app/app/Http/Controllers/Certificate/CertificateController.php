@@ -35,9 +35,10 @@ class CertificateController extends Controller
     public function manage(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isStudentAffairs() || $user->assigned('admin_event'), 403);
+        abort_unless($user->managesAnyCompetition(), 403);
+        $managed = $user->managedCompetitionIds();
         $competitions = Competition::with(['event', 'registrations' => fn ($q) => $q->where('status', 'accepted')->with('participants.user')])
-            ->when(! $user->isStudentAffairs(), fn ($q) => $q->whereIn('event_id', $user->scopeIds('admin_event', 'event_id')))
+            ->when($managed !== null, fn ($q) => $q->whereIn('id', $managed))
             ->whereHas('registrations', fn ($q) => $q->where('status', 'accepted'))->get();
         $selected = $competitions->firstWhere('id', (int) $request->query('lomba'));
 

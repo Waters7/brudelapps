@@ -45,15 +45,24 @@ class AssignmentService extends DomainService
                 ->when($scope, fn ($q) => $q->where($scope, $scopeId))
                 ->where('starts_at', '<', $ends)->where('ends_at', '>', $starts)->exists();
             $this->ensure(! $overlap, 'Pengguna sudah memiliki penugasan yang sama pada periode tersebut.');
+            if ($data['role'] === 'penilai') {
+                Competition::whereKey($scopeId)->lockForUpdate()->first();
+                $judges = Assignment::where('role', 'penilai')->where('competition_id', $scopeId)->where('ends_at', '>', now())->count();
+                $this->ensure($judges < (int) config('brudel.max_judges'), 'Nomor lomba ini sudah memiliki '.config('brudel.max_judges').' juri (batas maksimal).');
+            }
 
             $assignment = Assignment::create([
                 'user_id' => $user->id,
                 'role' => $data['role'],
                 'club_id' => $scope === 'club_id' ? $scopeId : null,
                 'event_id' => $scope === 'event_id' ? $scopeId : null,
-                'program_id' => $scope === 'program_id' ? $scopeId : null,
+                'department_id' => $scope === 'department_id' ? $scopeId : null,
                 'competition_id' => $scope === 'competition_id' ? $scopeId : null,
-                'position' => $data['role'] === 'pengurus' ? ($data['position'] ?? 'Anggota pengurus') : null,
+                'position' => match ($data['role']) {
+                    'pengurus' => $data['position'] ?? 'Anggota pengurus',
+                    'pimpinan' => in_array($data['position'] ?? null, config('brudel.pimpinan_positions'), true) ? $data['position'] : 'Wakil Direktur III',
+                    default => null,
+                },
                 'period' => $data['period'] ?? null,
                 'starts_at' => $starts,
                 'ends_at' => $ends,

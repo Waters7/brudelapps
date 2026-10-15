@@ -5,19 +5,31 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 | Email | NIM | Peran / lingkup |
 |---|---|---|
 | mahasiswa@demo.brudel.test | DEMO001 | Bintang Mandagi, D-III Keperawatan; anggota UKM Karya Tulis Ilmiah; profil publik aktif |
-| anggota@demo.brudel.test | DEMO002 | Michelle Sumual, D-IV Gizi (prodi lain, untuk tim lintas prodi) |
+| anggota@demo.brudel.test | DEMO002 | Michelle Sumual, D-IV Gizi dan Dietetika (jurusan lain, untuk tim lintas jurusan) |
 | pengurus@demo.brudel.test | DEMO003 | Andre Runtuwene; Ketua UKM Badminton 2026/2027 |
-| admin@demo.brudel.test | — | Pengelola kemahasiswaan (semua lingkup) |
+| admin@demo.brudel.test | — | Kemahasiswaan (superadmin, semua lingkup); pengaju event Pekan Prestasi sehingga dapat melihat akun lombanya |
 | event@demo.brudel.test | — | Admin event Pekan Prestasi dan Seleksi Delegasi |
-| prodi@demo.brudel.test | — | Peninjau prodi D-III Keperawatan saja |
-| juri@demo.brudel.test | — | Penilai Lomba Poster Kesehatan |
-| operator@demo.brudel.test | — | Operator Tenis Meja Tunggal |
-| pimpinan@demo.brudel.test | — | Pimpinan (keputusan delegasi, laporan) |
-| pembina@demo.brudel.test | — | Pelatih/pembina UKM Badminton |
-| atlet1…atlet5@demo.brudel.test | DEMO004–008 | Peserta diterima Tenis Meja (bagan 5 peserta) |
+| jurusan@demo.brudel.test | — | Peninjau Jurusan Keperawatan saja (menggantikan akun prodi lama) |
+| juri@demo.brudel.test | — | Juri Lomba Poster Kesehatan (penugasan manual) |
+| operator@demo.brudel.test | — | Operator Tenis Meja Tunggal (penugasan manual) |
+| pimpinan@demo.brudel.test | — | Pimpinan, jabatan Wakil Direktur III (dashboard pimpinan, keputusan delegasi, laporan) |
+| pembina@demo.brudel.test | — | Pelatih/pembina UKM Badminton (dapat membuat kegiatan dan kode kehadiran) |
+| atlet1…atlet5@demo.brudel.test | DEMO004–008 | Peserta diterima Tenis Meja (bagan 5 peserta); atlet1–3 juga anggota UKM Badminton |
 | baru@demo.brudel.test | DEMO009 | Akun hasil impor yang **belum diaktivasi** |
+| `lomba{id}-pengelola`, `-operator`, `-juri{n}@lomba.brudel.invalid` | — | Akun lomba otomatis; kata sandinya acak dan dilihat di Kelola Event → Akun lomba (pengaju/kemahasiswaan) |
 
-Data demo lain: 6 UKM, event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login), pengajuan event UKM Badminton yang menunggu keputusan, event seleksi delegasi, 2 prestasi terverifikasi (1 tim, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
+Data demo lain: 7 jurusan resmi; 6 UKM; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Badminton yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Badminton (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
+
+### Skenario tahap ketiga (browser)
+
+1. **Halaman depan**: buka `/` tanpa masuk — info lomba, kegiatan terbuka (meeting internal tidak tampil), UKM yang membuka pendaftaran, tombol Masuk.
+2. **Akun**: menu akun di kanan atas → Profil & foto (unggah foto), Ubah kata sandi, Keluar. Tombol Keluar juga ada di bawah sidebar.
+3. **Jurusan** (`jurusan@`): menu Jurusan → mahasiswa Keperawatan beserta UKM-nya, filter "Tidak aktif di UKM", sertifikat juara dan prestasi jurusan, CSV.
+4. **Akun lomba otomatis** (`admin@` atau Ketua UKM pengaju setelah event disetujui): Kelola Event → event → "Akun lomba" pada nomor lomba → tampilkan/salin/ganti kata sandi. Masuk dengan akun pengelola/operator/juri untuk melihat hak masing-masing.
+5. **Juri & log**: masuk sebagai juri, isi lalu ubah nilai; di Operasional lomba lihat "Nilai per juri & log penilaian" dan unduh CSV log.
+6. **Jelajah Kegiatan** (`pengurus@` atau `pembina@`): buka "Latihan rutin tunggal" → Buat kode kehadiran; masuk sebagai `atlet1@`, isi kode di Jelajah Kegiatan; kembali sebagai pelatih → Buat laporan → Laporan (cetak/PDF) dan CSV. Meeting internal wajib notulen; persahabatan wajib lawan, skor, dan catatan.
+7. **Pimpinan** (`pimpinan@`): dashboard hanya berisi ringkasan laporan, tabel IKU per jurusan, dan usulan/notifikasi delegasi.
+8. **Google & Turnstile**: isi `GOOGLE_*` dan `TURNSTILE_*` di `.env` (lihat DEPLOYMENT.md); tombol Google dan widget Cloudflare muncul otomatis.
 
 ## Data trial bervolume (`TrialSeeder`)
 
@@ -58,12 +70,14 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 15 Oktober 2026 (56 tes):
+Hasil 16 Oktober 2026 (77 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **57 lulus, 882 assertions**, termasuk 4 tes konkurensi dua proses |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **53 lulus, 4 dilewati, 837 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **77 lulus**, termasuk 4 tes konkurensi dua proses |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **73 lulus, 4 dilewati, 1.092 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+
+Tes tahap ketiga: `DepartmentTest` (7 jurusan, isolasi jurusan, unduhan sertifikat juara/bukti prestasi jurusan sendiri, IKU per jurusan, dashboard pimpinan), `CompetitionAccountTest` (akun otomatis, hanya pengaju/superadmin, ganti kata sandi, lingkup pengelola, juri maks. 5, log nilai), `AccountSecurityTest` (ubah kata sandi, foto, Google SSO dengan respons tiruan, Turnstile), `ActivityTest` (kode kehadiran, anggota saja, laporan per jenis, halaman depan).
 
 Temuan khusus PostgreSQL yang sudah diperbaiki dan dikunci tes:
 
@@ -118,7 +132,7 @@ Data uji perlu di-commit agar terlihat oleh proses lain. Karena itu `Concurrency
 
 | Skenario wajib brief | Tes |
 |---|---|
-| Isolasi akses antar-UKM/event/prodi | `EnrollmentTest::test_ukm_scope…`, `test_event_scope…`, `ManagementTest::test_club_officers_only…`, `test_program_approval_isolation…`, `RecognitionTest::test_exports_follow_assignment_scope` |
+| Isolasi akses antar-UKM/event/jurusan | `EnrollmentTest::test_ukm_scope…`, `test_event_scope…`, `ManagementTest::test_club_officers_only…`, `test_program_approval_isolation…`, `RecognitionTest::test_exports_follow_assignment_scope` |
 | Pendaftaran ganda | `EnrollmentTest::test_duplicate_ukm…`, `test_pending_invitee…`, `test_database_prevents_duplicate_participant…` |
 | Perebutan kuota terakhir | Berurutan: `EnrollmentTest::test_last_ukm_place…`, `test_individual_flow_and_quota_validation`. Dua proses bersamaan (PostgreSQL): `ConcurrencyTest::test_last_competition_place…`, `test_last_club_place…` |
 | Pemenang dan pengesahan bersamaan | `ConcurrencyTest::test_concurrent_winner_entries…`, `test_concurrent_publication…` (PostgreSQL) |
@@ -141,7 +155,7 @@ Jalankan `./Start-BRUDEL.ps1` dari folder induk (menjalankan migrasi, worker que
 3. **Ketua UKM** (`pengurus@`): Kelola UKM → Badminton: buka rekrutmen, ubah status/divisi anggota (alasan wajib), tambah pengurus; Kelola Event → ajukan lomba UKM.
 4. **Kemahasiswaan** (`admin@`): Kelola Event → putuskan "Badminton Open Internal"; tugaskan admin event; Mahasiswa & Impor → pratinjau/impor CSV; Penugasan Peran; Pengaturan Kampus → rekening uji; Verifikasi Prestasi.
 5. **Admin event** (`event@`): Tinjau Pengajuan; Operasional lomba Tenis Meja → buat bagan → catat pemenang → sahkan hasil → tetapkan penghargaan; Kelola Sertifikat → terbitkan PDF per penerima.
-6. **Prodi** (`prodi@`): Debat Bahasa Inggris memerlukan persetujuan prodi dan berbayar. Daftarkan tim lintas prodi, lalu prodi Keperawatan hanya dapat memutuskan unitnya.
+6. **Jurusan** (`jurusan@`): Debat Bahasa Inggris memerlukan persetujuan jurusan dan berbayar. Daftarkan tim lintas jurusan, lalu Jurusan Keperawatan hanya dapat memutuskan unitnya.
 7. **Penilai** (`juri@`): Penilaian Juri → isi nilai Poster setelah ada peserta diterima.
 8. **Operator** (`operator@`): Operator Live Score → perbarui skor; buka `/live/{id}` di jendela lain (publik untuk Tenis Meja) untuk melihat pembaruan berkala.
 9. **Pimpinan** (`pimpinan@`): Delegasi → putuskan usulan; Laporan dengan filter.

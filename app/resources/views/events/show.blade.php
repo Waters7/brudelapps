@@ -51,7 +51,7 @@
 @foreach($event->competitions as $competition)
 <details class="panel collapsible" id="competition-{{ $competition->id }}">
     <summary><strong>{{ $competition->name }}</strong> <span class="muted">{{ $competition->field }} · {{ $competition->format === 'team' ? 'Tim' : 'Individu' }} · {{ $competition->feeLabel() }} · {{ $competition->holding_count }}/{{ $competition->quota }} terkirim</span>
-    @if(auth()->user()->managesCompetition($competition))<a class="text-link" href="/kelola/lomba/{{ $competition->id }}">Operasional lomba →</a>@endif</summary>
+    @if(auth()->user()->managesCompetition($competition))<a class="text-link" href="/kelola/lomba/{{ $competition->id }}">Operasional lomba →</a>@endif @if($canSeeAccounts)<a class="text-link" href="/kelola/lomba/{{ $competition->id }}/akun">Akun lomba ({{ $competition->assessment_type === 'rubric' ? 2 + $competition->judge_count : 2 }}) →</a>@endif</summary>
     @if($canEdit)@include('events._competition-form', ['event' => $event, 'competition' => $competition])@else<p class="prewrap">{{ $competition->description }}</p>@endif
 </details>
 @endforeach

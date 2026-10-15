@@ -8,13 +8,19 @@ use App\Models\AwardResult;
 use App\Models\Certificate;
 use App\Models\Competition;
 use App\Models\Matchup;
+use App\Models\Score;
+use App\Models\ScoreLog;
 use App\Services\Achievement\AchievementService;
+use App\Services\Event\CompetitionAccountService;
 use App\Services\Match\BracketService;
+use App\Services\Report\ReportService;
 use App\Services\Scoring\ResultService;
 use App\Services\Scoring\ScoringService;
+use App\Services\Wita;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Operations hub for one competition: entrants, seeds, bracket, rubric, staff, official results and awards.
@@ -25,9 +31,20 @@ class CompetitionOpsController extends Controller
     {
         abort_unless($request->user()->managesCompetition($competition), 403);
         $competition->load('event', 'criteria');
-        $staff = Assignment::with('user')->where('competition_id', $competition->id)->whereIn('role', ['penilai', 'operator'])->where('ends_at', '>', now())->get()->groupBy('role');
+        $staff = Assignment::with('user')->where('competition_id', $competition->id)->whereIn('role', ['pengelola_lomba', 'penilai', 'operator'])->where('ends_at', '>', now())->get()->groupBy('role');
+        $judgeTotals = $competition->assessment_type === 'rubric'
+            ? Score::where('competition_id', $competition->id)->with('judge')->get()->groupBy('registration_id')
+                ->map(fn ($scores) => $scores->groupBy('judge_id')->map(fn ($own) => [
+                    'judge' => $own->first()->judge->name,
+                    'total' => round($own->sum(fn ($s) => $s->score * ($competition->criteria->firstWhere('id', $s->rubric_criterion_id)?->weight ?? 0) / 100), 2),
+                    'count' => $own->count(),
+                ]))
+            : collect();
 
         return view('competitions.ops', [
+            'judgeTotals' => $judgeTotals,
+            'scoreLogs' => $competition->scoreLogs()->with('judge', 'registration.user', 'criterion')->limit(30)->get(),
+            'canSeeAccounts' => app(CompetitionAccountService::class)->canView($request->user(), $competition),
             'competition' => $competition,
             'registrations' => $competition->registrations()->whereNotIn('status', ['draft', 'cancelled'])->with('user', 'participants.user.program')->orderByRaw('seed IS NULL')->orderBy('seed')->orderBy('submitted_at')->get(),
             'matches' => $competition->matchups()->with('sideA', 'sideB', 'winner')->get()->groupBy('round'),
@@ -111,6 +128,19 @@ class CompetitionOpsController extends Controller
         $results->reopen($request->user(), $competition, $data['reason']);
 
         return back()->with('success', 'Pengesahan dibuka untuk koreksi. Hasil sebelumnya tersimpan di audit.');
+    }
+
+    /**
+     * Full judge score log for accountability, as CSV.
+     */
+    public function scoreLog(Request $request, Competition $competition): StreamedResponse
+    {
+        abort_unless($request->user()->managesCompetition($competition), 403);
+        $rows = ScoreLog::with('judge', 'registration.user', 'criterion')->where('competition_id', $competition->id)->orderBy('id')->cursor()
+            ->map(fn ($log) => [Wita::show($log->created_at, 'd/m/Y H:i:s'), $log->judge->name, $log->registration->displayName(), $log->criterion->name,
+                $log->old_score === null ? 'baru' : number_format($log->old_score, 2, ',', ''), number_format($log->new_score, 2, ',', ''), $log->note, $log->ip_address]);
+
+        return ReportService::csv('log-penilaian-lomba-'.$competition->id.'.csv', ['Waktu WITA', 'Juri', 'Peserta', 'Kriteria', 'Nilai lama', 'Nilai baru', 'Catatan', 'IP'], $rows);
     }
 
     public function award(Request $request, Competition $competition, AchievementService $achievements): RedirectResponse

@@ -39,11 +39,11 @@ class LiveController extends Controller
     public function operator(Request $request): View
     {
         $user = $request->user();
-        $ids = $user->scopeIds('operator', 'competition_id');
-        $events = $user->isStudentAffairs() ? null : $user->scopeIds('admin_event', 'event_id');
-        abort_unless($user->isStudentAffairs() || $ids->isNotEmpty() || $events->isNotEmpty(), 403);
-        $competitions = Competition::with('event')->where('live_score', true)
-            ->when($events !== null, fn ($q) => $q->where(fn ($w) => $w->whereIn('id', $ids)->orWhereIn('event_id', $events)))
+        $managed = $user->managedCompetitionIds();
+        $ids = $managed === null ? null : $managed->merge($user->scopeIds('operator', 'competition_id'))->unique();
+        abort_unless($ids === null || $ids->isNotEmpty(), 403);
+        $competitions = Competition::with('event')->where(fn ($q) => $q->where('live_score', true)->orWhere('assessment_type', 'bracket'))
+            ->when($ids !== null, fn ($q) => $q->whereIn('id', $ids))
             ->get();
         $selected = $competitions->firstWhere('id', (int) $request->query('lomba')) ?? $competitions->first();
 

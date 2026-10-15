@@ -1,14 +1,15 @@
 <x-layout title="Penugasan Peran">
-<div class="page-heading"><div><p class="eyebrow">HAK AKSES BERJANGKA</p><h1>Penugasan peran.</h1><p>Satu pengguna dapat memiliki beberapa peran. Akses dibatasi menurut UKM, event, prodi, atau nomor lomba. Ketua UKM tidak otomatis menjadi admin event.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">HAK AKSES BERJANGKA</p><h1>Penugasan peran.</h1><p>Satu pengguna dapat memiliki beberapa peran. Akses dibatasi menurut UKM, event, jurusan, atau nomor lomba. Ketua UKM tidak otomatis menjadi admin event.</p></div></div>
 
 <section class="panel" x-data="{ role: '{{ old('role', 'pengurus') }}', scopes: @js(collect(config('brudel.roles'))->map(fn ($r) => $r['scope'])) }">
     <h2>Tambah penugasan</h2>
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
         <label>Email atau NIM pengguna<input name="user" required maxlength="190" value="{{ old('user') }}" placeholder="nama@email.kampus atau NIM"></label>
         <label>Peran<select name="role" x-model="role" required>@foreach(config('brudel.roles') as $key => $role)<option value="{{ $key }}">{{ $role['label'] }}</option>@endforeach</select></label>
-        @foreach(['club_id' => 'UKM', 'event_id' => 'Event', 'program_id' => 'Program studi', 'competition_id' => 'Nomor lomba'] as $column => $label)
+        @foreach(['club_id' => 'UKM', 'event_id' => 'Event', 'department_id' => 'Jurusan', 'competition_id' => 'Nomor lomba'] as $column => $label)
         <template x-if="scopes[role] === '{{ $column }}'"><label>Lingkup: {{ $label }}<select name="scope_id" required><option value="">Pilih {{ strtolower($label) }}</option>@foreach($scopes[$column] as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></label></template>
         @endforeach
+        <template x-if="role === 'pimpinan'"><label>Jabatan pimpinan<select name="position">@foreach(config('brudel.pimpinan_positions') as $position)<option>{{ $position }}</option>@endforeach</select></label></template>
         <template x-if="role === 'pengurus'"><label>Jabatan<select name="position"><option>Ketua</option><option>Wakil Ketua</option><option>Sekretaris</option><option>Bendahara</option><option>Koordinator Divisi</option><option>Anggota pengurus</option></select></label></template>
         <label>Periode kepengurusan (opsional)<input name="period" maxlength="30" placeholder="2026/2027" value="{{ old('period') }}"></label>
         <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ old('starts_at', now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i')) }}"></label>

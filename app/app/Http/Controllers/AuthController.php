@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\Turnstile;
 use App\Services\Account\AccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,8 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => 'required|email', 'password' => 'required|string']);
+        $data = $request->validate(['email' => 'required|email', 'password' => 'required|string', 'cf-turnstile-response' => [new Turnstile]]);
+        unset($data['cf-turnstile-response']);
         if (! Auth::attempt([...$data, 'active' => true])) {
             throw ValidationException::withMessages(['email' => 'Email atau kata sandi tidak sesuai, atau akun nonaktif.']);
         }
@@ -42,7 +44,7 @@ class AuthController extends Controller
 
     public function requestActivation(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => 'required|email|max:190']);
+        $data = $request->validate(['email' => 'required|email|max:190', 'cf-turnstile-response' => [new Turnstile]]);
         $this->accounts->sendActivation($data['email']);
 
         return back()->with('success', self::NEUTRAL);
@@ -63,7 +65,7 @@ class AuthController extends Controller
 
     public function requestReset(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => 'required|email|max:190']);
+        $data = $request->validate(['email' => 'required|email|max:190', 'cf-turnstile-response' => [new Turnstile]]);
         $this->accounts->sendReset($data['email']);
 
         return back()->with('success', self::NEUTRAL);

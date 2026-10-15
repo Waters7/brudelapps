@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProgramApproval extends Model
+class DepartmentApproval extends Model
 {
     protected $guarded = [];
 
@@ -19,9 +19,9 @@ class ProgramApproval extends Model
         return $this->belongsTo(Registration::class);
     }
 
-    public function program(): BelongsTo
+    public function department(): BelongsTo
     {
-        return $this->belongsTo(Program::class);
+        return $this->belongsTo(Department::class);
     }
 
     public function decider(): BelongsTo

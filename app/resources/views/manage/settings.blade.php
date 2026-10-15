@@ -32,13 +32,14 @@
 </div>
 
 <section class="panel">
-    <h2>Program studi</h2>
+    <h2>Jurusan & program studi</h2>
+    <p>Poltekkes Kemenkes Manado memiliki 7 jurusan: {{ $departments->pluck('name')->join(', ') }}. Setiap program studi wajib berada di salah satu jurusan; persetujuan lomba dan laporan dihitung per jurusan.</p>
     <div class="table-wrap"><table class="compact"><thead><tr><th>Jurusan</th><th>Program studi</th><th>Kode</th><th>Mahasiswa</th><th>Ubah</th></tr></thead><tbody>
     @foreach($programs as $program)
-    <tr><td>{{ $program->department }}</td><td>{{ $program->name }}</td><td>{{ $program->code ?? '—' }}</td><td>{{ $program->users_count }}</td>
-    <td><details><summary class="text-link">Ubah</summary><form class="inline-form" method="post" action="/kelola/prodi/{{ $program->id }}">@csrf<input name="department" value="{{ $program->department }}" required><input name="name" value="{{ $program->name }}" required><input name="code" value="{{ $program->code }}" placeholder="Kode"><button class="button outline small">Simpan</button></form></details></td></tr>
+    <tr><td>{!! $program->department ? e($program->department->name) : '<span class="badge status-rejected">Belum dipetakan</span>' !!}</td><td>{{ $program->name }}</td><td>{{ $program->code ?? '—' }}</td><td>{{ $program->users_count }}</td>
+    <td><details><summary class="text-link">Ubah</summary><form class="inline-form" method="post" action="/kelola/prodi/{{ $program->id }}">@csrf<select name="department_id" required>@foreach($departments as $department)<option value="{{ $department->id }}" @selected($program->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select><input name="name" value="{{ $program->name }}" required><input name="code" value="{{ $program->code }}" placeholder="Kode"><button class="button outline small">Simpan</button></form></details></td></tr>
     @endforeach
     </tbody></table></div>
-    <form class="inline-form" method="post" action="/kelola/prodi">@csrf<input name="department" required placeholder="Jurusan"><input name="name" required placeholder="Nama program studi"><input name="code" placeholder="Kode (untuk impor)"><button class="button primary small">Tambah prodi</button></form>
+    <form class="inline-form" method="post" action="/kelola/prodi">@csrf<select name="department_id" required><option value="">Pilih jurusan</option>@foreach($departments as $department)<option value="{{ $department->id }}">{{ $department->name }}</option>@endforeach</select><input name="name" required placeholder="Nama program studi"><input name="code" placeholder="Kode (untuk impor)"><button class="button primary small">Tambah prodi</button></form>
 </section>
 </x-layout>

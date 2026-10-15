@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Report;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
-use App\Models\Program;
+use App\Models\Department;
 use App\Services\Report\ReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +18,7 @@ class ReportController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isStudentAffairs() || $user->isLeadership() || $user->assigned('admin_event') || $user->assigned('pengurus'), 403);
+        abort_unless($user->isStudentAffairs() || $user->isLeadership() || $user->managesAnyCompetition() || $user->assigned('pengurus'), 403);
         $filters = $this->filters($request);
 
         return view('reports.index', [
@@ -26,7 +26,8 @@ class ReportController extends Controller
             'dashboard' => $this->reports->canViewDashboard($user),
             'summary' => $this->reports->canViewDashboard($user) ? $this->reports->summary($filters) : null,
             'awards' => $this->reports->canViewDashboard($user) ? $this->reports->awards($filters)->withCount('recipients')->latest('awarded_on')->limit(15)->get() : collect(),
-            'programs' => Program::orderBy('name')->get(),
+            'iku' => $this->reports->canViewDashboard($user) ? $this->reports->ikuByDepartment($filters) : null,
+            'departments' => Department::orderBy('name')->get(),
             'clubs' => Club::orderBy('name')->get(),
             'exports' => ReportService::EXPORTS,
         ]);
@@ -49,7 +50,7 @@ class ReportController extends Controller
     }
 
     /**
-     * @return array{year: ?int, level: ?int, field: ?string, program_id: ?int, club_id: ?int, team: ?string}
+     * @return array{year: ?int, level: ?int, field: ?string, department_id: ?int, club_id: ?int, team: ?string}
      */
     private function filters(Request $request): array
     {
@@ -57,7 +58,7 @@ class ReportController extends Controller
             'year' => 'nullable|integer|between:2000,2100',
             'level' => 'nullable|integer|between:1,6',
             'field' => 'nullable|in:'.implode(',', config('brudel.fields')),
-            'program_id' => 'nullable|integer',
+            'department_id' => 'nullable|integer',
             'club_id' => 'nullable|integer',
             'team' => 'nullable|in:tim,individu',
         ]);
@@ -66,7 +67,7 @@ class ReportController extends Controller
             'year' => isset($data['year']) ? (int) $data['year'] : null,
             'level' => isset($data['level']) ? (int) $data['level'] : null,
             'field' => $data['field'] ?? null,
-            'program_id' => isset($data['program_id']) ? (int) $data['program_id'] : null,
+            'department_id' => isset($data['department_id']) ? (int) $data['department_id'] : null,
             'club_id' => isset($data['club_id']) ? (int) $data['club_id'] : null,
             'team' => $data['team'] ?? null,
         ];

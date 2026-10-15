@@ -29,5 +29,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('account-link', fn (Request $request) => Limit::perMinute(5)->by('account-link|'.$request->ip()));
         RateLimiter::for('account-token', fn (Request $request) => Limit::perMinute(10)->by('account-token|'.$request->ip()));
         RateLimiter::for('public', fn (Request $request) => Limit::perMinute(60)->by('public|'.$request->ip()));
+        RateLimiter::for('google', fn (Request $request) => Limit::perMinute(20)->by('google|'.$request->ip()));
+        RateLimiter::for('checkin', fn (Request $request) => Limit::perMinute(10)->by('checkin|'.($request->user()?->id ?? $request->ip())));
     }
 }

@@ -8,11 +8,11 @@ Aturan bisnis berada di service per modul; controller hanya memvalidasi input da
 
 | Modul | Service | Controller |
 |---|---|---|
-| Akun | `Account\AccountService`, `StudentImportService`, `AssignmentService` | `AuthController`, `Account\StudentController`, `Account\AssignmentController` |
-| Data kampus | `Campus\CampusService` | `Campus\SettingsController` |
-| UKM | `Club\ClubService` | `Club\ClubManageController` |
-| Event | `Event\EventService` | `Event\EventManageController` |
-| Pendaftaran | `Registration\EnrollmentService` | `EnrollmentController`, `Registration\ProgramApprovalController` |
+| Akun | `Account\AccountService` (aktivasi, pemulihan, ubah kata sandi, foto, Google), `StudentImportService`, `AssignmentService` | `AuthController`, `Account\GoogleController`, `Account\ProfileController`, `Account\StudentController`, `Account\AssignmentController`; aturan `Rules\Turnstile` |
+| Data kampus & jurusan | `Campus\CampusService` | `Campus\SettingsController`, `Department\DepartmentController` |
+| UKM & kegiatan | `Club\ClubService`, `Club\ActivityService` | `Club\ClubManageController`, `Club\ActivityController` |
+| Event & akun lomba | `Event\EventService`, `Event\CompetitionAccountService` | `Event\EventManageController`, `Event\CompetitionAccountController` |
+| Pendaftaran | `Registration\EnrollmentService` (termasuk persetujuan jurusan) | `EnrollmentController`, `Department\DepartmentController` |
 | Pembayaran | `Payment\PaymentService` | `Payment\PaymentController` |
 | Pertandingan & live score | `Match\BracketService`, `Match\LiveScoreService` | `Match\CompetitionOpsController`, `Match\LiveController`, Livewire `LiveBoard` |
 | Penilaian | `Scoring\ScoringService`, `Scoring\ResultService` | `Scoring\JudgeController`, `CompetitionOpsController` |
@@ -59,16 +59,28 @@ erDiagram
     certificates ||--|{ certificate_versions : versions
     users ||--o{ notifications : receives
     users ||--o{ audit_logs : acts
+    departments ||--o{ programs : groups
+    departments ||--o{ department_approvals : decides
+    registrations ||--o{ department_approvals : needs
+    departments ||--o{ assignments : scopes
+    competitions ||--o{ competition_accounts : generates
+    users ||--o| competition_accounts : is
+    competitions ||--o{ score_logs : audits
+    clubs ||--o{ club_activities : schedules
+    club_activities ||--o{ activity_attendances : records
+    users ||--o{ activity_attendances : attends
 ```
+
+Tahap ketiga: `departments` (7 jurusan, diisi migrasi) mengelompokkan `programs`; persetujuan lomba disimpan per jurusan di `department_approvals` (menggantikan `program_approvals`, data lama dipetakan otomatis). `competition_accounts` menyimpan kata sandi akun lomba terenkripsi `APP_KEY` (cast `encrypted`) agar dapat dilihat pengaju/superadmin. `score_logs` adalah log append-only setiap nilai juri. `club_activities` + `activity_attendances` menyimpan kegiatan UKM, kode kehadiran berjangka, laporan, dan notulen privat.
 
 `status_histories`, `audit_logs`, `student_imports` dan `settings` tidak memiliki relasi wajib ke modul tertentu. Satu `award_results` mewakili satu penghargaan; penerimanya di `award_recipients`, sehingga penghargaan tim tidak berlipat dalam statistik (unik `award_result_id + user_id`, serta `registration_id + award`).
 
-Keunikan penting: NIM, email, kode prodi, rekrutmen/pengguna, UKM/pengguna, nomor lomba/pendaftar, nomor lomba/peserta, prodi per pendaftaran, nilai per penilai/kriteria/peserta, posisi bagan, nomor dan token sertifikat, versi sertifikat.
+Keunikan penting: NIM, email, kode prodi, rekrutmen/pengguna, UKM/pengguna, nomor lomba/pendaftar, nomor lomba/peserta, jurusan per pendaftaran, nilai per penilai/kriteria/peserta, posisi bagan, nomor dan token sertifikat, versi sertifikat.
 
 ## Transaksi dan penguncian
 
 - Kuota UKM: kunci `recruitments` → aplikasi → mahasiswa, hitung yang diterima, buat keanggotaan.
-- Pendaftaran lomba: urutan kunci `competitions` → `registrations` → `participants`/`program_approvals`/`payment_proofs`. Kuota dihitung dari status `program_review`, `submitted`, `accepted`.
+- Pendaftaran lomba: urutan kunci `competitions` → `registrations` → `participants`/`department_approvals`/`payment_proofs`. Kuota dihitung dari status `program_review`, `submitted`, `accepted`.
 - Pengesahan hasil dan penetapan pemenang mengunci `competitions` dan `matchups`. Live score memakai versi optimistik (`UPDATE … WHERE version = ?`) sehingga pembaruan bersamaan ditolak dengan pesan, bukan ditimpa.
 - Transaksi diulang hingga 3 kali saat deadlock. Semantik row lock (READ COMMITTED + `SELECT … FOR UPDATE`) terverifikasi di PostgreSQL 17.11 dengan dua proses bersamaan (`ConcurrencyTest`).
 
@@ -77,14 +89,15 @@ Keunikan penting: NIM, email, kode prodi, rekrutmen/pengguna, UKM/pengguna, nomo
 | Peran | Lingkup | Hak |
 |---|---|---|
 | Mahasiswa aktif teraktivasi | Diri dan tim | Daftar UKM/lomba, draf, undang/konfirmasi, unggah dokumen dan bukti bayar, status, Sertifikat Saya, Prestasi Saya, ajukan prestasi eksternal, persetujuan publikasi |
-| Kemahasiswaan | Seluruh kampus | Impor dan status mahasiswa, prodi, rekening dan kebijakan, semua peran, UKM, keputusan event, verifikasi prestasi, surat tugas, buka koreksi hasil, semua laporan |
-| Pengurus UKM (Ketua) | UKM pada penugasan | Profil UKM, rekrutmen, tinjau pendaftar, anggota/divisi/status, ekspor UKM; Ketua: tambah/akhiri pengurus dan pembina, ajukan event |
+| Kemahasiswaan (superadmin) | Seluruh kampus | Impor dan status mahasiswa, jurusan/prodi, rekening dan kebijakan, semua peran, UKM, keputusan event, akun lomba semua event, verifikasi prestasi, surat tugas, buka koreksi hasil, semua laporan |
+| Pengurus UKM (Ketua) | UKM pada penugasan | Profil UKM, rekrutmen, tinjau pendaftar, anggota/divisi/status, ekspor UKM; Ketua: tambah/akhiri pengurus dan pembina, ajukan event, melihat dan mengganti kata sandi akun lomba event yang diajukannya, membuat kegiatan dan kode kehadiran |
 | Admin event | Event pada penugasan | Nomor lomba event approved, tinjau pendaftaran, verifikasi pembayaran, bagan, rubrik, tugaskan penilai/operator, sahkan hasil, penghargaan, sertifikat, usulan delegasi, laporan event |
-| Jurusan/prodi | Program studi | Persetujuan pendaftaran untuk anggota unitnya; melihat pendaftaran UKM/lomba mahasiswa unit |
-| Penilai | Nomor lomba | Mengisi nilai rubrik; tidak untuk diri/tim sendiri; terkunci setelah pengesahan |
-| Pelatih/pembina | UKM | Tercatat sebagai pembina UKM; melihat delegasi yang didampingi |
-| Pimpinan | Seluruh kampus (baca) | Dashboard dan laporan; memutuskan usulan delegasi yang tidak melibatkan dirinya |
-| Operator | Nomor lomba | Skor sementara, status tampil, pencatatan pemenang; tidak untuk pertandingan yang diikutinya |
+| Pengelola lomba (akun otomatis) | Satu nomor lomba | Hak admin event, terbatas pada nomor lomba itu |
+| Jurusan | Satu dari 7 jurusan | Persetujuan pendaftaran untuk anggota jurusannya; melihat UKM yang diikuti mahasiswa, mahasiswa tidak aktif di UKM, sertifikat juara dan bukti prestasi jurusannya; ekspor CSV |
+| Juri/penilai (maks. 5 per nomor lomba) | Nomor lomba | Mengisi nilai rubrik (setiap perubahan tercatat di log); tidak untuk diri/tim sendiri; terkunci setelah pengesahan |
+| Pelatih/pembina | UKM | Membuat kegiatan, kode kehadiran, dan laporan kegiatan UKM; melihat delegasi yang didampingi |
+| Pimpinan (Direktur, Wakil Direktur I–III) | Seluruh kampus (baca) | Dashboard pimpinan (ringkasan laporan, IKU per jurusan, notifikasi delegasi), laporan; memutuskan usulan delegasi yang tidak melibatkan dirinya |
+| Operator skor & live score | Nomor lomba | Skor sementara, status tampil, pencatatan pemenang; tidak untuk pertandingan yang diikutinya |
 
 Semua pemeriksaan di server. Satu pengguna dapat memiliki beberapa peran; setiap penugasan memiliki `starts_at`/`ends_at`. Tidak ada yang dapat mengubah hak aksesnya sendiri, menyetujui pengajuannya sendiri, memverifikasi pembayaran/prestasinya sendiri, atau menilai/mencatat pertandingan timnya.
 
@@ -92,7 +105,7 @@ Semua pemeriksaan di server. Satu pengguna dapat memiliki beberapa peran; setiap
 
 - **UKM**: kirim → menunggu → diterima/revisi/ditolak/daftar tunggu → keanggotaan aktif → nonaktif/keluar/alumni.
 - **Event**: draf (Ketua UKM) → diajukan → disetujui/revisi/ditolak (kemahasiswaan) → admin event ditugaskan.
-- **Lomba**: draf → undang/konfirmasi → kirim (biaya disimpan) → [persetujuan prodi per unit] → [bukti bayar → verifikasi] → diterima → bagan/penilaian → hasil disahkan → penghargaan → sertifikat.
+- **Lomba**: draf → undang/konfirmasi → kirim (biaya disimpan) → [persetujuan per jurusan] → [bukti bayar → verifikasi] → diterima → bagan/penilaian → hasil disahkan → penghargaan → sertifikat.
 - **Delegasi**: seleksi → hasil disahkan → usulan (draf) → diajukan → keputusan pimpinan → surat tugas → keikutsertaan → hasil → prestasi eksternal menunggu verifikasi.
 
 ## PWA

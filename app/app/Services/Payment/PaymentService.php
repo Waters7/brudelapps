@@ -70,7 +70,7 @@ class PaymentService extends DomainService
             $competition = Competition::lockForUpdate()->findOrFail($registrationRef->competition_id);
             $registration = Registration::lockForUpdate()->findOrFail($registrationRef->id);
             $proof = PaymentProof::lockForUpdate()->findOrFail($proofId);
-            abort_unless($actor->active && $actor->managesEvent($competition->event_id), 403);
+            abort_unless($actor->active && $actor->managesCompetition($competition), 403);
             abort_if($proof->uploaded_by === $actor->id || $registration->participants()->where('user_id', $actor->id)->exists(), 403, 'Petugas tidak dapat memverifikasi pembayarannya sendiri.');
             $this->ensure(in_array($decision, ['accepted', 'rejected'], true), 'Keputusan tidak valid.');
             $this->ensure($proof->status === 'pending' && $registration->payment_status === 'pending', 'Bukti pembayaran sudah diverifikasi.');
@@ -91,6 +91,6 @@ class PaymentService extends DomainService
     {
         $proof->loadMissing('registration.competition');
 
-        return $proof->registration->user_id === $user->id || $user->managesEvent($proof->registration->competition->event_id);
+        return $proof->registration->user_id === $user->id || $user->managesCompetition($proof->registration->competition);
     }
 }

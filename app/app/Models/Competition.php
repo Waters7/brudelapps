@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class Competition extends Model
 {
@@ -19,6 +20,7 @@ class Competition extends Model
             'ends_at' => 'datetime',
             'results_published_at' => 'datetime',
             'fee' => 'integer',
+            'judge_count' => 'integer',
             'requires_document' => 'boolean',
             'requires_program_approval' => 'boolean',
             'live_score' => 'boolean',
@@ -49,6 +51,24 @@ class Competition extends Model
     public function results(): HasMany
     {
         return $this->hasMany(CompetitionResult::class)->orderBy('rank');
+    }
+
+    public function accounts(): HasMany
+    {
+        return $this->hasMany(CompetitionAccount::class)->orderBy('role')->orderBy('slot');
+    }
+
+    public function scoreLogs(): HasMany
+    {
+        return $this->hasMany(ScoreLog::class)->latest('id');
+    }
+
+    /**
+     * Last moment the generated accounts and staff assignments stay valid.
+     */
+    public function staffUntil(): Carbon
+    {
+        return ($this->ends_at ?? $this->starts_at)->copy()->addDays(30);
     }
 
     public function isOpen(): bool

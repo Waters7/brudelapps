@@ -19,13 +19,15 @@ class EventManageController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isStudentAffairs() || $user->assigned('admin_event') || $user->assigned('pengurus'), 403);
+        abort_unless($user->managesAnyCompetition() || $user->assigned('pengurus') || Event::where('proposed_by', $user->id)->exists(), 403);
         $leadClubs = $user->currentAssignments()->where('role', 'pengurus')->where('position', 'Ketua')->pluck('club_id');
         $events = Event::with('club')->withCount('competitions')
-            ->when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($w) => $w->whereIn('id', $user->scopeIds('admin_event', 'event_id'))->orWhereIn('club_id', $user->scopeIds('pengurus', 'club_id'))))
+            ->when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($w) => $w->whereIn('id', $user->scopeIds('admin_event', 'event_id'))
+                ->orWhereIn('club_id', $user->scopeIds('pengurus', 'club_id'))->orWhere('proposed_by', $user->id)))
             ->latest()->get();
 
         return view('events.index', [
+            'managed' => $user->assigned('pengelola_lomba') ? Competition::with('event')->whereIn('id', $user->scopeIds('pengelola_lomba', 'competition_id'))->get() : collect(),
             'events' => $events,
             'pending' => $user->isStudentAffairs() ? $events->where('status', 'submitted') : collect(),
             'clubs' => $user->isStudentAffairs() ? Club::orderBy('name')->get() : Club::whereIn('id', $leadClubs)->orderBy('name')->get(),
@@ -36,7 +38,7 @@ class EventManageController extends Controller
     {
         $user = $request->user();
         $canEdit = $this->events->canEdit($user, $event);
-        abort_unless($canEdit || $user->managesEvent($event->id) || ($event->club_id && $user->managesClub($event->club_id)), 403);
+        abort_unless($canEdit || $user->managesEvent($event->id) || $event->proposed_by === $user->id || ($event->club_id && $user->managesClub($event->club_id)), 403);
         $event->load(['club', 'proposer', 'competitions' => fn ($q) => $q->withCount(['registrations as holding_count' => fn ($r) => $r->whereIn('status', ['program_review', 'submitted', 'accepted'])]), 'admins' => fn ($q) => $q->with('user')->where('ends_at', '>', now())]);
 
         return view('events.show', [
@@ -44,6 +46,7 @@ class EventManageController extends Controller
             'canEdit' => $canEdit,
             'canSubmit' => $event->isEditableProposal() && $event->club_id && $user->leadsClub($event->club_id),
             'canDecide' => $user->isStudentAffairs() && $event->status === 'submitted' && $event->proposed_by !== $user->id,
+            'canSeeAccounts' => $event->status === 'approved' && ($user->isStudentAffairs() || $event->proposed_by === $user->id),
             'histories' => StatusHistory::where('subject_type', 'events')->where('subject_id', $event->id)->oldest('id')->get(),
         ]);
     }
@@ -103,6 +106,7 @@ class EventManageController extends Controller
             'location' => 'required|string|max:190',
             'assessment_type' => 'required|in:none,bracket,rubric',
             'tie_break' => 'nullable|in:criteria,shared',
+            'judge_count' => 'nullable|integer|between:1,'.config('brudel.max_judges'),
             'live_score' => 'nullable|boolean',
             'live_visibility' => 'nullable|in:public,auth',
             'live_show_provisional' => 'nullable|boolean',

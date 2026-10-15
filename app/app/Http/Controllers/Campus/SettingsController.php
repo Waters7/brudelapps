@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Campus;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\PaymentAccount;
 use App\Models\Program;
 use App\Models\Setting;
@@ -20,7 +21,8 @@ class SettingsController extends Controller
         abort_unless($request->user()->isStudentAffairs(), 403);
 
         return view('manage.settings', [
-            'programs' => Program::withCount('users')->orderBy('department')->orderBy('name')->get(),
+            'programs' => Program::with('department')->withCount('users')->orderBy('department_id')->orderBy('name')->get(),
+            'departments' => Department::orderBy('name')->get(),
             'accounts' => PaymentAccount::latest()->get(),
             'settings' => collect(CampusService::SETTING_KEYS)->mapWithKeys(fn ($key) => [$key => Setting::value($key)]),
         ]);
@@ -42,7 +44,7 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:120|unique:programs,name'.($program ? ','.$program->id : ''),
-            'department' => 'required|string|max:120',
+            'department_id' => 'required|integer|exists:departments,id',
             'code' => 'nullable|string|max:20|alpha_dash|unique:programs,code'.($program ? ','.$program->id : ''),
         ]);
         $this->campus->saveProgram($request->user(), $program, $data);

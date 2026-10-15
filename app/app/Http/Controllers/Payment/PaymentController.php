@@ -18,8 +18,9 @@ class PaymentController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isStudentAffairs() || $user->assigned('admin_event'), 403);
-        $scoped = fn ($q) => $user->isStudentAffairs() ? $q : $q->whereHas('registration.competition', fn ($c) => $c->whereIn('event_id', $user->scopeIds('admin_event', 'event_id')));
+        abort_unless($user->managesAnyCompetition(), 403);
+        $managed = $user->managedCompetitionIds();
+        $scoped = fn ($q) => $managed === null ? $q : $q->whereHas('registration', fn ($r) => $r->whereIn('competition_id', $managed));
 
         return view('payments.index', [
             'pending' => $scoped(PaymentProof::with('registration.competition', 'registration.participants', 'uploader', 'account')->where('status', 'pending'))->oldest()->get(),

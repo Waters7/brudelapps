@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\Club;
 use App\Models\Competition;
+use App\Models\Department;
 use App\Models\Event;
-use App\Models\Program;
 use App\Services\Account\AssignmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ class AssignmentController extends Controller
         abort_unless($request->user()->isStudentAffairs(), 403);
 
         return view('manage.assignments', [
-            'assignments' => Assignment::with('user', 'club', 'event', 'program', 'competition')
+            'assignments' => Assignment::with('user', 'club', 'event', 'department', 'competition')
                 ->when($request->query('role'), fn ($q, $role) => $q->where('role', $role))
                 ->when($request->query('aktif') !== '0', fn ($q) => $q->where('ends_at', '>', now()))
                 ->latest()->paginate(30)->withQueryString(),
@@ -63,7 +63,7 @@ class AssignmentController extends Controller
         return [
             'club_id' => Club::orderBy('name')->pluck('name', 'id'),
             'event_id' => Event::where('status', 'approved')->orderBy('name')->pluck('name', 'id'),
-            'program_id' => Program::orderBy('name')->pluck('name', 'id'),
+            'department_id' => Department::orderBy('name')->pluck('name', 'id'),
             'competition_id' => Competition::with('event')->get()->mapWithKeys(fn ($c) => [$c->id => $c->name.' · '.$c->event->name]),
         ];
     }

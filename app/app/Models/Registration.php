@@ -35,7 +35,7 @@ class Registration extends Model
 
     public function approvals(): HasMany
     {
-        return $this->hasMany(ProgramApproval::class);
+        return $this->hasMany(DepartmentApproval::class);
     }
 
     public function payments(): HasMany

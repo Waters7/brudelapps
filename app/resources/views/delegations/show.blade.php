@@ -24,7 +24,10 @@
 </section>
 <section class="panel">
     <h2>Anggota delegasi</h2>
-    <ul class="plain-list">@foreach($delegation->members as $member)<li><strong>{{ $member->user->name }}</strong> · {{ ucfirst($member->role) }}@if($member->user->program) · {{ $member->user->program->name }}@endif</li>@endforeach</ul>
+    <div class="member-grid">@foreach($delegation->members as $member)
+        <div class="member-card"><x-avatar :user="$member->user" size="big"/><div><strong>{{ $member->user->name }}</strong><small>{{ ucfirst($member->role) }}@if($member->user->program) · {{ $member->user->program->name }}@endif</small></div></div>
+    @endforeach</div>
+    <p class="form-note">Foto profil diunggah sendiri oleh mahasiswa di menu Profil.</p>
     @if($delegation->letter_path)<div class="info-strip"><x-icon name="file"/><span>Surat tugas {{ $delegation->letter_number }} · <a class="text-link" href="/delegasi/{{ $delegation->id }}/surat-tugas">Unduh PDF ↓</a></span></div>@endif
 </section>
 </div>

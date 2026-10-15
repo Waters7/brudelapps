@@ -29,15 +29,28 @@ return [
     ],
 
     'roles' => [
-        'kemahasiswaan' => ['label' => 'Pengelola kemahasiswaan', 'scope' => null],
+        'kemahasiswaan' => ['label' => 'Kemahasiswaan (superadmin)', 'scope' => null],
         'pengurus' => ['label' => 'Pengurus UKM', 'scope' => 'club_id'],
         'admin_event' => ['label' => 'Admin event', 'scope' => 'event_id'],
-        'prodi' => ['label' => 'Jurusan/prodi', 'scope' => 'program_id'],
-        'penilai' => ['label' => 'Penilai', 'scope' => 'competition_id'],
+        'pengelola_lomba' => ['label' => 'Pengelola lomba', 'scope' => 'competition_id'],
+        'jurusan' => ['label' => 'Jurusan', 'scope' => 'department_id'],
+        'penilai' => ['label' => 'Juri/penilai', 'scope' => 'competition_id'],
         'pembina' => ['label' => 'Pelatih/pembina', 'scope' => 'club_id'],
         'pimpinan' => ['label' => 'Pimpinan', 'scope' => null],
-        'operator' => ['label' => 'Operator pertandingan', 'scope' => 'competition_id'],
+        'operator' => ['label' => 'Operator skor & live score', 'scope' => 'competition_id'],
     ],
+
+    'pimpinan_positions' => ['Direktur', 'Wakil Direktur I', 'Wakil Direktur II', 'Wakil Direktur III'],
+
+    /** Judges per competition (generated juri accounts plus manual penilai assignments). */
+    'max_judges' => 5,
+
+    /** Domain for logins generated per competition. ".invalid" never receives mail. */
+    'competition_account_domain' => env('BRUDEL_COMPETITION_ACCOUNT_DOMAIN', 'lomba.brudel.invalid'),
+
+    'photo_max_kb' => 2048,
+
+    'activity_code_minutes' => 120,
 
     'status_labels' => [
         'submitted' => 'Menunggu tinjauan',
@@ -54,7 +67,7 @@ return [
         'inactive' => 'Nonaktif',
         'left' => 'Keluar',
         'alumni' => 'Alumni',
-        'program_review' => 'Menunggu persetujuan prodi',
+        'program_review' => 'Menunggu persetujuan jurusan',
         'pending' => 'Menunggu verifikasi',
         'not_required' => 'Tanpa biaya',
         'unpaid' => 'Belum dibayar',

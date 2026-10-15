@@ -10,7 +10,7 @@
 
 <div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Delegasi</th><th>Tujuan</th><th>Jadwal (WITA)</th><th>Anggota</th><th>Status</th></tr></thead><tbody>
 @forelse($delegations as $d)
-<tr><td><a class="text-link" href="/delegasi/{{ $d->id }}"><strong>{{ $d->title }}</strong></a><small>{{ $d->competition?->name ?? 'Tanpa seleksi BRUDEL' }}</small></td><td>{{ $d->destination_event }}<small>{{ config('brudel.levels')[$d->level] }} · {{ $d->organizer }}</small></td><td>{{ \App\Services\Wita::show($d->starts_at, 'd M Y') }}</td><td>{{ $d->members_count }}</td><td><x-status :value="$d->status"/>@if($d->letter_number)<small>Surat: {{ $d->letter_number }}</small>@endif</td></tr>
+<tr><td><a class="text-link" href="/delegasi/{{ $d->id }}"><strong>{{ $d->title }}</strong></a><small>{{ $d->competition?->name ?? 'Tanpa seleksi BRUDEL' }}</small></td><td>{{ $d->destination_event }}<small>{{ config('brudel.levels')[$d->level] }} · {{ $d->organizer }}</small></td><td>{{ \App\Services\Wita::show($d->starts_at, 'd M Y') }}</td><td><div class="avatar-stack" title="{{ $d->members->map(fn ($m) => $m->user->name)->join(', ') }}">@foreach($d->members->take(5) as $member)<x-avatar :user="$member->user"/>@endforeach @if($d->members_count > 5)<span class="avatar small more">+{{ $d->members_count - 5 }}</span>@endif</div></td><td><x-status :value="$d->status"/>@if($d->letter_number)<small>Surat: {{ $d->letter_number }}</small>@endif</td></tr>
 @empty<tr><td colspan="5" class="empty">Belum ada delegasi dalam lingkup Anda.</td></tr>@endforelse
 </tbody></table></div></div>
 </x-layout>

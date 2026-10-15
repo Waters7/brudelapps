@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Registration;
 use App\Models\RubricCriterion;
 use App\Models\Score;
+use App\Models\ScoreLog;
 use App\Models\User;
 use App\Services\DomainService;
 use Illuminate\Support\Collection;
@@ -72,10 +73,27 @@ class ScoringService extends DomainService
                     continue;
                 }
                 $this->ensure(is_numeric($value) && $value >= 0 && $value <= 100, 'Nilai '.$criterion->name.' harus 0–100.');
+                $new = round((float) $value, 2);
+                $note = $entries[$criterion->id]['note'] ?? null;
+                $existing = Score::where('registration_id', $registration->id)->where('judge_id', $actor->id)->where('rubric_criterion_id', $criterion->id)->lockForUpdate()->first();
+                if ($existing && abs($existing->score - $new) < 0.001 && $existing->note === $note) {
+                    continue;
+                }
                 Score::updateOrCreate(
                     ['registration_id' => $registration->id, 'judge_id' => $actor->id, 'rubric_criterion_id' => $criterion->id],
-                    ['competition_id' => $competition->id, 'score' => round((float) $value, 2), 'note' => $entries[$criterion->id]['note'] ?? null],
+                    ['competition_id' => $competition->id, 'score' => $new, 'note' => $note],
                 );
+                ScoreLog::create([
+                    'competition_id' => $competition->id,
+                    'registration_id' => $registration->id,
+                    'judge_id' => $actor->id,
+                    'rubric_criterion_id' => $criterion->id,
+                    'old_score' => $existing?->score,
+                    'new_score' => $new,
+                    'note' => $note,
+                    'ip_address' => request()->ip(),
+                    'created_at' => now(),
+                ]);
             }
             $this->audit($actor, 'score.saved', $registration, ['entries' => $entries]);
         }, 3);

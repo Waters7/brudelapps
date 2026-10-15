@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\AwardRecipient;
 use App\Models\AwardResult;
 use App\Models\Club;
+use App\Models\ClubActivity;
 use App\Models\ClubApplication;
 use App\Models\Competition;
 use App\Models\Event;
@@ -14,6 +15,7 @@ use App\Models\Participant;
 use App\Models\Recruitment;
 use App\Models\Registration;
 use App\Models\User;
+use App\Services\Event\CompetitionAccountService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -32,14 +34,15 @@ class DemoSeeder extends Seeder
 
         DB::transaction(function () {
             // Keyed by code, not by explicit id: explicit ids would leave the PostgreSQL sequence behind.
-            foreach ([['D-III Keperawatan', 'Keperawatan', 'KEP'], ['D-IV Gizi dan Dietetika', 'Gizi', 'GIZ'], ['D-III Kesehatan Lingkungan', 'Kesehatan Lingkungan', 'KESLING']] as [$name, $department, $code]) {
-                DB::table('programs')->updateOrInsert(['code' => $code], ['name' => $name, 'department' => $department]);
+            $departments = DB::table('departments')->pluck('id', 'code');
+            foreach ([['D-III Keperawatan', 'KEP', 'KEP'], ['D-IV Gizi dan Dietetika', 'GIZ', 'GIZ'], ['D-III Kesehatan Lingkungan', 'KL', 'KESLING']] as [$name, $department, $code]) {
+                DB::table('programs')->updateOrInsert(['code' => $code], ['name' => $name, 'department_id' => $departments[$department]]);
             }
             $programs = DB::table('programs')->pluck('id', 'code');
 
             $people = [
                 ['Bintang Mandagi', 'mahasiswa', 'DEMO001', 'KEP'], ['Michelle Sumual', 'anggota', 'DEMO002', 'GIZ'], ['Andre Runtuwene', 'pengurus', 'DEMO003', 'KEP'],
-                ['Pengelola Kemahasiswaan', 'admin', null, null], ['Admin Pekan Prestasi', 'event', null, null], ['Koordinator Prodi Keperawatan', 'prodi', null, null],
+                ['Pengelola Kemahasiswaan', 'admin', null, null], ['Admin Pekan Prestasi', 'event', null, null], ['Koordinator Jurusan Keperawatan', 'jurusan', null, null],
                 ['Juri Poster Kesehatan', 'juri', null, null], ['Operator Pertandingan', 'operator', null, null], ['Wakil Direktur III', 'pimpinan', null, null],
                 ['Pelatih Badminton', 'pembina', null, null], ['Rifky Lasut', 'atlet1', 'DEMO004', 'KESLING'], ['Grace Wowor', 'atlet2', 'DEMO005', 'GIZ'],
                 ['Yosua Pangemanan', 'atlet3', 'DEMO006', 'KEP'], ['Natalia Rumengan', 'atlet4', 'DEMO007', 'KESLING'], ['Kevin Tumbel', 'atlet5', 'DEMO008', 'GIZ'],
@@ -70,8 +73,8 @@ class DemoSeeder extends Seeder
             Assignment::firstOrCreate(['user_id' => $users['pengurus']->id, 'role' => 'pengurus', 'club_id' => $all[0]->id], $window + ['position' => 'Ketua', 'period' => '2026/2027']);
             Assignment::firstOrCreate(['user_id' => $users['pembina']->id, 'role' => 'pembina', 'club_id' => $all[0]->id], $window);
             Assignment::firstOrCreate(['user_id' => $users['admin']->id, 'role' => 'kemahasiswaan'], $window);
-            Assignment::firstOrCreate(['user_id' => $users['pimpinan']->id, 'role' => 'pimpinan'], $window);
-            Assignment::firstOrCreate(['user_id' => $users['prodi']->id, 'role' => 'prodi', 'program_id' => $programs['KEP']], $window);
+            Assignment::firstOrCreate(['user_id' => $users['pimpinan']->id, 'role' => 'pimpinan'], $window + ['position' => 'Wakil Direktur III']);
+            Assignment::firstOrCreate(['user_id' => $users['jurusan']->id, 'role' => 'jurusan', 'department_id' => $departments['KEP']], $window);
 
             $event = Event::firstOrCreate(['name' => 'Pekan Prestasi Mahasiswa 2026 · Demo'], ['organizer' => 'Kemahasiswaan Poltekkes Kemenkes Manado (demo)', 'status' => 'approved', 'proposed_by' => $users['admin']->id, 'decided_by' => $users['admin']->id, 'decided_at' => now()]);
             Assignment::firstOrCreate(['user_id' => $users['event']->id, 'role' => 'admin_event', 'event_id' => $event->id], $window);
@@ -94,6 +97,7 @@ class DemoSeeder extends Seeder
                     'requires_document' => $document, 'requires_program_approval' => $programApproval, 'assessment_type' => $assessment,
                     'live_score' => $live, 'live_visibility' => $name === 'Tenis Meja Tunggal' ? 'public' : 'auth', 'live_show_provisional' => $assessment === 'rubric',
                     'opens_at' => now()->subDays(3), 'closes_at' => now()->addDays(5 + $i * 3), 'starts_at' => now()->addDays(20 + $i),
+                    'judge_count' => $name === 'Debat Bahasa Inggris' ? 2 : 0,
                 ]);
             }
 
@@ -120,9 +124,36 @@ class DemoSeeder extends Seeder
             $recruitment = $all[2]->recruitments()->first();
             $application = ClubApplication::firstOrCreate(['recruitment_id' => $recruitment->id, 'user_id' => $users['mahasiswa']->id], ['motivation' => 'Saya ingin mengembangkan riset kesehatan dan kemampuan menulis ilmiah.', 'status' => 'accepted']);
             Membership::firstOrCreate(['club_id' => $all[2]->id, 'user_id' => $users['mahasiswa']->id], ['club_application_id' => $application->id, 'joined_at' => now()->subDays(2), 'division' => 'Riset']);
+            foreach (['atlet1', 'atlet2', 'atlet3'] as $key) {
+                Membership::firstOrCreate(['club_id' => $all[0]->id, 'user_id' => $users[$key]->id], ['joined_at' => now()->subMonths(2), 'division' => 'Tunggal']);
+            }
 
             $this->awards($users, $all);
+            $this->activities($users['pengurus'], $all[0]);
         });
+
+        $accounts = app(CompetitionAccountService::class);
+        foreach (Competition::whereHas('event', fn ($q) => $q->where('status', 'approved'))->get() as $competition) {
+            $accounts->provision($competition);
+        }
+    }
+
+    /**
+     * One activity of each type for UKM Badminton: an ongoing training (attendance code can be opened now),
+     * an upcoming friendly match, and a past internal meeting still waiting for its minutes.
+     */
+    private function activities(User $chair, Club $club): void
+    {
+        foreach ([
+            ['latihan', 'Latihan rutin tunggal · Demo', now()->subMinutes(30), now()->addMinutes(90), true],
+            ['persahabatan', 'Persahabatan vs UKM Badminton Unsrat · Demo', now(config('brudel.timezone'))->addDays(4)->setTime(15, 0)->utc(), now(config('brudel.timezone'))->addDays(4)->setTime(18, 0)->utc(), true],
+            ['meeting', 'Rapat evaluasi semester · Demo', now(config('brudel.timezone'))->subDays(2)->setTime(16, 0)->utc(), now(config('brudel.timezone'))->subDays(2)->setTime(17, 30)->utc(), false],
+        ] as [$type, $title, $starts, $ends, $public]) {
+            ClubActivity::firstOrCreate(['club_id' => $club->id, 'title' => $title], [
+                'type' => $type, 'location' => 'GOR kampus', 'starts_at' => $starts, 'ends_at' => $ends, 'is_public' => $public,
+                'description' => 'Kegiatan demonstrasi.', 'created_by' => $chair->id,
+            ]);
+        }
     }
 
     /**

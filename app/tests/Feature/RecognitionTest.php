@@ -7,8 +7,8 @@ use App\Models\AwardResult;
 use App\Models\Certificate;
 use App\Models\Competition;
 use App\Models\Delegation;
+use App\Models\Department;
 use App\Models\Participant;
-use App\Models\Program;
 use App\Models\Registration;
 use App\Services\Report\ReportService;
 use Illuminate\Support\Facades\Storage;
@@ -73,8 +73,8 @@ class RecognitionTest extends DemoTestCase
         $province = $reports->summary(['level' => 3]);
         $this->assertSame([1, 2], [$province['award_count'], $province['unique_achievers']]);
         $this->assertSame(1, $reports->summary(['team' => 'individu'])['award_count']);
-        $nutrition = $reports->summary(['program_id' => Program::where('code', 'GIZ')->value('id')]);
-        $this->assertSame([1, 1], [$nutrition['award_count'], $nutrition['unique_achievers']], 'Penghargaan tim dihitung sekali; hanya penerima prodi terpilih yang dihitung unik.');
+        $nutrition = $reports->summary(['department_id' => Department::where('code', 'GIZ')->value('id')]);
+        $this->assertSame([1, 1], [$nutrition['award_count'], $nutrition['unique_achievers']], 'Penghargaan tim dihitung sekali; hanya penerima jurusan terpilih yang dihitung unik.');
 
         $this->actingAs($this->user('pimpinan'))->get('/laporan?level=3')->assertOk()->assertSee('Lomba Karya Tulis Ilmiah Kesehatan Provinsi');
         $csv = $this->get('/laporan/ekspor/prestasi')->assertOk()->streamedContent();

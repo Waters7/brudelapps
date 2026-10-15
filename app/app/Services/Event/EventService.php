@@ -2,6 +2,7 @@
 
 namespace App\Services\Event;
 
+use App\Models\Assignment;
 use App\Models\Competition;
 use App\Models\Event;
 use App\Models\User;
@@ -12,10 +13,13 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Event module. A Ketua UKM proposes an event with its competitions; kemahasiswaan approves, requests revision
- * or rejects with a reason. Approved events are run by assigned event admins (never automatically the proposer).
+ * or rejects with a reason. Each competition of an approved event gets generated pengelola, operator and juri
+ * logins that the proposer hands out; the proposer never becomes an event admin automatically.
  */
 class EventService extends DomainService
 {
+    public function __construct(private CompetitionAccountService $accounts) {}
+
     public function canEdit(User $actor, Event $event): bool
     {
         if ($actor->isStudentAffairs() || ($event->status === 'approved' && $actor->managesEvent($event->id))) {
@@ -94,6 +98,11 @@ class EventService extends DomainService
             $this->history($event, 'submitted', $decision, $actor, $reason);
             $this->audit($actor, 'event.'.$decision, $event, ['reason' => $reason]);
             $event->proposer?->notify(new BrudelNotice('Pengajuan event '.$event->name, 'Keputusan kemahasiswaan: '.$this->label($decision).($reason ? '. '.$reason : '.'), '/kelola/event/'.$event->id));
+            if ($decision === 'approved') {
+                foreach ($event->competitions as $competition) {
+                    $this->accounts->provision($competition, $actor);
+                }
+            }
         });
     }
 
@@ -116,8 +125,14 @@ class EventService extends DomainService
         $min = $team ? (int) $data['min_members'] : 1;
         $max = $team ? (int) $data['max_members'] : 1;
         $this->ensure($min >= ($team ? 2 : 1) && $max >= $min, 'Jumlah anggota tim minimal 2 dan maksimum tidak boleh lebih kecil dari minimum.');
+        $judges = $data['assessment_type'] === 'rubric' ? (int) ($data['judge_count'] ?? 3) : 0;
+        $maxJudges = (int) config('brudel.max_judges');
+        $manualJudges = $competition ? Assignment::where('role', 'penilai')->where('competition_id', $competition->id)->where('ends_at', '>', now())
+            ->whereNotIn('user_id', $competition->accounts()->pluck('user_id'))->count() : 0;
+        $this->ensure($judges + $manualJudges <= $maxJudges, 'Total juri per nomor lomba maksimal '.$maxJudges.' (saat ini '.$manualJudges.' juri ditugaskan manual).');
+        $this->ensure($data['assessment_type'] !== 'rubric' || $judges + $manualJudges >= 1, 'Lomba dengan rubrik memerlukan minimal 1 juri.');
 
-        return DB::transaction(function () use ($actor, $event, $competition, $data, $opens, $closes, $starts, $ends, $team, $min, $max) {
+        $saved = DB::transaction(function () use ($actor, $event, $competition, $data, $opens, $closes, $starts, $ends, $team, $min, $max, $judges) {
             if ($competition) {
                 $competition = Competition::lockForUpdate()->findOrFail($competition->id);
                 $locked = $competition->registrations()->whereNotIn('status', ['draft', 'cancelled'])->exists();
@@ -154,10 +169,14 @@ class EventService extends DomainService
                 'live_visibility' => $data['live_visibility'] ?? 'auth',
                 'live_show_provisional' => (bool) ($data['live_show_provisional'] ?? false),
                 'external_info' => $data['external_info'] ?? null,
+                'judge_count' => $judges,
             ])->save();
-            $this->audit($actor, 'competition.saved', $competition, ['fee' => $competition->fee, 'quota' => $competition->quota]);
+            $this->audit($actor, 'competition.saved', $competition, ['fee' => $competition->fee, 'quota' => $competition->quota, 'judges' => $judges]);
 
             return $competition;
         });
+        $this->accounts->provision($saved, $actor);
+
+        return $saved;
     }
 }

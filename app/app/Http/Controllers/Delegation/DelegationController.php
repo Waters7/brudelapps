@@ -23,16 +23,17 @@ class DelegationController extends Controller
     {
         $user = $request->user();
         $all = $user->isStudentAffairs() || $user->isLeadership();
-        $events = $user->scopeIds('admin_event', 'event_id');
-        $delegations = Delegation::with('competition.event')->withCount('members')
+        $managed = $user->managedCompetitionIds() ?? collect();
+        $delegations = Delegation::with('competition.event', 'members.user')->withCount('members')
             ->when(! $all, fn ($q) => $q->where(fn ($w) => $w->whereHas('members', fn ($m) => $m->where('user_id', $user->id))
-                ->orWhereHas('competition', fn ($c) => $c->whereIn('event_id', $events))))
+                ->orWhereIn('competition_id', $managed)))
             ->latest()->get();
-        $selections = $user->isStudentAffairs() || $events->isNotEmpty()
-            ? Competition::with('event')->whereHas('event', fn ($q) => $q->where('pathway', 'delegation')->when(! $user->isStudentAffairs(), fn ($e) => $e->whereIn('id', $events)))->get()
+        $canPropose = $user->isStudentAffairs() || $managed->isNotEmpty();
+        $selections = $canPropose
+            ? Competition::with('event')->whereHas('event', fn ($q) => $q->where('pathway', 'delegation'))->when(! $user->isStudentAffairs(), fn ($c) => $c->whereIn('id', $managed))->get()
             : collect();
 
-        return view('delegations.index', ['delegations' => $delegations, 'selections' => $selections, 'canPropose' => $user->isStudentAffairs() || $events->isNotEmpty()]);
+        return view('delegations.index', ['delegations' => $delegations, 'selections' => $selections, 'canPropose' => $canPropose]);
     }
 
     public function create(Request $request): View

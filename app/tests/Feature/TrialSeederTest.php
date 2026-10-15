@@ -47,10 +47,10 @@ class TrialSeederTest extends DemoTestCase
         $winner = User::findOrFail(Certificate::where('status', 'valid')->orderBy('id')->value('user_id'));
         $chess = $this->competition('Catur Cepat');
         $pages = [
-            'admin' => ['/tinjauan', '/pembayaran', '/prodi', '/kelola/prestasi', '/laporan', '/kelola/mahasiswa', '/kelola/sertifikat?lomba='.$this->competition('Cerdas Cermat Kesehatan')->id,
+            'admin' => ['/tinjauan', '/pembayaran', '/jurusan', '/kelola/prestasi', '/laporan', '/kelola/mahasiswa', '/kelola/sertifikat?lomba='.$this->competition('Cerdas Cermat Kesehatan')->id,
                 '/kelola/lomba/'.$chess->id, '/kelola/lomba/'.$this->competition('Debat Bahasa Inggris')->id, '/delegasi', '/delegasi/'.Delegation::where('status', 'completed')->value('id')],
             'event' => ['/tinjauan', '/pembayaran', '/operator', '/kelola/lomba/'.$poster->id],
-            'prodi' => ['/prodi'],
+            'jurusan' => ['/jurusan'],
             'juri' => ['/penilaian', '/penilaian/'.$poster->id],
             'pimpinan' => ['/delegasi', '/laporan'],
             'pengurus' => ['/tinjauan', '/kelola/ukm/'.Club::where('name', 'Badminton')->value('id')],

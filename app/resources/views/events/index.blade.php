@@ -1,6 +1,12 @@
 <x-layout title="Kelola Event & Lomba">
 <div class="page-heading"><div><p class="eyebrow">EVENT INDUK & NOMOR LOMBA</p><h1>Event dan pengajuan lomba.</h1><p>Ketua UKM mengajukan lomba; kemahasiswaan menyetujui, meminta revisi, atau menolak dengan alasan. Event disetujui dikelola admin event yang ditugaskan.</p></div></div>
 
+@if($managed->isNotEmpty())
+<section class="section-block"><h2>Lomba yang Anda kelola</h2>
+@foreach($managed as $competition)<a class="panel list-row" href="/kelola/lomba/{{ $competition->id }}"><div><strong>{{ $competition->name }}</strong><small>{{ $competition->event->name }} · {{ \App\Services\Wita::show($competition->starts_at, 'd M Y') }}</small></div><span class="text-link">Operasional lomba →</span></a>@endforeach
+</section>
+@endif
+
 @if($pending->isNotEmpty())
 <section class="section-block"><h2>Menunggu keputusan kemahasiswaan · {{ $pending->count() }}</h2>
 @foreach($pending as $event)<a class="panel list-row" href="/kelola/event/{{ $event->id }}"><div><strong>{{ $event->name }}</strong><small>{{ $event->club?->name ?? 'Kemahasiswaan' }} · {{ $event->competitions_count }} nomor lomba · diajukan {{ \App\Services\Wita::show($event->submitted_at, 'd M Y H:i') }}</small></div><span class="text-link">Tinjau →</span></a>@endforeach

@@ -32,7 +32,7 @@
     @endforeach</div>
 
     @if($r->approvals->isNotEmpty())
-    <div class="approval-list"><strong>Persetujuan prodi:</strong> @foreach($r->approvals as $approval)<span class="chip">{{ $approval->program->name }} · <x-status :value="$approval->status"/></span>@endforeach</div>
+    <div class="approval-list"><strong>Persetujuan jurusan:</strong> @foreach($r->approvals as $approval)<span class="chip">{{ $approval->department->name }} · <x-status :value="$approval->status"/></span>@endforeach</div>
     @endif
 
     @if($leader && $r->isEditable())
@@ -42,14 +42,14 @@
         </div>
         @php($members = $r->participants->count())
         @php($fee = $competition->fee * ($competition->fee_basis === 'participant' ? $members : 1))
-        <div class="submit-bar"><span>Biaya pendaftaran: <strong>{{ $fee ? 'Rp '.number_format($fee, 0, ',', '.') : 'Gratis' }}</strong>@if($fee && $competition->fee_basis === 'participant') <small class="muted">({{ $members }} peserta × Rp {{ number_format($competition->fee, 0, ',', '.') }})</small>@endif @if($competition->requires_program_approval)<br><small class="muted">Setelah dikirim, pendaftaran menunggu persetujuan prodi.</small>@endif</span>
+        <div class="submit-bar"><span>Biaya pendaftaran: <strong>{{ $fee ? 'Rp '.number_format($fee, 0, ',', '.') : 'Gratis' }}</strong>@if($fee && $competition->fee_basis === 'participant') <small class="muted">({{ $members }} peserta × Rp {{ number_format($competition->fee, 0, ',', '.') }})</small>@endif @if($competition->requires_program_approval)<br><small class="muted">Setelah dikirim, pendaftaran menunggu persetujuan jurusan.</small>@endif</span>
             <div class="inline-actions"><a href="/lomba/{{ $r->competition_id }}" class="text-link">Ubah draf</a>
                 @if($r->status === 'draft')<form method="post" action="/pendaftaran/{{ $r->id }}/batal" onsubmit="return confirm('Batalkan draf ini? Undangan anggota juga dilepas.')">@csrf<button class="button outline">Batalkan draf</button></form>@endif
                 <form method="post" action="/pendaftaran/{{ $r->id }}/submit">@csrf<button class="button primary">Kirim pendaftaran <x-icon name="arrow"/></button></form></div></div>
     @elseif($r->isEditable())
         <p class="form-note">Ketua tim mengelola susunan dan pengiriman pendaftaran.</p>
     @else
-        <p class="form-note">Pendaftaran terkunci. Revisi hanya dapat dilakukan jika diminta pengelola atau prodi.</p>
+        <p class="form-note">Pendaftaran terkunci. Revisi hanya dapat dilakukan jika diminta pengelola atau jurusan.</p>
     @endif
 
     @if($r->payment_status !== 'not_required')

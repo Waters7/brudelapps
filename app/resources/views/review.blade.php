@@ -12,7 +12,7 @@
         @if($r->document_path)<a class="text-link" href="/ukm-pendaftaran/{{ $r->id }}/document">Unduh dokumen privat ↓</a>@endif
     @else
         <p>Peserta: {{ $r->participants->map(fn($p)=>$p->user->name.' ('.($p->user->program?->name ?? '—').')')->join(', ') }}</p>
-        @if($r->approvals->isNotEmpty())<p class="muted">Disetujui prodi: {{ $r->approvals->map(fn ($a) => $a->program->name)->join(', ') }}</p>@endif
+        @if($r->approvals->isNotEmpty())<p class="muted">Disetujui jurusan: {{ $r->approvals->map(fn ($a) => $a->department->name)->join(', ') }}</p>@endif
         @if($r->document_path)<a class="text-link" href="/pendaftaran/{{ $r->id }}/document">Unduh dokumen privat ↓</a>@endif
         @if(!in_array($r->payment_status, ['not_required', 'paid']))<div class="alert warning">Pembayaran belum diverifikasi. Pendaftaran belum dapat diterima.</div>@endif
     @endif

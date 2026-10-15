@@ -111,7 +111,13 @@ class CertificateService extends DomainService
         if ($user->managesCompetition($certificate->competition)) {
             return true;
         }
+        if ($certificate->status !== 'valid') {
+            return false;
+        }
 
-        return $certificate->user_id === $user->id && $certificate->status === 'valid';
+        $winnerOfOwnDepartment = $certificate->award_recipient_id !== null && $user->assigned('jurusan')
+            && $user->reviewsDepartment($certificate->user->departmentId());
+
+        return $certificate->user_id === $user->id || $winnerOfOwnDepartment;
     }
 }

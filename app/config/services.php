@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    /* Google sign-in: only links existing campus accounts. Leave empty to hide the button. */
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'allowed_domain' => env('GOOGLE_ALLOWED_DOMAIN'),
+    ],
+
+    /* Cloudflare Turnstile on login, activation and password recovery. Leave empty to disable. */
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
 ];

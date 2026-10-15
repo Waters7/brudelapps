@@ -17,7 +17,7 @@ class CampusService extends DomainService
     public const SETTING_KEYS = ['regional_definition', 'refund_policy', 'certificate_prefix'];
 
     /**
-     * @param  array{name: string, department: string, code?: ?string}  $data
+     * @param  array{name: string, department_id: int, code?: ?string}  $data
      */
     public function saveProgram(User $actor, ?Program $program, array $data): Program
     {
@@ -25,7 +25,7 @@ class CampusService extends DomainService
 
         return DB::transaction(function () use ($actor, $program, $data) {
             $program ??= new Program;
-            $program->fill(['name' => $data['name'], 'department' => $data['department'], 'code' => $data['code'] ?: null])->save();
+            $program->fill(['name' => $data['name'], 'department_id' => $data['department_id'], 'code' => ($data['code'] ?? null) ?: null])->save();
             $this->audit($actor, 'program.saved', $program, $data);
 
             return $program;

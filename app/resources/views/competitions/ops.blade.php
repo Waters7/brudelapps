@@ -23,20 +23,22 @@
 </section>
 
 <section class="panel">
-    <h2>Penilai & operator</h2>
+    <div class="section-heading"><h2>Tim lomba</h2>@if($canSeeAccounts)<a class="button outline small" href="/kelola/lomba/{{ $competition->id }}/akun">Lihat akun lomba otomatis</a>@endif</div>
     <div class="inline-actions">
-        @foreach(['penilai' => 'Penilai', 'operator' => 'Operator'] as $role => $label)
+        @foreach(['pengelola_lomba' => 'Pengelola', 'operator' => 'Operator skor & live', 'penilai' => 'Juri ('.($staff['penilai'] ?? collect())->count().'/'.config('brudel.max_judges').')'] as $role => $label)
             <span><strong>{{ $label }}:</strong> {{ ($staff[$role] ?? collect())->map(fn ($a) => $a->user->name)->join(', ') ?: 'belum ada' }}</span>
         @endforeach
     </div>
+    <p class="form-note">Akun pengelola, operator, dan juri dibuat otomatis untuk setiap lomba; pengaju lomba atau kemahasiswaan membagikannya. Penugasan tambahan di bawah opsional (total juri tetap maksimal {{ config('brudel.max_judges') }}).</p>
+    <details><summary class="text-link">Tugaskan pengguna terdaftar</summary>
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
         <input type="hidden" name="scope_id" value="{{ $competition->id }}">
         <label>Email/NIM<input name="user" required maxlength="190"></label>
-        <label>Peran<select name="role"><option value="penilai">Penilai</option><option value="operator">Operator pertandingan</option></select></label>
+        <label>Peran<select name="role"><option value="penilai">Juri/penilai</option><option value="operator">Operator skor & live score</option></select></label>
         <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i') }}"></label>
-        <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ \App\Services\Wita::input(($competition->ends_at ?? $competition->starts_at)->copy()->addMonth()) }}"></label>
-        <div class="span-2"><button class="button outline">Tugaskan</button><p class="form-note">Penilai tidak dapat menilai diri atau timnya sendiri; operator tidak dapat mencatat pertandingan yang diikutinya.</p></div>
-    </form>
+        <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ \App\Services\Wita::input($competition->staffUntil()) }}"></label>
+        <div class="span-2"><button class="button outline">Tugaskan</button><p class="form-note">Juri tidak dapat menilai diri atau timnya sendiri; operator tidak dapat mencatat pertandingan yang diikutinya.</p></div>
+    </form></details>
 </section>
 
 @if($bracket)
@@ -105,6 +107,18 @@
     @endif
 </section>
 </div>
+<section class="panel">
+    <div class="section-heading"><div><h2>Nilai per juri & log penilaian</h2><p>Setiap pengisian dan perubahan nilai tercatat (nilai lama, nilai baru, catatan, waktu, alamat IP).</p></div><a class="button outline small" href="/kelola/lomba/{{ $competition->id }}/log-nilai">Unduh log lengkap (CSV) ↓</a></div>
+    @if($judgeTotals->isNotEmpty())
+    <div class="table-wrap"><table class="compact"><thead><tr><th>Peserta</th><th>Total per juri (Σ nilai × bobot)</th></tr></thead><tbody>
+    @foreach($judgeTotals as $registrationId => $byJudge)<tr><td>{{ $registrations->firstWhere('id', $registrationId)?->displayName() }}</td><td>@foreach($byJudge as $row)<span class="chip">{{ $row['judge'] }}: {{ number_format($row['total'], 2, ',', '.') }} ({{ $row['count'] }}/{{ $competition->criteria->count() }})</span>@endforeach</td></tr>@endforeach
+    </tbody></table></div>
+    @endif
+    <div class="table-wrap"><table class="compact"><thead><tr><th>Waktu WITA</th><th>Juri</th><th>Peserta · kriteria</th><th>Perubahan</th></tr></thead><tbody>
+    @forelse($scoreLogs as $log)<tr><td>{{ \App\Services\Wita::show($log->created_at, 'd M H:i:s') }}</td><td>{{ $log->judge->name }}</td><td>{{ $log->registration->displayName() }}<small>{{ $log->criterion->name }}</small></td><td>{{ $log->old_score === null ? 'baru' : number_format($log->old_score, 2, ',', '') }} → <strong>{{ number_format($log->new_score, 2, ',', '') }}</strong>@if($log->note)<small>{{ $log->note }}</small>@endif</td></tr>
+    @empty<tr><td colspan="4" class="empty">Belum ada nilai masuk.</td></tr>@endforelse
+    </tbody></table></div>
+</section>
 @endif
 
 @if($bracket || $rubric)

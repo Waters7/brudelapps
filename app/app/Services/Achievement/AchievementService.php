@@ -154,6 +154,11 @@ class AchievementService extends DomainService
 
     public function canViewEvidence(User $user, AwardResult $award): bool
     {
-        return $user->isStudentAffairs() || $award->submitted_by === $user->id || $award->recipients()->where('user_id', $user->id)->exists();
+        if ($user->isStudentAffairs() || $award->submitted_by === $user->id || $award->recipients()->where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
+        return $award->status === 'verified' && $user->assigned('jurusan') && $award->recipients()->whereHas('user.program',
+            fn ($q) => $q->whereIn('department_id', $user->scopeIds('jurusan', 'department_id')))->exists();
     }
 }

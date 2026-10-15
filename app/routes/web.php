@@ -1,28 +1,37 @@
 <?php
 
 use App\Http\Controllers\Account\AssignmentController;
+use App\Http\Controllers\Account\GoogleController;
+use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\StudentController;
 use App\Http\Controllers\Achievement\AchievementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Campus\SettingsController;
 use App\Http\Controllers\Certificate\CertificateController;
+use App\Http\Controllers\Club\ActivityController;
 use App\Http\Controllers\Club\ClubManageController;
 use App\Http\Controllers\Delegation\DelegationController;
+use App\Http\Controllers\Department\DepartmentController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\Event\CompetitionAccountController;
 use App\Http\Controllers\Event\EventManageController;
 use App\Http\Controllers\Match\CompetitionOpsController;
 use App\Http\Controllers\Match\LiveController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\PortalController;
-use App\Http\Controllers\Registration\ProgramApprovalController;
 use App\Http\Controllers\Report\ReportController;
 use App\Http\Controllers\Scoring\JudgeController;
 use Illuminate\Support\Facades\Route;
 
-/* Akun: masuk, aktivasi, pemulihan kata sandi. */
+/* Halaman depan: info publik untuk tamu, dashboard untuk pengguna yang sudah masuk. */
+Route::get('/', [PortalController::class, 'home'])->name('dashboard');
+
+/* Akun: masuk, Google, aktivasi, pemulihan kata sandi. */
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => view('auth.login'))->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::get('/auth/google', [GoogleController::class, 'redirect'])->middleware('throttle:google');
+    Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->middleware('throttle:google');
     Route::get('/aktivasi', fn () => view('auth.request-link', ['mode' => 'activation']));
     Route::post('/aktivasi', [AuthController::class, 'requestActivation'])->middleware('throttle:account-link');
     Route::get('/aktivasi/{token}', [AuthController::class, 'activationForm']);
@@ -43,7 +52,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     /* Ruang mahasiswa */
-    Route::get('/', [PortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/ukm', fn () => view('catalog', ['kind' => 'ukm']))->name('ukm');
     Route::get('/lomba', fn () => view('catalog', ['kind' => 'lomba']))->name('lomba');
     Route::get('/ukm/{id}', [PortalController::class, 'club']);
@@ -53,6 +61,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/rekomendasi', fn () => view('recommendations'))->name('recommendations');
     Route::get('/profil', [PortalController::class, 'profile'])->name('profile');
     Route::post('/profil', [PortalController::class, 'saveProfile']);
+    Route::post('/profil/sandi', [ProfileController::class, 'password'])->middleware('throttle:account-token');
+    Route::post('/profil/foto', [ProfileController::class, 'photo']);
+    Route::post('/profil/foto/hapus', [ProfileController::class, 'removePhoto']);
+    Route::get('/foto/{user}', [ProfileController::class, 'show']);
+
+    /* Jelajah kegiatan UKM dan absensi berkode */
+    Route::get('/kegiatan', [ActivityController::class, 'index']);
+    Route::post('/kegiatan', [ActivityController::class, 'store']);
+    Route::post('/kegiatan/hadir', [ActivityController::class, 'checkIn'])->middleware('throttle:checkin');
+    Route::get('/kegiatan/{activity}', [ActivityController::class, 'show']);
+    Route::post('/kegiatan/{activity}/kode', [ActivityController::class, 'openCode']);
+    Route::post('/kegiatan/{activity}/kode/tutup', [ActivityController::class, 'closeCode']);
+    Route::post('/kegiatan/{activity}/hadir-manual', [ActivityController::class, 'markPresent']);
+    Route::post('/kegiatan/{activity}/laporan', [ActivityController::class, 'report']);
+    Route::get('/kegiatan/{activity}/laporan', [ActivityController::class, 'printable']);
+    Route::get('/kegiatan/{activity}/laporan.csv', [ActivityController::class, 'csv']);
+    Route::get('/kegiatan/{activity}/notulen', [ActivityController::class, 'minutes']);
+    Route::post('/kegiatan/{activity}/batal', [ActivityController::class, 'cancel']);
     Route::get('/notifikasi', [PortalController::class, 'notifications']);
     Route::post('/notifikasi/baca', [PortalController::class, 'readNotifications']);
 
@@ -117,6 +143,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/lomba/{competition}/sahkan', [CompetitionOpsController::class, 'publish']);
     Route::post('/kelola/lomba/{competition}/buka-koreksi', [CompetitionOpsController::class, 'reopen']);
     Route::post('/kelola/lomba/{competition}/penghargaan', [CompetitionOpsController::class, 'award']);
+    Route::get('/kelola/lomba/{competition}/log-nilai', [CompetitionOpsController::class, 'scoreLog']);
+    Route::get('/kelola/lomba/{competition}/akun', [CompetitionAccountController::class, 'show']);
+    Route::post('/kelola/lomba/{competition}/akun/{account}/reset', [CompetitionAccountController::class, 'reset']);
     Route::post('/pertandingan/{matchup}/jadwal', [CompetitionOpsController::class, 'schedule']);
     Route::post('/pertandingan/{matchup}/pemenang', [CompetitionOpsController::class, 'winner']);
     Route::post('/pertandingan/{matchup}/koreksi', [CompetitionOpsController::class, 'correct']);
@@ -129,9 +158,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/penilaian/{competition}', [JudgeController::class, 'show']);
     Route::post('/penilaian/{competition}/{registration}', [JudgeController::class, 'store']);
 
-    /* Prodi dan pembayaran */
-    Route::get('/prodi', [ProgramApprovalController::class, 'index']);
-    Route::post('/prodi/{approval}', [ProgramApprovalController::class, 'decide']);
+    /* Jurusan dan pembayaran */
+    Route::get('/jurusan', [DepartmentController::class, 'index']);
+    Route::post('/jurusan/persetujuan/{approval}', [DepartmentController::class, 'decide']);
+    Route::get('/jurusan/{department}/ekspor', [DepartmentController::class, 'export']);
     Route::get('/pembayaran', [PaymentController::class, 'index']);
     Route::post('/pembayaran/{proof}', [PaymentController::class, 'verify']);
 

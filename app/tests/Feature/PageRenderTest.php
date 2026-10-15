@@ -20,10 +20,10 @@ class PageRenderTest extends DemoTestCase
             'mahasiswa' => ['/pendaftaran', '/ukm-saya', '/sertifikat', '/prestasi'],
             'pengurus' => ['/tinjauan', '/kelola/ukm', '/kelola/ukm/'.$club->id, '/kelola/event', '/kelola/event/'.Event::where('club_id', $club->id)->first()->id, '/laporan'],
             'admin' => ['/tinjauan', '/kelola/ukm', '/kelola/ukm/'.$club->id, '/kelola/event', '/kelola/event/'.$event->id, '/kelola/lomba/'.$tennis->id, '/kelola/lomba/'.$poster->id,
-                '/prodi', '/pembayaran', '/operator', '/kelola/sertifikat', '/kelola/sertifikat?lomba='.$tennis->id, '/kelola/prestasi', '/laporan', '/kelola/mahasiswa',
+                '/jurusan', '/pembayaran', '/operator', '/kelola/sertifikat', '/kelola/sertifikat?lomba='.$tennis->id, '/kelola/prestasi', '/laporan', '/kelola/mahasiswa',
                 '/kelola/penugasan', '/kelola/pengaturan', '/delegasi/baru', '/delegasi/baru?lomba='.$this->competition('Seleksi Baca Puisi')->id],
             'event' => ['/tinjauan', '/kelola/event', '/kelola/event/'.$event->id, '/kelola/lomba/'.$tennis->id, '/pembayaran', '/operator', '/kelola/sertifikat', '/laporan'],
-            'prodi' => ['/prodi'],
+            'jurusan' => ['/jurusan'],
             'juri' => ['/penilaian', '/penilaian/'.$poster->id],
             'operator' => ['/operator'],
             'pimpinan' => ['/laporan'],
@@ -58,7 +58,7 @@ class PageRenderTest extends DemoTestCase
     public function test_students_cannot_open_management_pages(): void
     {
         $this->actingAs($this->user('mahasiswa'));
-        foreach (['/kelola/ukm', '/kelola/event', '/prodi', '/pembayaran', '/operator', '/kelola/sertifikat', '/kelola/prestasi', '/laporan', '/kelola/mahasiswa', '/kelola/penugasan', '/kelola/pengaturan', '/delegasi/baru'] as $url) {
+        foreach (['/kelola/ukm', '/kelola/event', '/jurusan', '/pembayaran', '/operator', '/kelola/sertifikat', '/kelola/prestasi', '/laporan', '/kelola/mahasiswa', '/kelola/penugasan', '/kelola/pengaturan', '/delegasi/baru'] as $url) {
             $this->get($url)->assertForbidden();
         }
         $this->assertSame(0, Delegation::count());

@@ -4,10 +4,10 @@ namespace App\Services\Registration;
 
 use App\Models\ClubApplication;
 use App\Models\Competition;
+use App\Models\DepartmentApproval;
 use App\Models\Membership;
 use App\Models\Participant;
 use App\Models\PaymentAccount;
-use App\Models\ProgramApproval;
 use App\Models\Recruitment;
 use App\Models\Registration;
 use App\Models\User;
@@ -237,11 +237,11 @@ class EnrollmentService extends DomainService
 
             $status = 'submitted';
             if ($competition->requires_program_approval) {
-                $programs = $members->pluck('user.program_id');
-                $this->ensure($programs->every(fn ($program) => $program !== null), 'Setiap anggota harus memiliki program studi untuk persetujuan prodi.');
+                $departments = $members->map(fn ($participant) => $participant->user->departmentId());
+                $this->ensure($departments->every(fn ($department) => $department !== null), 'Setiap anggota harus terdaftar pada jurusan untuk persetujuan jurusan.');
                 $registration->approvals()->delete();
-                foreach ($programs->unique() as $program) {
-                    ProgramApproval::create(['registration_id' => $registration->id, 'program_id' => $program, 'status' => 'pending']);
+                foreach ($departments->unique() as $department) {
+                    DepartmentApproval::create(['registration_id' => $registration->id, 'department_id' => $department, 'status' => 'pending']);
                 }
                 $status = 'program_review';
             }
@@ -254,40 +254,40 @@ class EnrollmentService extends DomainService
     }
 
     /**
-     * A program (prodi) reviewer decides on the members of their unit.
-     * A rejection returns the team for revision and closes the other programs' pending approvals;
-     * resubmitting creates a fresh approval for every program.
+     * A jurusan reviewer decides on the members of their jurusan. A cross-jurusan team needs every jurusan.
+     * A rejection returns the team for revision and closes the other jurusan's pending approvals;
+     * resubmitting creates a fresh approval for every jurusan.
      */
-    public function decideProgram(User $actor, int $approvalId, string $decision, ?string $reason): void
+    public function decideDepartment(User $actor, int $approvalId, string $decision, ?string $reason): void
     {
         DB::transaction(function () use ($actor, $approvalId, $decision, $reason) {
-            $reference = ProgramApproval::findOrFail($approvalId);
+            $reference = DepartmentApproval::findOrFail($approvalId);
             $registrationRef = Registration::findOrFail($reference->registration_id);
             Competition::whereKey($registrationRef->competition_id)->lockForUpdate()->firstOrFail();
             $registration = Registration::lockForUpdate()->findOrFail($registrationRef->id);
-            $approval = ProgramApproval::lockForUpdate()->findOrFail($approvalId);
-            abort_unless($actor->active && $actor->reviewsProgram($approval->program_id), 403);
+            $approval = DepartmentApproval::lockForUpdate()->findOrFail($approvalId);
+            abort_unless($actor->active && $actor->reviewsDepartment($approval->department_id), 403);
             abort_if($registration->participants()->where('user_id', $actor->id)->exists(), 403, 'Tidak dapat menyetujui pendaftaran sendiri.');
             $this->ensure(in_array($decision, ['approved', 'rejected'], true), 'Keputusan tidak valid.');
             $this->ensure($registration->status === 'program_review' && $approval->status === 'pending', 'Persetujuan ini sudah diproses.');
             $this->requireReason($decision, $reason);
             $approval->update(['status' => $decision, 'reason' => $reason, 'decided_by' => $actor->id, 'decided_at' => now()]);
-            $this->audit($actor, 'program.'.$decision, $approval, ['reason' => $reason]);
+            $this->audit($actor, 'department.'.$decision, $approval, ['reason' => $reason]);
 
-            $program = $approval->program->name;
+            $department = 'Jurusan '.$approval->department->name;
             if ($decision === 'rejected') {
-                $closing = 'Ditutup karena Prodi '.$program.' meminta perbaikan.';
+                $closing = 'Ditutup karena '.$department.' meminta perbaikan.';
                 foreach ($registration->approvals()->where('status', 'pending')->get() as $other) {
                     $other->update(['status' => 'cancelled', 'reason' => $closing, 'decided_at' => now()]);
-                    $this->audit($actor, 'program.cancelled', $other, ['reason' => $closing]);
+                    $this->audit($actor, 'department.cancelled', $other, ['reason' => $closing]);
                 }
-                $registration->update(['status' => 'revision', 'reason' => 'Prodi '.$program.': '.$reason]);
-                $this->history($registration, 'program_review', 'revision', $actor, 'Prodi '.$program.': '.$reason);
+                $registration->update(['status' => 'revision', 'reason' => $department.': '.$reason]);
+                $this->history($registration, 'program_review', 'revision', $actor, $department.': '.$reason);
             } elseif (! $registration->approvals()->where('status', '!=', 'approved')->exists()) {
                 $registration->update(['status' => 'submitted']);
-                $this->history($registration, 'program_review', 'submitted', $actor, 'Disetujui seluruh prodi terkait.');
+                $this->history($registration, 'program_review', 'submitted', $actor, 'Disetujui seluruh jurusan terkait.');
             }
-            $registration->user->notify(new BrudelNotice('Persetujuan prodi '.$program, $decision === 'approved' ? 'Prodi menyetujui keikutsertaan.' : 'Prodi meminta perbaikan: '.$reason, '/pendaftaran#registration-'.$registration->id));
+            $registration->user->notify(new BrudelNotice('Persetujuan '.$department, $decision === 'approved' ? 'Jurusan menyetujui keikutsertaan.' : 'Jurusan meminta perbaikan: '.$reason, '/pendaftaran#registration-'.$registration->id));
         }, 3);
     }
 
@@ -297,7 +297,7 @@ class EnrollmentService extends DomainService
             $reference = Registration::findOrFail($id);
             $competition = Competition::lockForUpdate()->findOrFail($reference->competition_id);
             $registration = Registration::lockForUpdate()->findOrFail($id);
-            abort_unless($actor->active && $actor->managesEvent($competition->event_id), 403);
+            abort_unless($actor->active && $actor->managesCompetition($competition), 403);
             abort_if($registration->participants()->where('user_id', $actor->id)->exists(), 403, 'Tidak dapat meninjau diri atau tim sendiri.');
             $this->ensure($registration->status === 'submitted', 'Pendaftaran sudah ditinjau atau masih menunggu persetujuan prodi.');
             $this->ensure(in_array($decision, ['accepted', 'rejected', 'revision'], true), 'Keputusan tidak valid.');

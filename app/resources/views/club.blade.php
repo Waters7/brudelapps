@@ -17,8 +17,13 @@
     <ul class="plain-list">@foreach($club->awards as $award)<li><strong>{{ $award->award }}</strong> · {{ $award->title }} <span class="muted">{{ $award->levelLabel() }} · {{ $award->awarded_on->format('Y') }}</span></li>@endforeach</ul>
 </section>
 @endif
+@if($club->clubActivities->isNotEmpty())
+<section class="panel"><h2>Jadwal kegiatan</h2>
+    <ul class="plain-list">@foreach($club->clubActivities as $activity)<li><a class="text-link" href="/kegiatan/{{ $activity->id }}">{{ $activity->title }}</a> <span class="muted">· {{ $activity->typeLabel() }} · {{ \App\Services\Wita::show($activity->starts_at, 'd M H:i') }} WITA · {{ $activity->location }}</span></li>@endforeach</ul>
+</section>
+@endif
 @if($club->events->isNotEmpty())
-<section class="panel"><h2>Kegiatan & lomba UKM</h2>
+<section class="panel"><h2>Lomba yang diajukan UKM</h2>
     <ul class="plain-list">@foreach($club->events as $event)<li>{{ $event->name }} <span class="muted">· {{ $event->pathway === 'delegation' ? 'Seleksi delegasi' : 'Lomba internal' }}</span></li>@endforeach</ul>
 </section>
 @endif

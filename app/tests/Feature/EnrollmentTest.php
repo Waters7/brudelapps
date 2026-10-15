@@ -113,7 +113,7 @@ class EnrollmentTest extends TestCase
         $this->service->reviewClub($this->manager, $a->id, 'accepted', null);
         $this->actingAs($this->manager)->post('/tinjauan/ukm/'.$b->id, ['decision' => 'accepted'])->assertSessionHasErrors('action');
         $this->assertEquals('submitted', $b->fresh()->status);
-        $this->assertEquals(1, Membership::where('club_id', $r->club_id)->count());
+        $this->assertEquals(1, Membership::where('club_id', $r->club_id)->whereIn('user_id', [$this->student->id, $this->member->id])->count());
     }
 
     public function test_ukm_scope_self_approval_expiration_and_event_separation(): void

@@ -14,8 +14,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 
-#[Fillable(['name', 'email', 'password', 'nim', 'program_id', 'active', 'publication_consent', 'email_verified_at', 'public_slug', 'status_changed_at'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'nim', 'program_id', 'active', 'publication_consent', 'email_verified_at', 'public_slug', 'status_changed_at', 'photo_path', 'photo_disk', 'google_sub'])]
+#[Hidden(['password', 'remember_token', 'google_sub'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -36,6 +36,11 @@ class User extends Authenticatable
         return $this->hasMany(Membership::class);
     }
 
+    public function departmentId(): ?int
+    {
+        return $this->program?->department_id;
+    }
+
     /**
      * Assignments whose validity window includes the current moment.
      */
@@ -45,14 +50,14 @@ class User extends Authenticatable
     }
 
     /**
-     * Check an active assignment, optionally limited to one club, event, program or competition.
+     * Check an active assignment, optionally limited to one club, event, jurusan or competition.
      */
-    public function assigned(string $role, ?int $club = null, ?int $event = null, ?int $program = null, ?int $competition = null): bool
+    public function assigned(string $role, ?int $club = null, ?int $event = null, ?int $department = null, ?int $competition = null): bool
     {
         return $this->currentAssignments()->where('role', $role)
             ->when($club !== null, fn (Builder $q) => $q->where('club_id', $club))
             ->when($event !== null, fn (Builder $q) => $q->where('event_id', $event))
-            ->when($program !== null, fn (Builder $q) => $q->where('program_id', $program))
+            ->when($department !== null, fn (Builder $q) => $q->where('department_id', $department))
             ->when($competition !== null, fn (Builder $q) => $q->where('competition_id', $competition))
             ->exists();
     }
@@ -92,6 +97,14 @@ class User extends Authenticatable
         return $this->active && $this->nim !== null && $this->email_verified_at !== null;
     }
 
+    /**
+     * Account generated automatically for one competition; its password is managed by the proposer.
+     */
+    public function isCompetitionAccount(): bool
+    {
+        return CompetitionAccount::where('user_id', $this->id)->exists();
+    }
+
     public function managesClub(int $club): bool
     {
         return $this->isStudentAffairs() || $this->assigned('pengurus', $club);
@@ -106,6 +119,14 @@ class User extends Authenticatable
             ->where('club_id', $club)->where('position', 'Ketua')->exists();
     }
 
+    /**
+     * Pelatih/pembina and the Ketua UKM run club activities and attendance.
+     */
+    public function coachesClub(int $club): bool
+    {
+        return $this->leadsClub($club) || $this->assigned('pembina', $club);
+    }
+
     public function managesEvent(int $event): bool
     {
         return $this->isStudentAffairs() || $this->assigned('admin_event', null, $event);
@@ -113,7 +134,27 @@ class User extends Authenticatable
 
     public function managesCompetition(Competition $competition): bool
     {
-        return $this->managesEvent($competition->event_id);
+        return $this->managesEvent($competition->event_id) || $this->assigned('pengelola_lomba', competition: $competition->id);
+    }
+
+    /**
+     * Competitions the user manages, or null when the user manages every competition.
+     *
+     * @return Collection<int, int>|null
+     */
+    public function managedCompetitionIds(): ?Collection
+    {
+        if ($this->isStudentAffairs()) {
+            return null;
+        }
+
+        return Competition::whereIn('event_id', $this->scopeIds('admin_event', 'event_id'))->pluck('id')
+            ->merge($this->scopeIds('pengelola_lomba', 'competition_id'))->unique()->values();
+    }
+
+    public function managesAnyCompetition(): bool
+    {
+        return $this->isStudentAffairs() || $this->assigned('admin_event') || $this->assigned('pengelola_lomba');
     }
 
     public function judges(Competition $competition): bool
@@ -126,19 +167,24 @@ class User extends Authenticatable
         return $this->managesCompetition($competition) || $this->assigned('operator', competition: $competition->id);
     }
 
-    public function reviewsProgram(int $program): bool
+    public function reviewsDepartment(?int $department): bool
     {
-        return $this->isStudentAffairs() || $this->assigned('prodi', program: $program);
+        return $department !== null && ($this->isStudentAffairs() || $this->assigned('jurusan', department: $department));
     }
 
     public function isReviewer(): bool
     {
-        return $this->isStudentAffairs() || $this->assigned('pengurus') || $this->assigned('admin_event');
+        return $this->isStudentAffairs() || $this->assigned('pengurus') || $this->assigned('admin_event') || $this->assigned('pengelola_lomba');
     }
 
     public function isStaff(): bool
     {
         return $this->currentAssignments()->exists();
+    }
+
+    public function initial(): string
+    {
+        return mb_strtoupper(mb_substr($this->name, 0, 1));
     }
 
     /**

@@ -126,7 +126,7 @@ class EnrollmentController extends Controller
     {
         $registration = Registration::with('competition', 'participants')->findOrFail($id);
         $user = $request->user();
-        abort_unless($registration->participants->contains('user_id', $user->id) || $user->managesEvent($registration->competition->event_id), 403);
+        abort_unless($registration->participants->contains('user_id', $user->id) || $user->managesCompetition($registration->competition), 403);
         abort_unless($registration->document_path, 404);
 
         return $this->files->download($registration->document_path, $registration->document_disk, 'dokumen-pendaftaran.pdf');
@@ -141,7 +141,7 @@ class EnrollmentController extends Controller
             if ($type === 'ukm') {
                 $query->whereHas('recruitment', fn ($q) => $q->whereIn('club_id', $user->scopeIds('pengurus', 'club_id')));
             } else {
-                $query->whereHas('competition', fn ($q) => $q->whereIn('event_id', $user->scopeIds('admin_event', 'event_id')));
+                $query->whereIn('competition_id', $user->managedCompetitionIds());
             }
         }
 

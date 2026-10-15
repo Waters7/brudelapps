@@ -34,6 +34,11 @@ class Club extends Model
         return $this->hasMany(Event::class);
     }
 
+    public function clubActivities(): HasMany
+    {
+        return $this->hasMany(ClubActivity::class);
+    }
+
     public function awards(): HasMany
     {
         return $this->hasMany(AwardResult::class)->where('status', 'verified');

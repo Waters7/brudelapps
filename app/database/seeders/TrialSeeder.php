@@ -7,12 +7,12 @@ use App\Models\AwardResult;
 use App\Models\Certificate;
 use App\Models\Competition;
 use App\Models\CompetitionResult;
+use App\Models\DepartmentApproval;
 use App\Models\Event;
 use App\Models\Matchup;
 use App\Models\Membership;
 use App\Models\Participant;
 use App\Models\Program;
-use App\Models\ProgramApproval;
 use App\Models\Recruitment;
 use App\Models\Registration;
 use App\Models\RubricCriterion;
@@ -105,8 +105,8 @@ class TrialSeeder extends Seeder
     private function students(): void
     {
         $admin = $this->demo['admin'];
-        foreach ([['D-III Kebidanan', 'Kebidanan', 'KEB'], ['D-III Farmasi', 'Farmasi', 'FAR']] as [$name, $department, $code]) {
-            $this->campus->saveProgram($admin, null, ['name' => $name, 'department' => $department, 'code' => $code]);
+        foreach ([['D-III Kebidanan', 'KEB', 'KEB'], ['D-III Farmasi', 'FAR', 'FAR']] as [$name, $department, $code]) {
+            $this->campus->saveProgram($admin, null, ['name' => $name, 'department_id' => DB::table('departments')->where('code', $department)->value('id'), 'code' => $code]);
         }
 
         $programs = Program::orderBy('id')->pluck('id')->all();
@@ -284,13 +284,13 @@ class TrialSeeder extends Seeder
                 continue;
             }
 
-            foreach (ProgramApproval::where('registration_id', $registration->id)->orderBy('id')->pluck('id') as $approval) {
+            foreach (DepartmentApproval::where('registration_id', $registration->id)->orderBy('id')->pluck('id') as $approval) {
                 if ($stage === 'revision') {
-                    $this->enrollment->decideProgram($admin, $approval, 'rejected', 'Anggota tim sedang menjalani praktik klinik pada jadwal lomba.');
+                    $this->enrollment->decideDepartment($admin, $approval, 'rejected', 'Anggota tim sedang menjalani praktik klinik pada jadwal lomba.');
 
                     continue 2;
                 }
-                $this->enrollment->decideProgram($admin, $approval, 'approved', null);
+                $this->enrollment->decideDepartment($admin, $approval, 'approved', null);
             }
 
             $proof = $this->payments->upload($leader, $registration->id, $this->pdf('bukti-transfer.pdf'), [

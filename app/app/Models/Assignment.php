@@ -29,9 +29,9 @@ class Assignment extends Model
         return $this->belongsTo(Event::class);
     }
 
-    public function program(): BelongsTo
+    public function department(): BelongsTo
     {
-        return $this->belongsTo(Program::class);
+        return $this->belongsTo(Department::class);
     }
 
     public function competition(): BelongsTo
@@ -49,6 +49,10 @@ class Assignment extends Model
      */
     public function scopeLabel(): string
     {
-        return $this->club?->name ?? $this->event?->name ?? $this->program?->name ?? $this->competition?->name ?? 'Seluruh kampus';
+        if ($this->department) {
+            return 'Jurusan '.$this->department->name;
+        }
+
+        return $this->club?->name ?? $this->event?->name ?? $this->competition?->name ?? 'Seluruh kampus';
     }
 }

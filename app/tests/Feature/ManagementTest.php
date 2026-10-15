@@ -5,12 +5,13 @@ namespace Tests\Feature;
 use App\Models\Assignment;
 use App\Models\Club;
 use App\Models\ClubApplication;
+use App\Models\Department;
+use App\Models\DepartmentApproval;
 use App\Models\Event;
 use App\Models\Membership;
 use App\Models\Participant;
 use App\Models\PaymentAccount;
 use App\Models\PaymentProof;
-use App\Models\ProgramApproval;
 use App\Models\Recruitment;
 use App\Models\Registration;
 use App\Services\Registration\EnrollmentService;
@@ -114,13 +115,13 @@ class ManagementTest extends DemoTestCase
         $this->assertSame(['program_review', 'unpaid', 25000], [$registration->status, $registration->payment_status, $registration->fee_snapshot]);
         $this->assertSame(2, $registration->approvals()->count());
 
-        $mine = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $leader->program_id)->first();
-        $other = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $member->program_id)->first();
-        $this->actingAs($this->user('prodi'))->get('/prodi')->assertOk()->assertSee('Tim Debat');
-        $this->post('/prodi/'.$other->id, ['decision' => 'approved'])->assertForbidden();
-        $this->post('/prodi/'.$mine->id, ['decision' => 'approved'])->assertSessionHasNoErrors();
+        $mine = DepartmentApproval::where('registration_id', $registration->id)->where('department_id', $leader->departmentId())->first();
+        $other = DepartmentApproval::where('registration_id', $registration->id)->where('department_id', $member->departmentId())->first();
+        $this->actingAs($this->user('jurusan'))->get('/jurusan')->assertOk()->assertSee('Tim Debat');
+        $this->post('/jurusan/persetujuan/'.$other->id, ['decision' => 'approved'])->assertForbidden();
+        $this->post('/jurusan/persetujuan/'.$mine->id, ['decision' => 'approved'])->assertSessionHasNoErrors();
         $this->assertSame('program_review', $registration->fresh()->status);
-        $this->actingAs($this->user('admin'))->post('/prodi/'.$other->id, ['decision' => 'approved'])->assertSessionHasNoErrors();
+        $this->actingAs($this->user('admin'))->post('/jurusan/persetujuan/'.$other->id, ['decision' => 'approved'])->assertSessionHasNoErrors();
         $this->assertSame('submitted', $registration->fresh()->status);
 
         $this->actingAs($this->user('event'))->post('/tinjauan/lomba/'.$registration->id, ['decision' => 'accepted'])->assertSessionHasErrors('action');
@@ -147,7 +148,7 @@ class ManagementTest extends DemoTestCase
 
     public function test_student_affairs_can_add_a_program_after_the_demo_programs(): void
     {
-        $this->actingAs($this->user('admin'))->post('/kelola/prodi', ['name' => 'D-III Kebidanan', 'department' => 'Kebidanan', 'code' => 'KEB'])->assertSessionHasNoErrors();
+        $this->actingAs($this->user('admin'))->post('/kelola/prodi', ['name' => 'D-III Kebidanan', 'department_id' => Department::where('code', 'KEB')->value('id'), 'code' => 'KEB'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('programs', ['code' => 'KEB', 'name' => 'D-III Kebidanan']);
     }
 
@@ -161,10 +162,10 @@ class ManagementTest extends DemoTestCase
         $service->invite($leader, $registration->id, 'DEMO006');
         $service->respond($this->user('atlet3'), Participant::where('registration_id', $registration->id)->where('user_id', $this->user('atlet3')->id)->first()->id, true);
         $service->submit($leader, $registration->id);
-        $approval = ProgramApproval::where('registration_id', $registration->id)->first();
+        $approval = DepartmentApproval::where('registration_id', $registration->id)->first();
         $this->assertSame(1, $registration->approvals()->count(), 'Satu prodi: satu persetujuan.');
-        $this->actingAs($this->user('prodi'))->post('/prodi/'.$approval->id, ['decision' => 'rejected'])->assertSessionHasErrors('action');
-        $this->post('/prodi/'.$approval->id, ['decision' => 'rejected', 'reason' => 'Bentrok jadwal praktik klinik'])->assertSessionHasNoErrors();
+        $this->actingAs($this->user('jurusan'))->post('/jurusan/persetujuan/'.$approval->id, ['decision' => 'rejected'])->assertSessionHasErrors('action');
+        $this->post('/jurusan/persetujuan/'.$approval->id, ['decision' => 'rejected', 'reason' => 'Bentrok jadwal praktik klinik'])->assertSessionHasNoErrors();
         $this->assertSame('revision', $registration->fresh()->status);
         $this->assertStringContainsString('praktik klinik', $registration->fresh()->reason);
     }
@@ -180,22 +181,22 @@ class ManagementTest extends DemoTestCase
         $service->invite($leader, $registration->id, $member->nim);
         $service->respond($member, Participant::where('registration_id', $registration->id)->where('user_id', $member->id)->first()->id, true);
         $service->submit($leader, $registration->id);
-        $mine = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $leader->program_id)->first();
-        $other = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $member->program_id)->first();
+        $mine = DepartmentApproval::where('registration_id', $registration->id)->where('department_id', $leader->departmentId())->first();
+        $other = DepartmentApproval::where('registration_id', $registration->id)->where('department_id', $member->departmentId())->first();
 
-        $this->actingAs($this->user('admin'))->post('/prodi/'.$other->id, ['decision' => 'rejected', 'reason' => 'Bentrok jadwal praktik klinik'])->assertSessionHasNoErrors();
+        $this->actingAs($this->user('admin'))->post('/jurusan/persetujuan/'.$other->id, ['decision' => 'rejected', 'reason' => 'Bentrok jadwal praktik klinik'])->assertSessionHasNoErrors();
         $this->assertSame('revision', $registration->fresh()->status);
         $this->assertSame(['cancelled', null], [$mine->fresh()->status, $mine->fresh()->decided_by]);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'program.cancelled', 'subject_id' => $mine->id]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'department.cancelled', 'subject_id' => $mine->id]);
 
-        $this->actingAs($this->user('prodi'))->get('/prodi')->assertOk()->assertSee('Menunggu persetujuan · 0')->assertDontSee('Tim Lintas Prodi');
-        $this->get('/')->assertViewHas('tasks', fn (array $tasks) => in_array(['Persetujuan prodi menunggu', 0, '/prodi'], $tasks, true));
-        $this->post('/prodi/'.$mine->id, ['decision' => 'approved'])->assertSessionHasErrors('action');
+        $this->actingAs($this->user('jurusan'))->get('/jurusan')->assertOk()->assertSee('Menunggu persetujuan · 0')->assertDontSee('Tim Lintas Prodi');
+        $this->get('/')->assertViewHas('tasks', fn (array $tasks) => in_array(['Persetujuan jurusan menunggu', 0, '/jurusan'], $tasks, true));
+        $this->post('/jurusan/persetujuan/'.$mine->id, ['decision' => 'approved'])->assertSessionHasErrors('action');
 
         $service->submit($leader, $registration->id);
         $this->assertSame(['pending', 'pending'], $registration->approvals()->pluck('status')->all());
-        $this->get('/prodi')->assertSee('Tim Lintas Prodi');
-        $this->get('/')->assertViewHas('tasks', fn (array $tasks) => in_array(['Persetujuan prodi menunggu', 1, '/prodi'], $tasks, true));
+        $this->get('/jurusan')->assertSee('Tim Lintas Prodi');
+        $this->get('/')->assertViewHas('tasks', fn (array $tasks) => in_array(['Persetujuan jurusan menunggu', 1, '/jurusan'], $tasks, true));
     }
 
     public function test_unanswered_invitations_expire_after_registration_closes(): void
