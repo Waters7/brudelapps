@@ -169,6 +169,35 @@ class ManagementTest extends DemoTestCase
         $this->assertStringContainsString('praktik klinik', $registration->fresh()->reason);
     }
 
+    public function test_program_rejection_closes_the_other_programs_pending_approvals(): void
+    {
+        $debate = $this->competition('Debat Bahasa Inggris');
+        $debate->update(['fee' => 0]);
+        $service = app(EnrollmentService::class);
+        $leader = $this->user('mahasiswa');
+        $member = $this->user('anggota');
+        $registration = $service->draft($leader, $debate->id, ['motivation' => 'Kami siap berdebat dengan argumen berbasis bukti.', 'team_name' => 'Tim Lintas Prodi']);
+        $service->invite($leader, $registration->id, $member->nim);
+        $service->respond($member, Participant::where('registration_id', $registration->id)->where('user_id', $member->id)->first()->id, true);
+        $service->submit($leader, $registration->id);
+        $mine = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $leader->program_id)->first();
+        $other = ProgramApproval::where('registration_id', $registration->id)->where('program_id', $member->program_id)->first();
+
+        $this->actingAs($this->user('admin'))->post('/prodi/'.$other->id, ['decision' => 'rejected', 'reason' => 'Bentrok jadwal praktik klinik'])->assertSessionHasNoErrors();
+        $this->assertSame('revision', $registration->fresh()->status);
+        $this->assertSame(['cancelled', null], [$mine->fresh()->status, $mine->fresh()->decided_by]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'program.cancelled', 'subject_id' => $mine->id]);
+
+        $this->actingAs($this->user('prodi'))->get('/prodi')->assertOk()->assertSee('Menunggu persetujuan · 0')->assertDontSee('Tim Lintas Prodi');
+        $this->get('/')->assertViewHas('tasks', fn (array $tasks) => in_array(['Persetujuan prodi menunggu', 0, '/prodi'], $tasks, true));
+        $this->post('/prodi/'.$mine->id, ['decision' => 'approved'])->assertSessionHasErrors('action');
+
+        $service->submit($leader, $registration->id);
+        $this->assertSame(['pending', 'pending'], $registration->approvals()->pluck('status')->all());
+        $this->get('/prodi')->assertSee('Tim Lintas Prodi');
+        $this->get('/')->assertViewHas('tasks', fn (array $tasks) => in_array(['Persetujuan prodi menunggu', 1, '/prodi'], $tasks, true));
+    }
+
     public function test_unanswered_invitations_expire_after_registration_closes(): void
     {
         $service = app(EnrollmentService::class);

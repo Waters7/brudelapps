@@ -2,7 +2,7 @@
 
 Tanggal penilaian: 15 Oktober 2026 (WITA). Tahap kedua menambahkan seluruh modul brief di atas tahap pertama (UKM dan lomba gratis). Aplikasi berjalan lokal dan diuji otomatis, tetapi **belum siap produksi**: S3, email, queue, PWA di perangkat, dan VPS belum diverifikasi pada layanan nyata. PostgreSQL baru diuji lokal (17.11 di Windows), belum di staging Docker.
 
-Hasil uji otomatis terakhir (56 tes): **PostgreSQL 17.11 — 56 lulus, 869 assertions**, termasuk 4 tes konkurensi dua proses; **SQLite `:memory:` — 52 lulus, 4 dilewati** (tes konkurensi khusus PostgreSQL), 824 assertions. Rincian ada di [TESTING.md](TESTING.md). Trial lokal di PostgreSQL dengan data bervolume: `.\Start-BRUDEL.ps1 -PostgresTrial -ResetData` (lihat `TrialSeeder` di TESTING.md).
+Hasil uji otomatis terakhir (57 tes): **PostgreSQL 17.11 — 57 lulus, 882 assertions**, termasuk 4 tes konkurensi dua proses; **SQLite `:memory:` — 53 lulus, 4 dilewati** (tes konkurensi khusus PostgreSQL), 837 assertions. Rincian ada di [TESTING.md](TESTING.md). Trial lokal di PostgreSQL dengan data bervolume: `.\Start-BRUDEL.ps1 -PostgresTrial -ResetData` (lihat `TrialSeeder` di TESTING.md).
 
 ## Selesai dan diuji otomatis
 
@@ -30,7 +30,7 @@ Semua halaman untuk setiap peran demo dirender tanpa galat (`PageRenderTest`). P
 ## Dibuat, belum diverifikasi operasional
 
 - **PostgreSQL produksi**: migrasi, seluruh suite, dan penguncian baris lulus pada PostgreSQL 17.11 lokal (15 Oktober 2026). Image `postgres:17-alpine` pada Docker/VPS belum dijalankan. Perbedaan perilaku yang ditemukan dan sudah diperbaiki: pencarian mahasiswa kini `ILIKE`; zona sesi koneksi dipaksa UTC, karena server dengan zona selain UTC menggeser semua waktu; dan id prodi demo tidak lagi ditulis eksplisit agar sequence PostgreSQL benar.
-- **Trial bervolume**: `TrialSeeder` diuji pada SQLite dan PostgreSQL, dan dijalankan di PostgreSQL lokal (`brudel_trial`). Pemeriksaan browser 15 Oktober 2026 meliputi dashboard tugas kemahasiswaan, laporan, persetujuan prodi, papan live Catur Cepat, dan Sertifikat Saya mahasiswa. Temuan terbuka: setelah satu prodi menolak tim lintas prodi, persetujuan prodi lain tetap tampil "menunggu" dan ikut dihitung di dashboard, padahal tidak lagi bisa diputuskan.
+- **Trial bervolume**: `TrialSeeder` diuji pada SQLite dan PostgreSQL, dan dijalankan di PostgreSQL lokal (`brudel_trial`). Pemeriksaan browser 15 Oktober 2026 meliputi dashboard tugas kemahasiswaan, laporan, persetujuan prodi, papan live Catur Cepat, dan Sertifikat Saya mahasiswa. Temuan yang sudah diperbaiki: setelah satu prodi menolak tim lintas prodi, persetujuan prodi lain dulu tetap tampil "menunggu" dan ikut dihitung di dashboard walau tidak bisa diputuskan. Kini persetujuan itu ditutup (`cancelled`, beralasan, tercatat di audit) dan dibuat ulang saat tim mengirim kembali.
 - **S3 privat**: adapter siap, belum tersambung bucket nyata.
 - **Email**: aktivasi/pemulihan memakai notifikasi mail; demo memakai `MAIL_MAILER=log` (tautan muncul di `storage/logs/laravel.log`).
 - **Queue dan scheduler**: notifikasi antre di tabel `jobs`; `Start-BRUDEL.ps1` menjalankan worker dan scheduler lokal. Belum diuji pada Supervisor/systemd atau Docker.

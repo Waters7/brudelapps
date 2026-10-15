@@ -30,6 +30,6 @@
 
 @if($decided->isNotEmpty())
 <section class="panel"><h2>Keputusan terakhir</h2>
-<ul class="plain-list">@foreach($decided as $approval)<li>{{ $approval->registration->competition->name }} · {{ $approval->program->name }} · <x-status :value="$approval->status"/> oleh {{ $approval->decider?->name }} {{ \App\Services\Wita::show($approval->decided_at, 'd M H:i') }}@if($approval->reason) · {{ $approval->reason }}@endif</li>@endforeach</ul></section>
+<ul class="plain-list">@foreach($decided as $approval)<li>{{ $approval->registration->competition->name }} · {{ $approval->program->name }} · <x-status :value="$approval->status"/>@if($approval->decider) oleh {{ $approval->decider->name }}@endif {{ \App\Services\Wita::show($approval->decided_at, 'd M H:i') }}@if($approval->reason) · {{ $approval->reason }}@endif</li>@endforeach</ul></section>
 @endif
 </x-layout>

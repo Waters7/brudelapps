@@ -62,8 +62,8 @@ Hasil 15 Oktober 2026 (56 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **56 lulus, 869 assertions**, termasuk 4 tes konkurensi dua proses |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **52 lulus, 4 dilewati, 824 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **57 lulus, 882 assertions**, termasuk 4 tes konkurensi dua proses |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **53 lulus, 4 dilewati, 837 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
 
 Temuan khusus PostgreSQL yang sudah diperbaiki dan dikunci tes:
 

@@ -255,6 +255,8 @@ class EnrollmentService extends DomainService
 
     /**
      * A program (prodi) reviewer decides on the members of their unit.
+     * A rejection returns the team for revision and closes the other programs' pending approvals;
+     * resubmitting creates a fresh approval for every program.
      */
     public function decideProgram(User $actor, int $approvalId, string $decision, ?string $reason): void
     {
@@ -274,6 +276,11 @@ class EnrollmentService extends DomainService
 
             $program = $approval->program->name;
             if ($decision === 'rejected') {
+                $closing = 'Ditutup karena Prodi '.$program.' meminta perbaikan.';
+                foreach ($registration->approvals()->where('status', 'pending')->get() as $other) {
+                    $other->update(['status' => 'cancelled', 'reason' => $closing, 'decided_at' => now()]);
+                    $this->audit($actor, 'program.cancelled', $other, ['reason' => $closing]);
+                }
                 $registration->update(['status' => 'revision', 'reason' => 'Prodi '.$program.': '.$reason]);
                 $this->history($registration, 'program_review', 'revision', $actor, 'Prodi '.$program.': '.$reason);
             } elseif (! $registration->approvals()->where('status', '!=', 'approved')->exists()) {
