@@ -7,7 +7,9 @@ use App\Http\Controllers\Account\StudentController;
 use App\Http\Controllers\Achievement\AchievementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Campus\LandingSlideController;
+use App\Http\Controllers\Campus\MasterDataController;
 use App\Http\Controllers\Campus\SettingsController;
+use App\Http\Controllers\Campus\SystemSettingsController;
 use App\Http\Controllers\Certificate\CertificateController;
 use App\Http\Controllers\Club\ActivityController;
 use App\Http\Controllers\Club\ClubManageController;
@@ -24,6 +26,7 @@ use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\Report\ReportController;
 use App\Http\Controllers\Scoring\JudgeController;
+use App\Services\Campus\MasterData;
 use Illuminate\Support\Facades\Route;
 
 /* Halaman depan: info publik untuk tamu, dashboard untuk pengguna yang sudah masuk. */
@@ -208,6 +211,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/penugasan/impor-ketua', [AssignmentController::class, 'importOfficers']);
     Route::get('/kelola/penugasan/template-ketua.csv', [AssignmentController::class, 'officerTemplate']);
     Route::post('/kelola/penugasan/{assignment}/akhiri', [AssignmentController::class, 'end']);
+    Route::get('/kelola/sistem', [SystemSettingsController::class, 'index']);
+    Route::post('/kelola/sistem', [SystemSettingsController::class, 'update']);
+    Route::post('/kelola/sistem/uji-email', [SystemSettingsController::class, 'testMail'])->middleware('throttle:account-link');
+    Route::get('/kelola/master', [MasterDataController::class, 'index']);
+    Route::get('/kelola/master/{type}', [MasterDataController::class, 'show'])->whereIn('type', array_keys(MasterData::TYPES));
+    Route::post('/kelola/master/{type}', [MasterDataController::class, 'store'])->whereIn('type', array_keys(MasterData::TYPES));
+    Route::post('/kelola/master/{type}/{option}', [MasterDataController::class, 'update'])->whereIn('type', array_keys(MasterData::TYPES));
+    Route::post('/kelola/master/{type}/{option}/hapus', [MasterDataController::class, 'destroy'])->whereIn('type', array_keys(MasterData::TYPES));
     Route::get('/kelola/banner-depan', [LandingSlideController::class, 'index']);
     Route::post('/kelola/banner-depan', [LandingSlideController::class, 'store']);
     Route::post('/kelola/banner-depan/{slide}', [LandingSlideController::class, 'update']);

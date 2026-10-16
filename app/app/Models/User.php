@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Campus\MasterData;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Services\Club\ClubService;
 use Database\Factories\UserFactory;
@@ -140,7 +141,7 @@ class User extends Authenticatable
     public function leadsClub(int $club): bool
     {
         return $this->isStudentAffairs() || $this->currentAssignments()->where('role', 'pengurus')
-            ->where('club_id', $club)->whereIn('position', config('brudel.chair_positions'))->exists();
+            ->where('club_id', $club)->whereIn('position', app(MasterData::class)->chairPositions())->exists();
     }
 
     /**
@@ -149,7 +150,7 @@ class User extends Authenticatable
     public function managesOfficers(int $club): bool
     {
         return $this->isStudentAffairs() || $this->administersHimaju($club) || $this->currentAssignments()->where('role', 'pengurus')
-            ->where('club_id', $club)->whereIn('position', config('brudel.officer_managers'))->exists();
+            ->where('club_id', $club)->whereIn('position', app(MasterData::class)->officerManagers())->exists();
     }
 
     /**

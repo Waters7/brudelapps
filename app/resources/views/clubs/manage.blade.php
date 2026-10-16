@@ -18,7 +18,7 @@
             <label>Jurusan (khusus HIMAJU)<select name="department_id"><option value="">—</option>@foreach($departments as $department)<option value="{{ $department->id }}" @selected($club->department_id === $department->id)>{{ $department->name }}</option>@endforeach</select></label>
         </div>@endif
         <div class="form-grid">
-            <label>Bidang<select name="field" @required($club->isUkm())><option value="">— Tanpa bidang</option>@foreach(config('brudel.fields') as $field)<option @selected($club->field === $field)>{{ $field }}</option>@endforeach</select></label>
+            <label>Bidang<select name="field" @required($club->isUkm())><option value="">— Tanpa bidang</option>@foreach($master->fields($club->field) as $field)<option @selected($club->field === $field)>{{ $field }}</option>@endforeach</select></label>
             <label>Pembina<input name="mentor" required maxlength="120" value="{{ $club->mentor }}"></label>
             <label class="span-2">Kontak resmi<input name="contact" required maxlength="190" value="{{ $club->contact }}"></label>
         </div>
@@ -51,7 +51,7 @@
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
         <input type="hidden" name="scope_id" value="{{ $club->id }}"><input type="hidden" name="role" value="pengurus">
         <label class="span-2">Anggota aktif<select name="user" required><option value="">Pilih anggota…</option>@foreach($candidates as $candidate)<option value="{{ $candidate->user->nim ?? $candidate->user->email }}">{{ $candidate->user->name }} · {{ $candidate->user->nim }}{{ $candidate->division ? ' · '.$candidate->division : '' }}</option>@endforeach</select></label>
-        <label>Jabatan pengurus<select name="position">@foreach(config('brudel.officer_positions') as $position)<option @selected($position === 'Anggota pengurus')>{{ $position }}</option>@endforeach</select></label>
+        <label>Jabatan pengurus<select name="position">@foreach($master->officerPositions() as $position)<option @selected($position === 'Anggota pengurus')>{{ $position }}</option>@endforeach</select></label>
         <label>Periode<input name="period" maxlength="30" placeholder="2026/2027"></label>
         <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i') }}"></label>
         <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ now()->timezone('Asia/Makassar')->addYear()->format('Y-m-d\TH:i') }}"></label>

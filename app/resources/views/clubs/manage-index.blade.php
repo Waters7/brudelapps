@@ -19,7 +19,7 @@
         <label>Nama<input name="name" required maxlength="120"></label>
         <label>Kategori<select name="category" required>@foreach(config('brudel.club_categories') as $value => $label)<option value="{{ $value }}" @selected($value === 'ukm')>{{ $label }}</option>@endforeach</select></label>
         <label>Jurusan (khusus HIMAJU)<select name="department_id"><option value="">—</option>@foreach($departments as $department)<option value="{{ $department->id }}">{{ $department->name }}</option>@endforeach</select></label>
-        <label>Bidang (wajib untuk UKM)<select name="field"><option value="">— Tanpa bidang (BEM/MPM/HIMAJU)</option>@foreach(config('brudel.fields') as $field)<option>{{ $field }}</option>@endforeach</select></label>
+        <label>Bidang (wajib untuk UKM)<select name="field"><option value="">— Tanpa bidang (BEM/MPM/HIMAJU)</option>@foreach($master->fields() as $field)<option>{{ $field }}</option>@endforeach</select></label>
         <label>Pembina<input name="mentor" required maxlength="120"></label>
         <label>Kontak resmi<input name="contact" required maxlength="190"></label>
         <label>Ikon<select name="symbol">@foreach(config('brudel.club_symbols') as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>

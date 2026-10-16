@@ -7,10 +7,12 @@ use App\Models\Competition;
 use App\Models\Delegation;
 use App\Models\StatusHistory;
 use App\Models\User;
+use App\Services\Campus\MasterData;
 use App\Services\Delegation\DelegationService;
 use App\Services\PrivateFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -55,7 +57,7 @@ class DelegationController extends Controller
             'destination_event' => 'required|string|max:190',
             'organizer' => 'required|string|max:190',
             'level' => 'required|integer|between:1,6',
-            'field' => 'required|in:'.implode(',', config('brudel.fields')),
+            'field' => ['required', Rule::in(app(MasterData::class)->allFields())],
             'starts_at' => 'required|date',
             'ends_at' => 'nullable|date',
             'location' => 'required|string|max:190',

@@ -7,9 +7,11 @@ use App\Models\AwardRecipient;
 use App\Models\AwardResult;
 use App\Models\User;
 use App\Services\Achievement\AchievementService;
+use App\Services\Campus\MasterData;
 use App\Services\PrivateFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -30,7 +32,7 @@ class AchievementController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:190',
             'organizer' => 'required|string|max:190',
-            'field' => 'required|in:'.implode(',', config('brudel.fields')),
+            'field' => ['required', Rule::in(app(MasterData::class)->allFields())],
             'level' => 'required|integer|between:1,6',
             'award' => 'required|string|max:80',
             'awarded_on' => 'required|date|before_or_equal:today',

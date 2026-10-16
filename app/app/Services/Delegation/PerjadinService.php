@@ -3,6 +3,7 @@
 namespace App\Services\Delegation;
 
 use App\Models\Delegation;
+use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use Illuminate\Support\Collection;
 
@@ -27,17 +28,6 @@ class PerjadinService extends DomainService
     {
         return filled(config('services.pangi.base_url')) && filled(config('services.pangi.token'));
     }
-
-    /**
-     * Documents the external organizer usually asks for when the selected students register. A draft list:
-     * the definitive set and its source (generated in Pangi or uploaded) will be added later.
-     */
-    public const REGISTRATION_DOCUMENTS = [
-        'surat_pengantar' => 'Surat pengantar/rekomendasi kampus untuk pendaftaran',
-        'keterangan_aktif' => 'Surat keterangan mahasiswa aktif',
-        'ktm' => 'Kartu tanda mahasiswa (KTM)',
-        'pernyataan' => 'Surat pernyataan keaslian karya atau kesediaan mengikuti lomba',
-    ];
 
     /**
      * Selected delegations: approved by leadership (or already back with a result), newest trip first.
@@ -114,7 +104,9 @@ class PerjadinService extends DomainService
             'participants' => $delegation->members->where('role', 'peserta')->map($person)->values()->all(),
             'companions' => $delegation->members->where('role', 'pendamping')->map(fn ($member) => ['name' => $member->user->name, 'email' => $member->user->email])->values()->all(),
             'letters' => array_keys(self::LETTERS),
-            'registration_documents' => array_keys(self::REGISTRATION_DOCUMENTS),
+            // Documents for registering with the organizer: master data "Dokumen pendaftaran lomba".
+            'registration_documents' => collect(app(MasterData::class)->active('registration_document'))
+                ->map(fn ($document) => ['code' => $document->code, 'name' => $document->label, 'per_student' => (bool) $document->meta('per_student')])->all(),
         ];
     }
 }

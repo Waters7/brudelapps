@@ -9,14 +9,8 @@ return [
     'max_upload_kb' => 5120,
     'activation_expire_minutes' => 60 * 24 * 3,
 
-    'fields' => ['Olahraga', 'Seni', 'Akademik', 'Kerohanian', 'Sosial'],
-
-    /**
-     * Membership rules: every active student belongs to their own jurusan's HIMAJU automatically, BEM and MPM
-     * members are appointed after an election, a student picks at most one UKM in each field listed here,
-     * and any number of the other UKM.
-     */
-    'single_choice_fields' => ['Kerohanian'],
+    // Bidang, jenis kegiatan, lokasi, jenis lomba, jabatan pengurus, penghargaan, and registration documents are
+    // master data (table master_options, menu Master Data) maintained by kemahasiswaan direktorat.
 
     /** Student organization categories; keys are stored in clubs.category. HIMAJU belongs to one jurusan. */
     'club_categories' => [
@@ -64,14 +58,6 @@ return [
     ],
 
     'pimpinan_positions' => ['Direktur', 'Wakil Direktur I', 'Wakil Direktur II', 'Wakil Direktur III'],
-
-    'officer_positions' => ['Ketua', 'Ketua Putra', 'Ketua Putri', 'Wakil Ketua', 'Sekretaris', 'Bendahara', 'Koordinator Divisi', 'Anggota pengurus'],
-
-    /** Chair positions: an organization may have one Ketua, or a Ketua Putra and a Ketua Putri (e.g. Dewan Racana). */
-    'chair_positions' => ['Ketua', 'Ketua Putra', 'Ketua Putri'],
-
-    /** Officer positions that may add or end other officers. */
-    'officer_managers' => ['Ketua', 'Ketua Putra', 'Ketua Putri', 'Wakil Ketua', 'Sekretaris'],
 
     /** Judges per competition (generated juri accounts plus manual penilai assignments). */
     'max_judges' => 5,

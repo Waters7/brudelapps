@@ -14,6 +14,7 @@ use App\Models\Participant;
 use App\Models\PaymentProof;
 use App\Models\Registration;
 use App\Models\User;
+use App\Services\Campus\MasterData;
 use App\Services\Wita;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -112,7 +113,7 @@ class ReportService
             'membership_count' => (clone $memberships)->count(),
             'unique_members' => (clone $memberships)->distinct()->count('user_id'),
             'by_level' => collect(config('brudel.levels'))->map(fn ($label, $level) => (clone $awards)->where('level', $level)->count()),
-            'by_field' => collect(config('brudel.fields'))->mapWithKeys(fn ($field) => [$field => (clone $awards)->where('field', $field)->count()]),
+            'by_field' => collect(app(MasterData::class)->allFields())->mapWithKeys(fn ($field) => [$field => (clone $awards)->where('field', $field)->count()]),
         ];
     }
 

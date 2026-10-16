@@ -21,11 +21,11 @@ dl{display:grid;grid-template-columns:180px 1fr;gap:6px 14px;margin:0}dt{font-we
     <dt>Penanggung jawab</dt><dd>{{ $activity->creator->name }}</dd>
     <dt>Status</dt><dd>{{ config('brudel.status_labels')[$activity->status] ?? $activity->status }}{{ $activity->reported_at ? ' · dilaporkan '.\App\Services\Wita::show($activity->reported_at, 'd M Y H:i') : '' }}</dd>
     <dt>Kehadiran</dt><dd>{{ $summary['present']->count() }} hadir · {{ $summary['absent']->count() }} tidak hadir · {{ $summary['members'] }} anggota aktif</dd>
-    @if($activity->type === 'persahabatan')<dt>Lawan & skor</dt><dd>{{ $activity->club->name }} {{ $activity->score_home ?? '–' }} : {{ $activity->score_away ?? '–' }} {{ $activity->opponent ?? '(belum diisi)' }}</dd>@endif
-    @if($activity->type === 'meeting')<dt>Notulen</dt><dd>{{ $activity->minutes_name ?? 'Belum diunggah (wajib)' }}</dd>@endif
+    @if($activity->reportKind() === 'match')<dt>Lawan & skor</dt><dd>{{ $activity->club->name }} {{ $activity->score_home ?? '–' }} : {{ $activity->score_away ?? '–' }} {{ $activity->opponent ?? '(belum diisi)' }}</dd>@endif
+    @if($activity->reportKind() === 'minutes')<dt>Notulen</dt><dd>{{ $activity->minutes_name ?? 'Belum diunggah (wajib)' }}</dd>@endif
 </dl>
 @if($activity->description)<h2>Keterangan</h2><p style="white-space:pre-line">{{ $activity->description }}</p>@endif
-@if($activity->notes)<h2>{{ $activity->type === 'persahabatan' ? 'Catatan penting untuk selanjutnya' : 'Catatan' }}</h2><p style="white-space:pre-line">{{ $activity->notes }}</p>@endif
+@if($activity->notes)<h2>{{ $activity->reportKind() === 'match' ? 'Catatan penting untuk selanjutnya' : 'Catatan' }}</h2><p style="white-space:pre-line">{{ $activity->notes }}</p>@endif
 <h2>Daftar hadir</h2>
 <table><thead><tr><th>No</th><th>Nama</th><th>NIM</th><th>Prodi</th><th>Waktu</th><th>Cara</th></tr></thead><tbody>
 @forelse($summary['present'] as $i => $attendance)<tr><td>{{ $i + 1 }}</td><td>{{ $attendance->user->name }}</td><td>{{ $attendance->user->nim }}</td><td>{{ $attendance->user->program?->name }}</td><td>{{ \App\Services\Wita::show($attendance->checked_in_at, 'H:i') }}</td><td>{{ $attendance->method === 'code' ? 'Kode' : 'Manual' }}</td></tr>

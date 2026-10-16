@@ -9,6 +9,7 @@ use App\Models\Membership;
 use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
+use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use App\Services\PrivateFiles;
 use App\Services\Wita;
@@ -106,7 +107,7 @@ class ActivityService extends DomainService
     public function create(User $actor, Club $club, array $data): ClubActivity
     {
         abort_unless($this->canManage($actor, $club), 403);
-        $this->ensure(array_key_exists($data['type'], ClubActivity::TYPES), 'Jenis kegiatan tidak valid.');
+        $this->ensure(array_key_exists($data['type'], app(MasterData::class)->activityTypes()), 'Jenis kegiatan tidak valid.');
         $starts = Wita::toUtc($data['starts_at']);
         $ends = Wita::toUtc($data['ends_at']);
         $this->ensure($starts && $ends && $ends->gt($starts), 'Waktu selesai harus setelah waktu mulai.');
@@ -123,7 +124,7 @@ class ActivityService extends DomainService
                 'location' => $data['location'],
                 'starts_at' => $starts,
                 'ends_at' => $ends,
-                'is_public' => $data['type'] === 'meeting' ? false : (bool) ($data['is_public'] ?? true),
+                'is_public' => app(MasterData::class)->activityInternalOnly($data['type']) ? false : (bool) ($data['is_public'] ?? true),
                 'needs_room' => $needsRoom,
                 'room' => $needsRoom ? $data['room'] : null,
                 'permit_status' => $reasons ? 'pending' : null,
@@ -247,22 +248,23 @@ class ActivityService extends DomainService
         $this->ensure($activity->status !== 'cancelled', 'Kegiatan dibatalkan.');
         $this->ensure(! $activity->awaitsPermit(), 'Kegiatan belum mendapat izin.');
         $this->ensure(now()->gte($activity->starts_at), 'Laporan dibuat setelah kegiatan dimulai.');
-        if ($activity->type === 'meeting') {
-            $this->ensure($minutes !== null || $activity->minutes_path !== null, 'Meeting internal wajib melampirkan file notulen.');
+        $kind = $activity->reportKind();
+        if ($kind === 'minutes') {
+            $this->ensure($minutes !== null || $activity->minutes_path !== null, $activity->typeLabel().' wajib melampirkan file notulen.');
         }
-        if ($activity->type === 'persahabatan') {
-            $this->ensure(filled($data['opponent'] ?? null) && isset($data['score_home'], $data['score_away']), 'Pertandingan persahabatan wajib mengisi lawan dan skor.');
+        if ($kind === 'match') {
+            $this->ensure(filled($data['opponent'] ?? null) && isset($data['score_home'], $data['score_away']), $activity->typeLabel().' wajib mengisi lawan dan skor.');
             $this->ensure(mb_strlen(trim($data['notes'] ?? '')) >= 10, 'Isi catatan penting untuk latihan selanjutnya (minimal 10 karakter).');
         }
         $stored = $minutes ? $this->files->storeDocument($minutes, 'activities/'.$activity->id) : null;
 
         try {
-            DB::transaction(function () use ($actor, $activity, $data, $minutes, $stored) {
+            DB::transaction(function () use ($actor, $activity, $data, $minutes, $stored, $kind) {
                 $activity = ClubActivity::lockForUpdate()->findOrFail($activity->id);
                 $activity->update([
-                    'opponent' => $activity->type === 'persahabatan' ? $data['opponent'] : null,
-                    'score_home' => $activity->type === 'persahabatan' ? (int) $data['score_home'] : null,
-                    'score_away' => $activity->type === 'persahabatan' ? (int) $data['score_away'] : null,
+                    'opponent' => $kind === 'match' ? $data['opponent'] : null,
+                    'score_home' => $kind === 'match' ? (int) $data['score_home'] : null,
+                    'score_away' => $kind === 'match' ? (int) $data['score_away'] : null,
                     'notes' => $data['notes'] ?? null,
                     'status' => 'completed',
                     'attendance_code' => null,

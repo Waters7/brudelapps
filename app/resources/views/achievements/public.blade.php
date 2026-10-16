@@ -1,6 +1,6 @@
 <x-public :title="'Prestasi '.$student->name">
 <div class="page-heading"><div><p class="eyebrow">PROFIL PRESTASI · POLTEKKES KEMENKES MANADO</p><h1>{{ $student->name }}</h1><p>{{ $student->program?->name }}</p></div></div>
-@forelse(config('brudel.fields') as $field)
+@forelse($master->allFields() as $field)
 @continue(!isset($awards[$field]))
 <section class="section-block"><h2>{{ $field }}</h2>
 <div class="catalog-grid">@foreach($awards[$field] as $recipient)

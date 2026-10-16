@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Report;
 use App\Http\Controllers\Controller;
 use App\Models\Club;
 use App\Models\Department;
+use App\Services\Campus\MasterData;
 use App\Services\Report\ReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -57,7 +59,7 @@ class ReportController extends Controller
         $data = $request->validate([
             'year' => 'nullable|integer|between:2000,2100',
             'level' => 'nullable|integer|between:1,6',
-            'field' => 'nullable|in:'.implode(',', config('brudel.fields')),
+            'field' => ['nullable', Rule::in(app(MasterData::class)->allFields())],
             'department_id' => 'nullable|integer',
             'club_id' => 'nullable|integer',
             'team' => 'nullable|in:tim,individu',

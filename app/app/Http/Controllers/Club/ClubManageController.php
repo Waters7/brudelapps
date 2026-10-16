@@ -7,12 +7,14 @@ use App\Models\Club;
 use App\Models\Department;
 use App\Models\Membership;
 use App\Models\Recruitment;
+use App\Services\Campus\MasterData;
 use App\Services\Club\ClubService;
 use App\Services\PrivateFiles;
 use App\Services\Report\ReportService;
 use App\Services\Wita;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -153,7 +155,7 @@ class ClubManageController extends Controller
             'name' => ($full ? 'required' : 'nullable').'|string|max:120',
             'category' => ($full ? 'required' : 'nullable').'|in:'.implode(',', array_keys(config('brudel.club_categories'))),
             'department_id' => 'nullable|integer|exists:departments,id',
-            'field' => 'nullable|in:'.implode(',', config('brudel.fields')),
+            'field' => ['nullable', Rule::in(app(MasterData::class)->allFields())],
             'description' => 'required|string|max:3000',
             'mentor' => 'required|string|max:120',
             'contact' => 'required|string|max:190',

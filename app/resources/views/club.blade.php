@@ -10,7 +10,7 @@
         <dt>Kontak resmi</dt><dd>{{ $club->contact }}</dd>
         <dt>Pengurus aktif</dt><dd>@forelse($club->officers as $officer){{ $officer->user->name }} <span class="muted">({{ $officer->position }}{{ $officer->period ? ' · '.$officer->period : '' }})</span>@if(!$loop->last), @endif @empty <span class="muted">Belum ditetapkan</span>@endforelse</dd>
         @if($club->activities)<dt>Kegiatan</dt><dd class="prewrap">{{ $club->activities }}</dd>@endif
-        <dt>Keanggotaan</dt><dd>@if($club->category === 'himaju')Wajib dan otomatis untuk seluruh mahasiswa aktif Jurusan {{ $club->department?->name }}.@elseif(! $club->isUkm())Anggota ditetapkan dari hasil pemilihan, bukan pendaftaran terbuka.@elseif(in_array($club->field, config('brudel.single_choice_fields'), true))Mahasiswa hanya dapat memilih satu UKM {{ strtolower($club->field) }}. Pendaftaran gratis.@else Mahasiswa bebas bergabung dengan UKM ini dan UKM lain. Pendaftaran gratis.@endif</dd>
+        <dt>Keanggotaan</dt><dd>@if($club->category === 'himaju')Wajib dan otomatis untuk seluruh mahasiswa aktif Jurusan {{ $club->department?->name }}.@elseif(! $club->isUkm())Anggota ditetapkan dari hasil pemilihan, bukan pendaftaran terbuka.@elseif(in_array($club->field, $master->singleChoiceFields(), true))Mahasiswa hanya dapat memilih satu UKM {{ strtolower($club->field) }}. Pendaftaran gratis.@else Mahasiswa bebas bergabung dengan UKM ini dan UKM lain. Pendaftaran gratis.@endif</dd>
     </dl>
 </section>
 @if($club->awards->isNotEmpty())

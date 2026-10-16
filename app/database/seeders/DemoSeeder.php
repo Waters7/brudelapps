@@ -10,11 +10,13 @@ use App\Models\ClubActivity;
 use App\Models\ClubApplication;
 use App\Models\Competition;
 use App\Models\Event;
+use App\Models\MasterOption;
 use App\Models\Membership;
 use App\Models\Participant;
 use App\Models\Recruitment;
 use App\Models\Registration;
 use App\Models\User;
+use App\Services\Campus\MasterData;
 use App\Services\Event\CompetitionAccountService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -140,6 +142,7 @@ class DemoSeeder extends Seeder
                 Membership::firstOrCreate(['club_id' => $all[0]->id, 'user_id' => $users[$key]->id], ['joined_at' => now()->subMonths(2), 'division' => 'Badminton']);
             }
 
+            $this->masterData();
             $this->awards($users, $all);
             $this->activities($users['pengurus'], $all[0]);
         });
@@ -154,6 +157,34 @@ class DemoSeeder extends Seeder
      * One activity of each type for UKM Olahraga (badminton division): an ongoing training (attendance code can be opened now),
      * an upcoming friendly match, and a past internal meeting still waiting for its minutes.
      */
+    /**
+     * Example places and competition templates; the official lists are entered in Master Data.
+     */
+    private function masterData(): void
+    {
+        $places = [
+            ['aula_kampus', 'Aula kampus', 'aula', 300, true], ['ruang_seminar', 'Ruang seminar', 'ruang', 80, true],
+            ['gor_kampus', 'GOR kampus', 'lapangan', 200, true], ['lapangan_kampus', 'Lapangan kampus', 'lapangan', null, false],
+            ['lapangan_futsal', 'Lapangan futsal', 'lapangan', null, false], ['lab_komputer', 'Laboratorium komputer (demo)', 'lab', 40, true],
+        ];
+        foreach ($places as $index => [$code, $label, $kind, $capacity, $permit]) {
+            MasterOption::firstOrCreate(['type' => 'location', 'code' => $code], ['label' => $label, 'position' => $index + 1, 'meta' => ['kind' => $kind, 'capacity' => $capacity, 'permit' => $permit]]);
+        }
+        $types = [
+            ['badminton_tunggal', 'Badminton tunggal', 'Olahraga', 'individual', null, null, 'bracket'],
+            ['futsal', 'Futsal', 'Olahraga', 'team', 5, 8, 'bracket'],
+            ['karya_tulis_ilmiah', 'Karya tulis ilmiah', 'Akademik', 'team', 2, 3, 'rubric'],
+            ['debat_bahasa_inggris', 'Debat bahasa Inggris', 'Akademik', 'team', 2, 3, 'rubric'],
+            ['poster_kesehatan', 'Poster kesehatan', 'Seni', 'individual', null, null, 'rubric'],
+            ['baca_puisi', 'Baca puisi', 'Seni', 'individual', null, null, 'rubric'],
+        ];
+        foreach ($types as $index => [$code, $label, $field, $format, $min, $max, $assessment]) {
+            MasterOption::firstOrCreate(['type' => 'competition_type', 'code' => $code], ['label' => $label, 'position' => $index + 1,
+                'meta' => ['field' => $field, 'format' => $format, 'min_members' => $min, 'max_members' => $max, 'assessment_type' => $assessment]]);
+        }
+        app(MasterData::class)->flush();
+    }
+
     private function activities(User $chair, Club $club): void
     {
         foreach ([

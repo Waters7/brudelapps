@@ -28,7 +28,7 @@
         <label class="span-2">Nama event induk<input name="name" required maxlength="150" placeholder="Pekan Seni Mahasiswa 2026"></label>
         <label>Penyelenggara<input name="organizer" required maxlength="190" placeholder="UKM / Kemahasiswaan"></label>
         <label>Jalur<select name="pathway"><option value="internal">Lomba internal</option><option value="delegation">Seleksi delegasi nasional</option></select></label>
-        <label>Bidang utama<select name="field"><option value="">Campuran</option>@foreach(config('brudel.fields') as $field)<option>{{ $field }}</option>@endforeach</select></label>
+        <label>Bidang utama<select name="field"><option value="">Campuran</option>@foreach($master->fields() as $field)<option>{{ $field }}</option>@endforeach</select></label>
         <label>UKM pengusul<select name="club_id" {{ auth()->user()->isStudentAffairs() ? '' : 'required' }}>@if(auth()->user()->isStudentAffairs())<option value="">Kemahasiswaan (langsung disetujui)</option>@endif @foreach($clubs as $club)<option value="{{ $club->id }}">{{ $club->name }}</option>@endforeach</select></label>
         <label class="span-2">Penyelenggara eksternal (opsional)<input name="external_organizer" maxlength="190" placeholder="Untuk seleksi delegasi: nama penyelenggara tingkat nasional"></label>
         <label class="span-2">Deskripsi<textarea name="description" maxlength="3000" rows="3"></textarea></label>

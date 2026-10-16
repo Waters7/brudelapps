@@ -1,20 +1,21 @@
 @php($c = $competition)
 @php($levelKey = $c ? \App\Services\Achievement\AchievementService::levelKey($c->level) : 1)
-<form class="form-grid" method="post" action="/kelola/event/{{ $event->id }}/lomba{{ $c ? '/'.$c->id : '' }}" x-data="{ format: '{{ $c->format ?? 'individual' }}', fee: {{ $c->fee ?? 0 }}, live: {{ $c?->live_score ? 'true' : 'false' }}, assessment: '{{ $c->assessment_type ?? 'none' }}' }">@csrf
-    <label class="span-2">Nama nomor lomba<input name="name" required maxlength="150" value="{{ $c?->name }}"></label>
-    <label>Bidang<select name="field">@foreach(config('brudel.fields') as $field)<option @selected(($c->field ?? $event->field) === $field)>{{ $field }}</option>@endforeach</select></label>
+<form class="form-grid" method="post" action="/kelola/event/{{ $event->id }}/lomba{{ $c ? '/'.$c->id : '' }}" x-data="{ format: '{{ $c->format ?? 'individual' }}', fee: {{ $c->fee ?? 0 }}, live: {{ $c?->live_score ? 'true' : 'false' }}, assessment: '{{ $c->assessment_type ?? 'none' }}', types: @js($master->active('competition_type')->mapWithKeys(fn ($t) => [$t->code => ['label' => $t->label] + ($t->meta ?? [])])), pick(code) { const t = this.types[code]; if (! t) return; if (! $refs.name.value) $refs.name.value = t.label; if (t.field) $refs.field.value = t.field; this.format = t.format || this.format; this.assessment = t.assessment_type || this.assessment; this.$nextTick(() => { if (t.min_members) $refs.min.value = t.min_members; if (t.max_members) $refs.max.value = t.max_members; }); } }">@csrf
+    @if(! $c && $master->active('competition_type')->isNotEmpty())<label class="span-2">Jenis lomba (mengisi form otomatis)<select x-on:change="pick($event.target.value)"><option value="">Pilih dari master data…</option>@foreach($master->active('competition_type') as $kind)<option value="{{ $kind->code }}">{{ $kind->label }}</option>@endforeach</select></label>@endif
+    <label class="span-2">Nama nomor lomba<input name="name" required maxlength="150" value="{{ $c?->name }}" x-ref="name"></label>
+    <label>Bidang<select name="field" x-ref="field">@foreach($master->fields($c->field ?? $event->field) as $field)<option @selected(($c->field ?? $event->field) === $field)>{{ $field }}</option>@endforeach</select></label>
     <label>Tingkat<select name="level">@foreach(config('brudel.levels') as $key => $label)<option value="{{ $key }}" @selected($levelKey === $key)>{{ $label }}</option>@endforeach</select></label>
     <label class="span-2">Deskripsi<textarea name="description" required maxlength="3000" rows="2">{{ $c?->description }}</textarea></label>
     <label class="span-2">Persyaratan & dokumen wajib<textarea name="requirements" required maxlength="3000" rows="2">{{ $c?->requirements }}</textarea></label>
     <label>Format peserta<select name="format" x-model="format"><option value="individual">Individu</option><option value="team">Tim</option></select></label>
     <label>Kuota (tim/peserta)<input type="number" name="quota" required min="1" value="{{ $c->quota ?? 20 }}"></label>
-    <label x-show="format === 'team'">Minimum anggota<input type="number" name="min_members" min="1" max="50" value="{{ $c->min_members ?? 2 }}"></label>
-    <label x-show="format === 'team'">Maksimum anggota<input type="number" name="max_members" min="1" max="50" value="{{ $c->max_members ?? 3 }}"></label>
+    <label x-show="format === 'team'">Minimum anggota<input type="number" name="min_members" min="1" max="50" value="{{ $c->min_members ?? 2 }}" x-ref="min"></label>
+    <label x-show="format === 'team'">Maksimum anggota<input type="number" name="max_members" min="1" max="50" value="{{ $c->max_members ?? 3 }}" x-ref="max"></label>
     <label>Pendaftaran dibuka (WITA)<input type="datetime-local" name="opens_at" required value="{{ \App\Services\Wita::input($c?->opens_at) }}"></label>
     <label>Pendaftaran ditutup (WITA)<input type="datetime-local" name="closes_at" required value="{{ \App\Services\Wita::input($c?->closes_at) }}"></label>
     <label>Mulai lomba (WITA)<input type="datetime-local" name="starts_at" required value="{{ \App\Services\Wita::input($c?->starts_at) }}"></label>
     <label>Selesai lomba (WITA, opsional)<input type="datetime-local" name="ends_at" value="{{ \App\Services\Wita::input($c?->ends_at) }}"></label>
-    <label class="span-2">Lokasi<input name="location" required maxlength="190" value="{{ $c?->location }}"></label>
+    <label class="span-2">Lokasi<input name="location" required maxlength="190" value="{{ $c?->location }}" list="competition-location-options"></label><datalist id="competition-location-options">@foreach($master->active('location') as $place)<option value="{{ $place->label }}">@endforeach</datalist>
     <label>Biaya (Rp, 0 = gratis)<input type="number" name="fee" required min="0" x-model.number="fee" value="{{ $c->fee ?? 0 }}"></label>
     <label>Dasar biaya<select name="fee_basis"><option value="team" @selected(($c->fee_basis ?? 'team') === 'team')>Per tim / pendaftaran</option><option value="participant" @selected(($c->fee_basis ?? '') === 'participant')>Per peserta</option></select></label>
     <label class="span-2" x-show="fee > 0">Dasar perhitungan biaya<input name="fee_notes" maxlength="1000" value="{{ $c?->fee_notes }}" placeholder="Contoh: biaya konsumsi dan perlengkapan sesuai SK kegiatan"></label>

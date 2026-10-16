@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Services\Campus\MasterData;
+use App\Services\Campus\SystemSettings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,7 +17,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One instance per request keeps master data lists loaded once.
+        $this->app->singleton(MasterData::class);
+        $this->app->singleton(SystemSettings::class);
     }
 
     /**
@@ -22,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::share('master', $this->app->make(MasterData::class));
+        // Pengaturan Sistem overrides the allowlisted .env values (mail, Google, Turnstile, Pangi, …).
+        $this->app->make(SystemSettings::class)->apply();
         RateLimiter::for('login', fn (Request $request) => [
             Limit::perMinute(6)->by('login|'.mb_strtolower((string) $request->input('email')).'|'.$request->ip()),
             Limit::perMinute(30)->by('login-ip|'.$request->ip()),

@@ -9,7 +9,7 @@ Aturan bisnis berada di service per modul; controller hanya memvalidasi input da
 | Modul | Service | Controller |
 |---|---|---|
 | Akun | `Account\AccountService` (aktivasi, pemulihan, ubah kata sandi, foto, Google), `StudentImportService`, `AssignmentService` | `AuthController`, `Account\GoogleController`, `Account\ProfileController`, `Account\StudentController`, `Account\AssignmentController`; aturan `Rules\Turnstile` |
-| Data kampus & jurusan | `Campus\CampusService` (termasuk banner halaman depan) | `Campus\SettingsController`, `Campus\LandingSlideController`, `Department\DepartmentController` |
+| Data kampus & jurusan | `Campus\CampusService` (termasuk banner halaman depan), `Campus\MasterData` (tabel `master_options`), `Campus\SystemSettings` (override `.env` dari tabel `settings`) | `Campus\SettingsController`, `Campus\MasterDataController`, `Campus\SystemSettingsController`, `Campus\LandingSlideController`, `Department\DepartmentController` |
 | UKM & kegiatan | `Club\ClubService`, `Club\ActivityService` (izin kegiatan), `Club\SpaceService` (ruang organisasi) | `Club\ClubManageController`, `Club\ActivityController`, `Club\SpaceController`, Livewire `ClubChat` |
 | Event & akun lomba | `Event\EventService`, `Event\CompetitionAccountService` | `Event\EventManageController`, `Event\CompetitionAccountController` |
 | Pendaftaran | `Registration\EnrollmentService` (termasuk persetujuan jurusan) | `EnrollmentController`, `Department\DepartmentController` |

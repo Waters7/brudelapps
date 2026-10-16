@@ -55,7 +55,7 @@
 <section class="panel"><h2>Catat hasil keikutsertaan</h2>
 <form class="form-grid" method="post" action="/delegasi/{{ $delegation->id }}/hasil" enctype="multipart/form-data">@csrf
     <label class="span-2">Ringkasan hasil<textarea name="outcome" required minlength="5" maxlength="2000" rows="3"></textarea></label>
-    <label>Penghargaan (opsional)<input name="award" maxlength="80" placeholder="Juara 2 / Medali Perak"></label>
+    <label>Penghargaan (opsional)<input name="award" maxlength="80" placeholder="Juara 2 / Medali Perak" list="award-options"></label><datalist id="award-options">@foreach($master->awards() as $award)<option value="{{ $award }}">@endforeach</datalist>
     <label>Tanggal penghargaan<input type="date" name="awarded_on" max="{{ now()->timezone('Asia/Makassar')->toDateString() }}"></label>
     <label class="span-2">Bukti penghargaan (PDF, wajib bila ada penghargaan)<input type="file" name="evidence" accept="application/pdf,.pdf"></label>
     <div class="span-2"><button class="button primary">Simpan hasil</button><p class="form-note">Penghargaan delegasi dicatat sebagai prestasi eksternal dan menunggu verifikasi kemahasiswaan.</p></div>

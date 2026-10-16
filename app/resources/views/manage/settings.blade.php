@@ -18,10 +18,10 @@
     </form>
     <hr>
     <h3>Kebijakan lain dari konfigurasi lingkungan</h3>
-    <dl><dt>Aturan keanggotaan</dt><dd>HIMAJU wajib dan otomatis sesuai jurusan; BEM/MPM ditetapkan dari hasil pemilihan; maksimal satu UKM {{ strtolower(implode(', ', config('brudel.single_choice_fields'))) }}; UKM lain bebas.</dd><dt>Biaya pendaftaran UKM</dt><dd>Gratis — biaya lomba tidak berlaku untuk UKM</dd><dt>Penyimpanan dokumen</dt><dd>{{ config('brudel.document_disk') }} (privat)</dd></dl>
+    <dl><dt>Aturan keanggotaan</dt><dd>HIMAJU wajib dan otomatis sesuai jurusan; BEM/MPM ditetapkan dari hasil pemilihan; maksimal satu UKM {{ strtolower(implode(', ', $master->singleChoiceFields())) }}; UKM lain bebas.</dd><dt>Biaya pendaftaran UKM</dt><dd>Gratis — biaya lomba tidak berlaku untuk UKM</dd><dt>Penyimpanan dokumen</dt><dd>{{ config('brudel.document_disk') }} (privat)</dd></dl>
 </section>
 
-<section class="panel">
+<section class="panel" id="rekening">
     <h2>Rekening resmi pembayaran</h2>
     <p>Hanya rekening resmi kampus yang tercantum pada dokumen resmi. BRUDEL tidak memproses pembayaran otomatis; bukti transfer diverifikasi manual.</p>
     @forelse($accounts as $account)
@@ -37,7 +37,7 @@
 </section>
 </div>
 
-<section class="panel">
+<section class="panel" id="prodi">
     <h2>Jurusan & program studi</h2>
     <p>Poltekkes Kemenkes Manado memiliki 7 jurusan: {{ $departments->pluck('name')->join(', ') }}. Setiap program studi wajib berada di salah satu jurusan; persetujuan lomba dan laporan dihitung per jurusan.</p>
     <div class="table-wrap"><table class="compact"><thead><tr><th>Jurusan</th><th>Program studi</th><th>Kode</th><th>Mahasiswa</th><th>Ubah</th></tr></thead><tbody>

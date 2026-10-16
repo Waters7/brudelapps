@@ -7,9 +7,11 @@ use App\Models\Club;
 use App\Models\Competition;
 use App\Models\Event;
 use App\Models\StatusHistory;
+use App\Services\Campus\MasterData;
 use App\Services\Event\EventService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class EventManageController extends Controller
@@ -86,7 +88,7 @@ class EventManageController extends Controller
         abort_unless($this->events->canEdit($request->user(), $event), 403);
         $data = $request->validate([
             'name' => 'required|string|max:150',
-            'field' => 'required|in:'.implode(',', config('brudel.fields')),
+            'field' => ['required', Rule::in(app(MasterData::class)->allFields())],
             'level' => 'required|integer|between:1,6',
             'description' => 'required|string|max:3000',
             'requirements' => 'required|string|max:3000',
@@ -126,7 +128,7 @@ class EventManageController extends Controller
             'name' => 'required|string|max:150',
             'organizer' => 'required|string|max:190',
             'pathway' => 'required|in:internal,delegation',
-            'field' => 'nullable|in:'.implode(',', config('brudel.fields')),
+            'field' => ['nullable', Rule::in(app(MasterData::class)->allFields())],
             'description' => 'nullable|string|max:3000',
             'external_organizer' => 'nullable|string|max:190',
             'club_id' => 'nullable|integer|exists:clubs,id',

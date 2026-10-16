@@ -7,12 +7,14 @@ use App\Models\ActivityAttendance;
 use App\Models\Club;
 use App\Models\ClubActivity;
 use App\Models\Membership;
+use App\Services\Campus\MasterData;
 use App\Services\Club\ActivityService;
 use App\Services\PrivateFiles;
 use App\Services\Report\ReportService;
 use App\Services\Wita;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -49,7 +51,7 @@ class ActivityController extends Controller
         $club = Club::findOrFail((int) $request->input('club_id'));
         $data = $request->validate([
             'club_id' => 'required|integer',
-            'type' => 'required|in:'.implode(',', array_keys(ClubActivity::TYPES)),
+            'type' => ['required', Rule::in(array_keys(app(MasterData::class)->activityTypes()))],
             'title' => 'required|string|max:150',
             'description' => 'nullable|string|max:3000',
             'location' => 'required|string|max:190',

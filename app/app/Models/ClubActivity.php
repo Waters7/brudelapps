@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Campus\MasterData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,8 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClubActivity extends Model
 {
-    public const TYPES = ['latihan' => 'Jadwal latihan', 'persahabatan' => 'Pertandingan persahabatan', 'meeting' => 'Meeting internal'];
-
     protected $guarded = [];
 
     protected function casts(): array
@@ -66,7 +65,15 @@ class ClubActivity extends Model
 
     public function typeLabel(): string
     {
-        return self::TYPES[$this->type] ?? $this->type;
+        return app(MasterData::class)->activityTypeLabel($this->type);
+    }
+
+    /**
+     * Report format from master data: attendance, match (opponent and score), or minutes.
+     */
+    public function reportKind(): string
+    {
+        return app(MasterData::class)->activityReport($this->type);
     }
 
     public function codeIsOpen(): bool

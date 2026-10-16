@@ -12,7 +12,7 @@
         <label class="span-2">Nama event<input name="name" required maxlength="150" value="{{ $event->name }}"></label>
         <label>Penyelenggara<input name="organizer" required maxlength="190" value="{{ $event->organizer }}"></label>
         <label>Jalur<select name="pathway"><option value="internal" @selected($event->pathway === 'internal')>Lomba internal</option><option value="delegation" @selected($event->pathway === 'delegation')>Seleksi delegasi nasional</option></select></label>
-        <label>Bidang utama<select name="field"><option value="">Campuran</option>@foreach(config('brudel.fields') as $field)<option @selected($event->field === $field)>{{ $field }}</option>@endforeach</select></label>
+        <label>Bidang utama<select name="field"><option value="">Campuran</option>@foreach($master->fields($event->field) as $field)<option @selected($event->field === $field)>{{ $field }}</option>@endforeach</select></label>
         <label>Penyelenggara eksternal<input name="external_organizer" maxlength="190" value="{{ $event->external_organizer }}"></label>
         <label class="span-2">Deskripsi<textarea name="description" maxlength="3000" rows="3">{{ $event->description }}</textarea></label>
         <div class="span-2"><button class="button outline">Simpan event</button></div>

@@ -48,6 +48,12 @@
             ['/kelola/perjadin', 'globe', 'Perjadin Delegasi (Pangi)'],
             ['/kelola/banner-depan', 'spark', 'Banner Halaman Depan'],
             ['/kelola/pengaturan', 'spark', 'Pengaturan Kampus'],
+            ['/kelola/sistem', 'shield', 'Pengaturan Sistem'],
+        ] : [],
+        'MASTER DATA' => $has('kemahasiswaan') ? [
+            ['/kelola/master', 'grid', 'Ringkasan Master Data', null, true],
+            ...collect(\App\Services\Campus\MasterData::TYPES)->map(fn ($spec, $type) => ['/kelola/master/'.$type, $spec['icon'], $spec['label']])->values()->all(),
+            ['/kelola/pengaturan#prodi', 'book', 'Jurusan & Prodi'],
         ] : [],
     ];
     $sections['LAINNYA'] = [
@@ -69,8 +75,8 @@
             @continue(empty($items))
             <p class="nav-caption {{ $loop->first ? '' : 'second' }}">{{ $caption }}</p>
             @foreach($items as $item)
-                @php($path = ltrim($item[0], '/'))
-                @php($active = $path === '' ? request()->is('/') : request()->is($path, $path.'/*'))
+                @php($path = ltrim(strtok($item[0], '#'), '/'))
+                @php($active = $path === '' || ($item[4] ?? false) ? request()->is($path ?: '/') : request()->is($path, $path.'/*'))
                 <a href="{{ $item[0] }}" class="nav-item {{ $active ? 'active' : '' }}" @if($active) aria-current="page" @endif><x-icon :name="$item[1]"/><span>{{ $item[2] }}</span>@if($item[3] ?? null)<span class="nav-count">{{ $item[3] }}</span>@endif</a>
             @endforeach
         @endforeach

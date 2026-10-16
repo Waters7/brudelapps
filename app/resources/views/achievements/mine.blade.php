@@ -2,7 +2,7 @@
 <div class="page-heading"><div><p class="eyebrow">PORTOFOLIO PRESTASI</p><h1>Prestasi saya.</h1><p>Prestasi dari lomba BRUDEL dan kegiatan eksternal. Prestasi eksternal masuk laporan resmi setelah diverifikasi kemahasiswaan.</p></div>
 @if($user->publication_consent && $user->public_slug)<a class="button outline" href="/mahasiswa/{{ $user->public_slug }}">Lihat profil publik ↗</a>@else<a class="button outline" href="/profil">Atur publikasi profil</a>@endif</div>
 
-@foreach(config('brudel.fields') as $field)
+@foreach($master->allFields() as $field)
 @php($items = $recipients->filter(fn ($r) => $r->award->field === $field))
 @continue($items->isEmpty())
 <section class="section-block"><h2>{{ $field }}</h2>
@@ -22,8 +22,8 @@
     <form class="form-grid" method="post" action="/prestasi" enctype="multipart/form-data">@csrf
         <label class="span-2">Nama kegiatan/lomba<input name="title" required maxlength="190" value="{{ old('title') }}"></label>
         <label>Penyelenggara<input name="organizer" required maxlength="190" value="{{ old('organizer') }}"></label>
-        <label>Penghargaan<input name="award" required maxlength="80" value="{{ old('award') }}" placeholder="Juara 2 / Medali Perak"></label>
-        <label>Bidang<select name="field">@foreach(config('brudel.fields') as $field)<option @selected(old('field') === $field)>{{ $field }}</option>@endforeach</select></label>
+        <label>Penghargaan<input name="award" required maxlength="80" value="{{ old('award') }}" placeholder="Juara 2 / Medali Perak" list="award-options"></label><datalist id="award-options">@foreach($master->awards() as $award)<option value="{{ $award }}">@endforeach</datalist>
+        <label>Bidang<select name="field">@foreach($master->fields() as $field)<option @selected(old('field') === $field)>{{ $field }}</option>@endforeach</select></label>
         <label>Tingkat<select name="level">@foreach(config('brudel.levels') as $key => $label)<option value="{{ $key }}" @selected((int) old('level') === $key)>{{ $label }}</option>@endforeach</select></label>
         <label>Tanggal penghargaan<input type="date" name="awarded_on" required max="{{ now()->timezone('Asia/Makassar')->toDateString() }}" value="{{ old('awarded_on') }}"></label>
         <label>Nama tim (bila tim)<input name="team_name" maxlength="80" value="{{ old('team_name') }}"></label>

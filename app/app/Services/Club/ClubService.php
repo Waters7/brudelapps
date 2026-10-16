@@ -9,6 +9,7 @@ use App\Models\Program;
 use App\Models\Recruitment;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
+use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use App\Services\PrivateFiles;
 use App\Services\Wita;
@@ -148,7 +149,7 @@ class ClubService extends DomainService
      */
     public function choiceConflict(int $userId, Club $club, bool $pending = false): bool
     {
-        if (! $club->isUkm() || ! in_array($club->field, config('brudel.single_choice_fields'), true)) {
+        if (! $club->isUkm() || ! in_array($club->field, app(MasterData::class)->singleChoiceFields(), true)) {
             return false;
         }
         $sameField = fn ($q) => $q->where('category', 'ukm')->where('field', $club->field)->whereKeyNot($club->id);

@@ -9,6 +9,7 @@ use App\Models\Membership;
 use App\Models\Program;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
+use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -187,7 +188,7 @@ class OfficerImportService extends DomainService
             if ($email !== '' && (! filter_var($email, FILTER_VALIDATE_EMAIL) || User::where('email', $email)->where(fn ($q) => $q->whereNull('nim')->orWhere('nim', '!=', $row['nim']))->exists())) {
                 $messages[] = 'Email tidak valid atau sudah dipakai akun lain.';
             }
-            $position = $row['position'] === '' ? 'Ketua' : collect(config('brudel.officer_positions'))->first(fn ($known) => mb_strtolower($known) === mb_strtolower($row['position']));
+            $position = $row['position'] === '' ? 'Ketua' : collect(app(MasterData::class)->officerPositions())->first(fn ($known) => mb_strtolower($known) === mb_strtolower($row['position']));
             if (! $position) {
                 $messages[] = 'Jabatan "'.$row['position'].'" tidak dikenal.';
             }

@@ -132,7 +132,7 @@
     @php($given = $awards->where('registration_id', $result->registration_id))
     <tr><td><strong>{{ $result->rank }}</strong></td><td>{{ $result->registration->displayName() }}</td><td>{{ $result->total !== null ? number_format($result->total, 2, ',', '.') : '—' }}</td><td>{{ $result->note }}</td>
     <td>@foreach($given as $award)<span class="chip">{{ $award->award }}</span>@endforeach
-        <form class="inline-form" method="post" action="/kelola/lomba/{{ $competition->id }}/penghargaan">@csrf<input type="hidden" name="registration_id" value="{{ $result->registration_id }}"><select name="award">@foreach(['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1', 'Harapan 2', 'Penampil Terbaik'] as $label)<option @selected($label === 'Juara '.$result->rank)>{{ $label }}</option>@endforeach</select><button class="button outline small">Tetapkan</button></form></td></tr>
+        <form class="inline-form" method="post" action="/kelola/lomba/{{ $competition->id }}/penghargaan">@csrf<input type="hidden" name="registration_id" value="{{ $result->registration_id }}"><select name="award">@foreach($master->awards() as $label)<option @selected($label === 'Juara '.$result->rank)>{{ $label }}</option>@endforeach</select><button class="button outline small">Tetapkan</button></form></td></tr>
     @endforeach
     </tbody></table></div>
     <p class="form-note">Penghargaan tim dicatat satu kali dengan setiap anggota sebagai penerima. {{ $awards->count() }} penghargaan · {{ $certificates }} sertifikat terbit.</p>

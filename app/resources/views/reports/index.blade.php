@@ -4,7 +4,7 @@
 <form class="filters" method="get">
     <label>Tahun<input type="number" name="year" min="2000" max="2100" value="{{ $filters['year'] }}" placeholder="Semua"></label>
     <label>Tingkat<select name="level"><option value="">Semua tingkat</option>@foreach(config('brudel.levels') as $key => $label)<option value="{{ $key }}" @selected($filters['level'] === $key)>{{ $label }}</option>@endforeach</select></label>
-    <label>Bidang<select name="field"><option value="">Semua bidang</option>@foreach(config('brudel.fields') as $field)<option @selected($filters['field'] === $field)>{{ $field }}</option>@endforeach</select></label>
+    <label>Bidang<select name="field"><option value="">Semua bidang</option>@foreach($master->allFields() as $field)<option @selected($filters['field'] === $field)>{{ $field }}</option>@endforeach</select></label>
     <label>Jurusan<select name="department_id"><option value="">Semua jurusan</option>@foreach($departments as $department)<option value="{{ $department->id }}" @selected($filters['department_id'] === $department->id)>{{ $department->name }}</option>@endforeach</select></label>
     <label>UKM<select name="club_id"><option value="">Semua UKM</option>@foreach($clubs as $club)<option value="{{ $club->id }}" @selected($filters['club_id'] === $club->id)>{{ $club->name }}</option>@endforeach</select></label>
     <label>Format<select name="team"><option value="">Individu & tim</option><option value="individu" @selected($filters['team'] === 'individu')>Individu</option><option value="tim" @selected($filters['team'] === 'tim')>Tim</option></select></label>

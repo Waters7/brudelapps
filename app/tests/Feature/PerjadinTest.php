@@ -52,7 +52,7 @@ class PerjadinTest extends DemoTestCase
         $this->assertSame(['DEMO001', 'Keperawatan', 'Nasional'], [$json['participants'][0]['nim'], $json['participants'][0]['department'], $json['activity']['level']]);
         $this->assertSame('Pelatih Badminton', $json['companions'][0]['name']);
         $this->assertSame(['surat_tugas', 'sppd', 'dispensasi', 'laporan'], $json['letters']);
-        $this->assertContains('keterangan_aktif', $json['registration_documents']);
+        $this->assertContains('keterangan_aktif', array_column($json['registration_documents'], 'code'));
         $this->assertDatabaseHas('audit_logs', ['action' => 'perjadin.exported', 'subject_id' => $ready->id]);
 
         $csv = $this->get('/kelola/perjadin/ekspor')->assertOk()->streamedContent();

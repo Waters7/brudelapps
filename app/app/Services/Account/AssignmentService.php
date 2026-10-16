@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\Competition;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
+use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use App\Services\Wita;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +37,7 @@ class AssignmentService extends DomainService
         abort_if($user->id === $actor->id, 403, 'Tidak dapat mengubah hak akses sendiri.');
         if ($data['role'] === 'pengurus') {
             $this->ensure($user->memberships()->where('club_id', $scopeId)->where('status', 'active')->exists(), 'Pengurus dipilih dari anggota aktif organisasi ini.');
-            $this->ensure(in_array($data['position'] ?? 'Anggota pengurus', config('brudel.officer_positions'), true), 'Jabatan pengurus tidak dikenal.');
+            $this->ensure(in_array($data['position'] ?? 'Anggota pengurus', app(MasterData::class)->officerPositions(), true), 'Jabatan pengurus tidak dikenal.');
         }
 
         $starts = Wita::toUtc($data['starts_at']);

@@ -28,8 +28,8 @@
     <ul class="plain-list">@foreach(\App\Services\Delegation\PerjadinService::LETTERS as $key => $label)<li class="list-row"><span>{{ $label }}</span><button class="button outline small" type="button" disabled title="Menunggu integrasi Pangi">Buat di Pangi</button></li>@endforeach</ul>
     <hr>
     <h2>Dokumen pendaftaran lomba</h2>
-    <p class="muted">Daftar sementara dokumen yang biasa diminta penyelenggara. Jenis dokumen pasti dan cara pengisiannya akan ditambahkan kemudian.</p>
-    <ul class="plain-list">@foreach(\App\Services\Delegation\PerjadinService::REGISTRATION_DOCUMENTS as $key => $label)<li class="list-row"><span>{{ $label }}</span><span class="badge status-draft">Disiapkan</span></li>@endforeach</ul>
+    <p class="muted">Daftar dari Master Data → Dokumen pendaftaran lomba; kemahasiswaan direktorat dapat menambah atau mengubahnya.</p>
+    <ul class="plain-list">@forelse($master->active('registration_document') as $document)<li class="list-row"><span>{{ $document->label }}@if($document->meta('per_student'))<small class="muted"> · per mahasiswa</small>@endif</span><span class="badge status-draft">Disiapkan</span></li>@empty<li class="muted">Belum ada dokumen di master data.</li>@endforelse</ul>
 </section>
 </div>
 

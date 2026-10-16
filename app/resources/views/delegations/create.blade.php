@@ -9,7 +9,7 @@
     <label>Kegiatan tujuan<input name="destination_event" required maxlength="190" value="{{ old('destination_event') }}" placeholder="Nama lomba tingkat nasional"></label>
     <label>Penyelenggara tujuan<input name="organizer" required maxlength="190" value="{{ old('organizer', $competition?->event->external_organizer) }}"></label>
     <label>Tingkat<select name="level">@foreach(config('brudel.levels') as $key => $label)<option value="{{ $key }}" @selected((int) old('level', 5) === $key)>{{ $label }}</option>@endforeach</select></label>
-    <label>Bidang<select name="field">@foreach(config('brudel.fields') as $field)<option @selected(old('field', $competition?->field) === $field)>{{ $field }}</option>@endforeach</select></label>
+    <label>Bidang<select name="field">@foreach($master->fields(old('field', $competition?->field)) as $field)<option @selected(old('field', $competition?->field) === $field)>{{ $field }}</option>@endforeach</select></label>
     <label>Berangkat/mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ old('starts_at') }}"></label>
     <label>Selesai (WITA)<input type="datetime-local" name="ends_at" value="{{ old('ends_at') }}"></label>
     <label class="span-2">Lokasi<input name="location" required maxlength="190" value="{{ old('location') }}"></label>
