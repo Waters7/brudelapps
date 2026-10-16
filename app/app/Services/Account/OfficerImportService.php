@@ -35,7 +35,7 @@ class OfficerImportService extends DomainService
     /** Program-name keywords for a jurusan, as in the jurusan migration. */
     private const DEPARTMENT_KEYWORDS = [
         'gigi' => 'KG', 'bidan' => 'KEB', 'rawat' => 'KEP', 'ners' => 'KEP', 'gizi' => 'GIZ', 'lingkungan' => 'KL',
-        'sanitasi' => 'KL', 'farmasi' => 'FAR', 'laborator' => 'TLM', 'analis' => 'TLM',
+        'sanitasi' => 'KL', 'farmasi' => 'FAR', 'laborator' => 'TLM', 'analis' => 'TLM', 'promosi kesehatan' => 'KEP',
     ];
 
     /** Common short names for a jurusan in "HMJ …". */

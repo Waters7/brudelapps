@@ -7,6 +7,7 @@ use App\Models\PaymentAccount;
 use App\Models\Program;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Club\ClubService;
 use App\Services\DomainService;
 use App\Services\PrivateFiles;
 use Illuminate\Http\UploadedFile;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  */
 class CampusService extends DomainService
 {
-    public function __construct(private PrivateFiles $files) {}
+    public function __construct(private PrivateFiles $files, private ClubService $clubs) {}
 
     public const SETTING_KEYS = ['regional_definition', 'refund_policy', 'certificate_prefix', 'operating_days', 'operating_open', 'operating_close'];
 
@@ -33,6 +34,10 @@ class CampusService extends DomainService
             $program ??= new Program;
             $program->fill(['name' => $data['name'], 'department_id' => $data['department_id'], 'code' => ($data['code'] ?? null) ?: null])->save();
             $this->audit($actor, 'program.saved', $program, $data);
+            // HIMAJU follows the jurusan, so moving a program moves its students to the new HIMAJU.
+            if ($program->wasChanged('department_id')) {
+                User::where('program_id', $program->id)->whereNotNull('nim')->get()->each(fn (User $student) => $this->clubs->syncHimaju($student));
+            }
 
             return $program;
         });

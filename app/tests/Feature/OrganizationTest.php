@@ -62,6 +62,17 @@ class OrganizationTest extends DemoTestCase
         $this->assertSame('inactive', $membership->fresh()->status);
     }
 
+    public function test_moving_a_program_to_another_jurusan_moves_its_students_himaju(): void
+    {
+        $program = Program::where('code', 'KESLING')->firstOrFail();
+        $student = $this->user('atlet1');
+        $this->assertSame('active', $this->membershipStatus($this->himaju('KL'), $student));
+        $this->actingAs($this->user('admin'))->post('/kelola/prodi/'.$program->id, ['name' => $program->name, 'department_id' => Department::where('code', 'KEP')->value('id'), 'code' => $program->code])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('left', $this->membershipStatus($this->himaju('KL'), $student));
+        $this->assertSame('active', $this->membershipStatus($this->himaju('KEP'), $student));
+    }
+
     public function test_bem_and_mpm_members_are_appointed_from_the_election(): void
     {
         $bem = Club::where('name', 'Badan Eksekutif Mahasiswa (BEM)')->first();

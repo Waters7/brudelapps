@@ -29,6 +29,7 @@ class OfficerImportTest extends DemoTestCase
             'UKM Satgas Kegawatdaruratan Bencana,Uji Satgas,UJI0007,D-IV Promosi Kesehatan,,',
             'HMJ Kesling,Uji Salah Jurusan,UJI0008,D-III Farmasi,,',
             'UKM Antah Berantah,Uji Organisasi Asing,UJI0009,D-III Farmasi,,',
+            'UKM Ikatan Duta,Uji Prodi Asing,UJI0010,D-IV Prodi Uji Tanpa Jurusan,,',
         ]);
         $this->actingAs($this->user('jurusan'))->post('/kelola/penugasan/impor-ketua', ['file' => $this->csv($rows), 'mode' => 'commit'])->assertForbidden();
 
@@ -38,7 +39,7 @@ class OfficerImportTest extends DemoTestCase
         $this->get('/kelola/penugasan')->assertSee('Majelis Permusyawaratan Mahasiswa (MPM)')->assertSee('Ketua Putra')->assertSee('harus mahasiswa jurusan tersebut')->assertSee('tidak dikenal');
 
         $this->post('/kelola/penugasan/impor-ketua', ['file' => $this->csv($rows), 'mode' => 'commit'])->assertSessionHasNoErrors()
-            ->assertSessionHas('officer_import', fn ($report) => $report['assigned'] === 7 && $report['created_users'] === 7);
+            ->assertSessionHas('officer_import', fn ($report) => $report['assigned'] === 8 && $report['created_users'] === 8);
 
         $mpm = User::where('nim', 'UJI0001')->firstOrFail();
         $this->assertSame('uji0001@'.OfficerImportService::PLACEHOLDER_DOMAIN, $mpm->email);
@@ -47,7 +48,8 @@ class OfficerImportTest extends DemoTestCase
         $this->assertSame('KL', $mpm->program->department->code);
         $this->assertSame('KEP', User::where('nim', 'UJI0003')->firstOrFail()->program->department->code);
         $this->assertTrue(Program::where('name', 'D-III Keperawatan')->exists(), 'D-lll dinormalkan menjadi D-III.');
-        $this->assertNull(Program::where('name', 'D-IV Promosi Kesehatan')->value('department_id'), 'Prodi tanpa padanan menunggu pemetaan.');
+        $this->assertSame('KEP', Program::where('name', 'D-IV Promosi Kesehatan')->first()->department->code, 'Promosi Kesehatan termasuk Jurusan Keperawatan.');
+        $this->assertNull(Program::where('name', 'D-IV Prodi Uji Tanpa Jurusan')->value('department_id'), 'Prodi tanpa padanan menunggu pemetaan.');
 
         $mpmClub = Club::where('name', 'Majelis Permusyawaratan Mahasiswa (MPM)')->first();
         $this->assertTrue(Membership::where('club_id', $mpmClub->id)->where('user_id', $mpm->id)->where('status', 'active')->exists());
