@@ -9,10 +9,13 @@ use App\Models\Competition;
 use App\Models\Department;
 use App\Models\Event;
 use App\Services\Account\AssignmentService;
+use App\Services\Account\OfficerImportService;
+use App\Services\Report\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssignmentController extends Controller
 {
@@ -43,6 +46,26 @@ class AssignmentController extends Controller
         $service->grant($request->user(), $data);
 
         return back()->with('success', 'Penugasan disimpan dan tercatat pada audit.');
+    }
+
+    /**
+     * Preview or import organization chairs from a CSV (organisasi, nama, nim, prodi, jabatan, email).
+     */
+    public function importOfficers(Request $request, OfficerImportService $officers): RedirectResponse
+    {
+        $data = $request->validate(['file' => 'required|file|mimes:csv,txt|extensions:csv,txt|max:1024', 'mode' => 'required|in:preview,commit']);
+        $result = $officers->import($request->user(), (string) file_get_contents($request->file('file')->getRealPath()), $data['mode'] === 'commit');
+
+        return back()->with('officer_import', $result)->with('success', $result['committed']
+            ? $result['assigned'].' penugasan pengurus dibuat, '.$result['created_users'].' akun mahasiswa baru.'
+            : 'Pratinjau selesai: periksa hasil per baris sebelum mengimpor.');
+    }
+
+    public function officerTemplate(Request $request, OfficerImportService $officers): StreamedResponse
+    {
+        abort_unless($request->user()->isStudentAffairs(), 403);
+
+        return ReportService::csv('template-ketua-organisasi.csv', ['organisasi', 'nama', 'nim', 'prodi', 'jabatan', 'email'], $officers->template());
     }
 
     public function end(Request $request, Assignment $assignment, AssignmentService $service): RedirectResponse

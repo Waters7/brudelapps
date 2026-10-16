@@ -1,6 +1,26 @@
 <x-layout title="Penugasan Peran">
 <div class="page-heading"><div><p class="eyebrow">HAK AKSES BERJANGKA</p><h1>Penugasan peran.</h1><p>Satu pengguna dapat memiliki beberapa peran. Akses dibatasi menurut UKM, event, jurusan, atau nomor lomba. Ketua UKM tidak otomatis menjadi admin event.</p></div></div>
 
+<section class="panel">
+    <h2>Impor ketua & pengurus organisasi (CSV)</h2>
+    <p class="muted">Kolom: <code>organisasi, nama, nim, prodi</code>, opsional <code>jabatan</code> (Ketua, Ketua Putra, Ketua Putri, Wakil Ketua, Sekretaris, …), <code>email</code>, <code>periode</code>. Organisasi boleh ditulis seperti "BEM", "MPM", "HMJ Kesling", atau nama lengkap. Mahasiswa yang belum ada dibuat dari NIM; tanpa email diberi email sementara yang tertimpa saat impor resmi mahasiswa (dicocokkan NIM), sehingga aktivasi menunggu email resmi. Prodi baru dibuat dan dipetakan ke jurusan menurut namanya. Periode bawaan {{ \App\Services\Account\OfficerImportService::currentPeriod() }}, berlaku 1 tahun.</p>
+    <form class="inline-form" method="post" action="/kelola/penugasan/impor-ketua" enctype="multipart/form-data">@csrf
+        <input type="file" name="file" accept=".csv,text/csv" required aria-label="Berkas CSV ketua organisasi">
+        <button class="button outline" name="mode" value="preview">Pratinjau</button>
+        <button class="button primary" name="mode" value="commit">Impor</button>
+        <a class="text-link" href="/kelola/penugasan/template-ketua.csv">Unduh template (semua organisasi) ↓</a>
+    </form>
+    @if($report = session('officer_import'))
+    <div class="alert {{ $report['errors'] ? 'warning' : 'success' }}">{{ $report['committed'] ? 'Hasil impor' : 'Pratinjau' }}: {{ count($report['rows']) }} baris, {{ $report['errors'] }} gagal{{ $report['committed'] ? ', '.$report['assigned'].' penugasan dibuat, '.$report['created_users'].' akun baru' : '' }}.@if($report['new_programs']) Prodi baru: {{ implode(', ', $report['new_programs']) }}.@endif</div>
+    <div class="table-wrap"><table class="compact"><thead><tr><th>Baris</th><th>Organisasi</th><th>Jabatan</th><th>Mahasiswa</th><th>Prodi · jurusan</th><th>Hasil</th></tr></thead><tbody>
+    @foreach($report['rows'] as $row)
+    <tr><td>{{ $row['line'] }}</td><td>{{ $row['organization'] }}</td><td>{{ $row['position'] }}</td><td>{{ $row['name'] }}<small>{{ $row['nim'] }}</small></td><td>{{ $row['program'] }}<small>{{ $row['department'] ?? 'Jurusan belum dipetakan' }}</small></td>
+    <td>@if($row['messages'])<span class="badge status-rejected">Gagal</span><small>{{ implode(' ', $row['messages']) }}</small>@else<span class="badge {{ $row['result'] === 'Sudah menjabat' ? 'status-draft' : 'status-accepted' }}">{{ $row['result'] }}</span>@endif</td></tr>
+    @endforeach
+    </tbody></table></div>
+    @endif
+</section>
+
 <section class="panel" x-data="{ role: '{{ old('role', 'pengurus') }}', scopes: @js(collect(config('brudel.roles'))->map(fn ($r) => $r['scope'])) }">
     <h2>Tambah penugasan</h2>
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf

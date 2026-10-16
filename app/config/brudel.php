@@ -65,10 +65,13 @@ return [
 
     'pimpinan_positions' => ['Direktur', 'Wakil Direktur I', 'Wakil Direktur II', 'Wakil Direktur III'],
 
-    'officer_positions' => ['Ketua', 'Wakil Ketua', 'Sekretaris', 'Bendahara', 'Koordinator Divisi', 'Anggota pengurus'],
+    'officer_positions' => ['Ketua', 'Ketua Putra', 'Ketua Putri', 'Wakil Ketua', 'Sekretaris', 'Bendahara', 'Koordinator Divisi', 'Anggota pengurus'],
+
+    /** Chair positions: an organization may have one Ketua, or a Ketua Putra and a Ketua Putri (e.g. Dewan Racana). */
+    'chair_positions' => ['Ketua', 'Ketua Putra', 'Ketua Putri'],
 
     /** Officer positions that may add or end other officers. */
-    'officer_managers' => ['Ketua', 'Wakil Ketua', 'Sekretaris'],
+    'officer_managers' => ['Ketua', 'Ketua Putra', 'Ketua Putri', 'Wakil Ketua', 'Sekretaris'],
 
     /** Judges per competition (generated juri accounts plus manual penilai assignments). */
     'max_judges' => 5,

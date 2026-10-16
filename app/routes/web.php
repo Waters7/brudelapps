@@ -205,6 +205,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/mahasiswa/{student}/aktivasi', [StudentController::class, 'sendActivation']);
     Route::get('/kelola/penugasan', [AssignmentController::class, 'index']);
     Route::post('/kelola/penugasan', [AssignmentController::class, 'store']);
+    Route::post('/kelola/penugasan/impor-ketua', [AssignmentController::class, 'importOfficers']);
+    Route::get('/kelola/penugasan/template-ketua.csv', [AssignmentController::class, 'officerTemplate']);
     Route::post('/kelola/penugasan/{assignment}/akhiri', [AssignmentController::class, 'end']);
     Route::get('/kelola/banner-depan', [LandingSlideController::class, 'index']);
     Route::post('/kelola/banner-depan', [LandingSlideController::class, 'store']);

@@ -140,7 +140,7 @@ class User extends Authenticatable
     public function leadsClub(int $club): bool
     {
         return $this->isStudentAffairs() || $this->currentAssignments()->where('role', 'pengurus')
-            ->where('club_id', $club)->where('position', 'Ketua')->exists();
+            ->where('club_id', $club)->whereIn('position', config('brudel.chair_positions'))->exists();
     }
 
     /**

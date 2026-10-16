@@ -6,7 +6,7 @@
     $staff = $roles->isNotEmpty();
     $leadershipOnly = $roles->all() === ['pimpinan'] && ! $me->nim;
     $managesCompetition = $has('kemahasiswaan', 'admin_event', 'pengelola_lomba');
-    $coach = $has('kemahasiswaan', 'pembina') || $me->currentAssignments()->where('role', 'pengurus')->where('position', 'Ketua')->exists();
+    $coach = $has('kemahasiswaan', 'pembina', 'pengurus', 'jurusan');
     $unread = $me->unreadNotifications()->count();
     $roleLabel = $staff ? (config('brudel.roles')[$roles->first()]['label'] ?? 'Pengelola') : 'Mahasiswa aktif';
     $sections = $leadershipOnly ? [
