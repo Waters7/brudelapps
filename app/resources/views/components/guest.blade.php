@@ -10,4 +10,10 @@
     @if($errors->any())<div class="alert error" role="alert">{{ $errors->first() }}</div>@endif
     {{ $slot }}
 </section>
-</main></body></html>
+</main>
+<div class="brand-loader" id="brand-loader" role="status" aria-live="polite" hidden>
+    <div class="brand-loader-mark"><span class="brand-loader-ring" aria-hidden="true"></span><img src="/brand/logo-mark.svg" alt=""></div>
+    <strong>BRUDEL<span class="brand-dot">.</span></strong>
+    <p>Menyiapkan ruangmu<span class="brand-loader-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
+</div>
+</body></html>

@@ -29,6 +29,7 @@
     @endforeach</div>
     <p class="form-note">Foto profil diunggah sendiri oleh mahasiswa di menu Profil.</p>
     @if($delegation->letter_path)<div class="info-strip"><x-icon name="file"/><span>Surat tugas {{ $delegation->letter_number }} · <a class="text-link" href="/delegasi/{{ $delegation->id }}/surat-tugas">Unduh PDF ↓</a></span></div>@endif
+    @if(auth()->user()->isStudentAffairs() && $delegation->status !== 'draft')<div class="info-strip"><x-icon name="globe"/><span>Surat perjalanan dinas mahasiswa · <a class="text-link" href="/kelola/perjadin/{{ $delegation->id }}">Data surat perjadin (Pangi) →</a></span></div>@endif
 </section>
 </div>
 

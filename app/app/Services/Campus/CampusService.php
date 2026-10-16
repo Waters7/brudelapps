@@ -2,18 +2,24 @@
 
 namespace App\Services\Campus;
 
+use App\Models\LandingSlide;
 use App\Models\PaymentAccount;
 use App\Models\Program;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\DomainService;
+use App\Services\PrivateFiles;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Campus data maintained by kemahasiswaan: programs, configurable policies and official bank accounts.
+ * Campus data maintained by kemahasiswaan: programs, configurable policies, official bank accounts, and the
+ * front-page banner.
  */
 class CampusService extends DomainService
 {
+    public function __construct(private PrivateFiles $files) {}
+
     public const SETTING_KEYS = ['regional_definition', 'refund_policy', 'certificate_prefix', 'operating_days', 'operating_open', 'operating_close'];
 
     /**
@@ -46,6 +52,54 @@ class CampusService extends DomainService
                 }
             }
         });
+    }
+
+    /**
+     * Add a front-page banner slide: a short MP4/WebM video kept as uploaded, or an image re-encoded to 1600×640.
+     *
+     * @param  array{title: string, caption?: ?string, link_url?: ?string, link_label?: ?string, position?: ?int}  $data
+     */
+    public function addSlide(User $actor, array $data, UploadedFile $media): LandingSlide
+    {
+        abort_unless($actor->isStudentAffairs(), 403);
+        $this->ensure(blank($data['link_url'] ?? null) || str_starts_with($data['link_url'], '/') || str_starts_with($data['link_url'], 'https://'),
+            'Tautan harus diawali / (halaman BRUDEL) atau https://.');
+        $video = str_starts_with((string) $media->getMimeType(), 'video/');
+        [$path, $disk] = $video ? $this->files->storeVideo($media, 'landing-slides') : $this->files->storeSlideImage($media, 'landing-slides');
+
+        try {
+            return DB::transaction(function () use ($actor, $data, $video, $path, $disk) {
+                $slide = LandingSlide::create([
+                    'title' => $data['title'], 'caption' => $data['caption'] ?? null, 'link_url' => $data['link_url'] ?? null, 'link_label' => $data['link_label'] ?? null,
+                    'media_type' => $video ? 'video' : 'image', 'media_path' => $path, 'media_disk' => $disk,
+                    'position' => $data['position'] ?? (int) LandingSlide::max('position') + 1, 'created_by' => $actor->id,
+                ]);
+                $this->audit($actor, 'landing.slide_added', $slide, ['type' => $slide->media_type]);
+
+                return $slide;
+            });
+        } catch (\Throwable $e) {
+            $this->files->delete($path, $disk);
+            throw $e;
+        }
+    }
+
+    /**
+     * @param  array{position: int, active: bool}  $data
+     */
+    public function updateSlide(User $actor, LandingSlide $slide, array $data): void
+    {
+        abort_unless($actor->isStudentAffairs(), 403);
+        $slide->update(['position' => $data['position'], 'active' => $data['active']]);
+        $this->audit($actor, 'landing.slide_updated', $slide, $data);
+    }
+
+    public function deleteSlide(User $actor, LandingSlide $slide): void
+    {
+        abort_unless($actor->isStudentAffairs(), 403);
+        $this->audit($actor, 'landing.slide_deleted', $slide, ['title' => $slide->title]);
+        $this->files->delete($slide->media_path, $slide->media_disk);
+        $slide->delete();
     }
 
     /**

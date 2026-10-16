@@ -49,4 +49,10 @@ return [
         'secret_key' => env('TURNSTILE_SECRET_KEY'),
     ],
 
+    // Pangi (modul mahasiswa perjadin) for delegation travel letters; the connection is not built yet.
+    'pangi' => [
+        'base_url' => env('PANGI_BASE_URL'),
+        'token' => env('PANGI_TOKEN'),
+    ],
+
 ];

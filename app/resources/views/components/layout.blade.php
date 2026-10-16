@@ -45,6 +45,8 @@
         'ADMINISTRASI KAMPUS' => $has('kemahasiswaan') ? [
             ['/kelola/mahasiswa', 'user', 'Mahasiswa & Impor'],
             ['/kelola/penugasan', 'users', 'Penugasan Peran'],
+            ['/kelola/perjadin', 'globe', 'Perjadin Delegasi (Pangi)'],
+            ['/kelola/banner-depan', 'spark', 'Banner Halaman Depan'],
             ['/kelola/pengaturan', 'spark', 'Pengaturan Kampus'],
         ] : [],
     ];

@@ -9,14 +9,14 @@ Aturan bisnis berada di service per modul; controller hanya memvalidasi input da
 | Modul | Service | Controller |
 |---|---|---|
 | Akun | `Account\AccountService` (aktivasi, pemulihan, ubah kata sandi, foto, Google), `StudentImportService`, `AssignmentService` | `AuthController`, `Account\GoogleController`, `Account\ProfileController`, `Account\StudentController`, `Account\AssignmentController`; aturan `Rules\Turnstile` |
-| Data kampus & jurusan | `Campus\CampusService` | `Campus\SettingsController`, `Department\DepartmentController` |
+| Data kampus & jurusan | `Campus\CampusService` (termasuk banner halaman depan) | `Campus\SettingsController`, `Campus\LandingSlideController`, `Department\DepartmentController` |
 | UKM & kegiatan | `Club\ClubService`, `Club\ActivityService` (izin kegiatan), `Club\SpaceService` (ruang organisasi) | `Club\ClubManageController`, `Club\ActivityController`, `Club\SpaceController`, Livewire `ClubChat` |
 | Event & akun lomba | `Event\EventService`, `Event\CompetitionAccountService` | `Event\EventManageController`, `Event\CompetitionAccountController` |
 | Pendaftaran | `Registration\EnrollmentService` (termasuk persetujuan jurusan) | `EnrollmentController`, `Department\DepartmentController` |
 | Pembayaran | `Payment\PaymentService` | `Payment\PaymentController` |
 | Pertandingan & live score | `Match\BracketService`, `Match\LiveScoreService` | `Match\CompetitionOpsController`, `Match\LiveController`, Livewire `LiveBoard` |
 | Penilaian | `Scoring\ScoringService`, `Scoring\ResultService` | `Scoring\JudgeController`, `CompetitionOpsController` |
-| Delegasi | `Delegation\DelegationService` | `Delegation\DelegationController` |
+| Delegasi | `Delegation\DelegationService`, `Delegation\PerjadinService` (data surat perjadin untuk Pangi) | `Delegation\DelegationController`, `Delegation\PerjadinController` |
 | Sertifikat | `Certificate\CertificateService` | `Certificate\CertificateController` |
 | Prestasi | `Achievement\AchievementService` | `Achievement\AchievementController` |
 | Laporan | `Report\ReportService` | `Report\ReportController` |

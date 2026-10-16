@@ -6,12 +6,14 @@ use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\StudentController;
 use App\Http\Controllers\Achievement\AchievementController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Campus\LandingSlideController;
 use App\Http\Controllers\Campus\SettingsController;
 use App\Http\Controllers\Certificate\CertificateController;
 use App\Http\Controllers\Club\ActivityController;
 use App\Http\Controllers\Club\ClubManageController;
 use App\Http\Controllers\Club\SpaceController;
 use App\Http\Controllers\Delegation\DelegationController;
+use App\Http\Controllers\Delegation\PerjadinController;
 use App\Http\Controllers\Department\DepartmentController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\Event\CompetitionAccountController;
@@ -49,6 +51,7 @@ Route::get('/mahasiswa/{slug}', [AchievementController::class, 'profile']);
 Route::get('/live', [LiveController::class, 'index']);
 Route::get('/live/{competition}', [LiveController::class, 'show']);
 Route::get('/banner/{club}', [ClubManageController::class, 'showBanner'])->middleware('throttle:banner');
+Route::get('/slide/{slide}', [LandingSlideController::class, 'media'])->middleware('throttle:banner');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -203,6 +206,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/kelola/penugasan', [AssignmentController::class, 'index']);
     Route::post('/kelola/penugasan', [AssignmentController::class, 'store']);
     Route::post('/kelola/penugasan/{assignment}/akhiri', [AssignmentController::class, 'end']);
+    Route::get('/kelola/banner-depan', [LandingSlideController::class, 'index']);
+    Route::post('/kelola/banner-depan', [LandingSlideController::class, 'store']);
+    Route::post('/kelola/banner-depan/{slide}', [LandingSlideController::class, 'update']);
+    Route::post('/kelola/banner-depan/{slide}/hapus', [LandingSlideController::class, 'destroy']);
+    Route::get('/kelola/perjadin', [PerjadinController::class, 'index']);
+    Route::get('/kelola/perjadin/ekspor', [PerjadinController::class, 'csv']);
+    Route::get('/kelola/perjadin/{delegation}', [PerjadinController::class, 'show']);
+    Route::get('/kelola/perjadin/{delegation}/data.json', [PerjadinController::class, 'json']);
     Route::get('/kelola/pengaturan', [SettingsController::class, 'index']);
     Route::post('/kelola/pengaturan', [SettingsController::class, 'saveSettings']);
     Route::post('/kelola/prodi/{program?}', [SettingsController::class, 'saveProgram']);

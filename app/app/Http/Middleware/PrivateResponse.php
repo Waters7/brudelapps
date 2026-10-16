@@ -13,7 +13,9 @@ class PrivateResponse
             abort(403, 'Akun mahasiswa nonaktif. Hubungi kemahasiswaan.');
         }
         $response = $next($request);
-        $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+        // Public banner media carry a version in the URL, so browsers may keep them; everything else is private.
+        $publicMedia = $request->is('banner/*', 'slide/*') && $response->isSuccessful();
+        $response->headers->set('Cache-Control', $publicMedia ? 'public, max-age=86400' : 'private, no-store, max-age=0');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'same-origin');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');

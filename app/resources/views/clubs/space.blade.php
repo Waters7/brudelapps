@@ -1,20 +1,30 @@
 <x-layout :title="'Ruang '.$club->name">
 <a class="back-link" href="/ukm/{{ $club->id }}">← Profil {{ $club->name }}</a>
-<div class="space-hero {{ $club->tone() }}">
+<div class="space-hero {{ $club->tone() }} {{ $club->banner_path ? 'has-banner' : '' }}">
     @if($club->banner_path)<img src="/banner/{{ $club->id }}?v={{ $club->updated_at?->timestamp }}" alt="">@endif
     <div class="space-hero-body">
-        <span class="eyebrow">RUANG {{ strtoupper($club->categoryShort()) }}</span>
-        <h1>{{ $club->name }}</h1>
-        <p>{{ $members->count() }} anggota aktif · {{ $quests->where('status', 'open')->count() }} quest terbuka</p>
+        <span class="space-avatar {{ $club->tone() }}"><x-icon :name="$club->symbol"/></span>
+        <div>
+            <span class="eyebrow">RUANG {{ strtoupper($club->categoryShort()) }}</span>
+            <h1>{{ $club->name }}</h1>
+            <p><span class="space-stat"><x-icon name="users"/>{{ $members->count() }} anggota</span><span class="space-stat"><x-icon name="star"/>{{ $quests->where('status', 'open')->count() }} quest</span><span class="space-stat"><x-icon name="calendar"/>{{ $activities->count() }} kegiatan</span></p>
+        </div>
     </div>
     @if($me)
-    <div class="space-me"><span class="space-level"><x-icon name="star"/>{{ $me['level'] }}</span><strong>{{ $me['points'] }} poin</strong><small>Peringkat {{ $me['rank'] }} dari {{ $leaderboard->count() }}</small></div>
+    @php($progress = \App\Services\Club\SpaceService::progress($me['points']))
+    <div class="space-me">
+        <div class="space-me-top"><span class="space-level"><x-icon name="star"/>{{ $me['level'] }}</span><span class="space-rank">#{{ $me['rank'] }}<small>/{{ $leaderboard->count() }}</small></span></div>
+        <strong>{{ $me['points'] }} <small>poin</small></strong>
+        <div class="space-progress" role="progressbar" aria-valuenow="{{ $progress['percent'] }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progres level"><i style="width: {{ $progress['percent'] }}%"></i></div>
+        <small>{{ $progress['next'] ? $progress['needed'].' poin lagi menuju '.$progress['next'] : 'Level tertinggi tercapai!' }}</small>
+    </div>
     @endif
 </div>
 
+@php($tabIcons = ['beranda' => 'grid', 'obrolan' => 'chat', 'quest' => 'star', 'peringkat' => 'trophy', 'anggota' => 'users'])
 <nav class="space-tabs" aria-label="Bagian ruang organisasi">
     @foreach(\App\Http\Controllers\Club\SpaceController::TABS as $key => $label)
-    <a href="/ruang/{{ $club->id }}?tab={{ $key }}" class="{{ $tab === $key ? 'selected' : '' }}" @if($tab === $key) aria-current="page" @endif>{{ $label }}@if($key === 'quest' && $canLead && $reviews->isNotEmpty())<span class="count-pill">{{ $reviews->count() }}</span>@endif</a>
+    <a href="/ruang/{{ $club->id }}?tab={{ $key }}" class="{{ $tab === $key ? 'selected' : '' }}" @if($tab === $key) aria-current="page" @endif><x-icon :name="$tabIcons[$key]"/><span>{{ $label }}</span>@if($key === 'quest' && $canLead && $reviews->isNotEmpty())<span class="count-pill">{{ $reviews->count() }}</span>@endif</a>
     @endforeach
 </nav>
 
@@ -102,7 +112,26 @@
 </div>
 
 @elseif($tab === 'peringkat')
-<section class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>#</th><th>Anggota</th><th>Level</th><th>Quest</th><th>Hadir kegiatan</th><th>Poin</th></tr></thead><tbody>
+@if($leaderboard->isNotEmpty())
+<section class="podium" aria-label="Tiga teratas">
+    @foreach($leaderboard->take(3)->sortBy(fn ($row) => [2 => 0, 1 => 1, 3 => 2][$row['rank']]) as $row)
+    <div class="podium-place place-{{ $row['rank'] }} {{ $row['user']->id === auth()->id() ? 'is-me' : '' }}">
+        <span class="podium-medal">{{ ['🥇', '🥈', '🥉'][$row['rank'] - 1] }}</span>
+        <x-avatar :user="$row['user']" size="big"/>
+        <strong>{{ $row['user']->name }}</strong>
+        <small>{{ $row['level'] }}</small>
+        <span class="podium-points">{{ $row['points'] }} poin</span>
+        <div class="podium-block">{{ $row['rank'] }}</div>
+    </div>
+    @endforeach
+</section>
+@endif
+<ol class="leader-cards">
+    @foreach($leaderboard->slice(3) as $row)
+    <li class="{{ $row['user']->id === auth()->id() ? 'is-me' : '' }}"><span class="leader-rank">{{ $row['rank'] }}</span><x-avatar :user="$row['user']"/><span class="leader-name">{{ $row['user']->name }}<small>{{ $row['level'] }} · {{ $row['quests'] }} quest · {{ $row['attended'] }}× hadir</small></span><strong>{{ $row['points'] }}</strong></li>
+    @endforeach
+</ol>
+<section class="panel table-panel leader-table"><div class="table-wrap"><table><thead><tr><th>#</th><th>Anggota</th><th>Level</th><th>Quest</th><th>Hadir kegiatan</th><th>Poin</th></tr></thead><tbody>
 @forelse($leaderboard as $row)
 <tr class="{{ $row['user']->id === auth()->id() ? 'is-me' : '' }}"><td>{{ $row['rank'] <= 3 ? ['🥇', '🥈', '🥉'][$row['rank'] - 1] : $row['rank'] }}</td><td><div class="person"><x-avatar :user="$row['user']"/><span>{{ $row['user']->name }}</span></div></td><td>{{ $row['level'] }}</td><td>{{ $row['quests'] }}</td><td>{{ $row['attended'] }}</td><td><strong>{{ $row['points'] }}</strong></td></tr>
 @empty<tr><td colspan="6" class="empty">Belum ada anggota aktif.</td></tr>@endforelse

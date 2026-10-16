@@ -62,7 +62,8 @@ class ClubSpaceTest extends DemoTestCase
         $this->post('/ruang/laporan-quest/'.$submission->id, ['decision' => 'approved'])->assertSessionHasNoErrors();
         ActivityAttendance::create(['club_activity_id' => ClubActivity::where('club_id', $club->id)->where('type', 'latihan')->value('id'), 'user_id' => $athlete->id, 'method' => 'code', 'checked_in_at' => now()]);
 
-        $this->actingAs($athlete)->get('/ruang/'.$club->id.'?tab=peringkat')->assertOk()->assertSeeInOrder(['Rifky Lasut', 'Penggerak', '55']);
+        $this->actingAs($athlete)->get('/ruang/'.$club->id.'?tab=peringkat')->assertOk()->assertSee('podium', false)->assertSeeInOrder(['Rifky Lasut', 'Penggerak', '55']);
+        $this->get('/ruang/'.$club->id)->assertSee('95 poin lagi menuju Andalan');
         $this->assertTrue($athlete->notifications()->get()->contains(fn ($n) => str_contains($n->data['title'], '+45 poin')));
         $this->actingAs($this->user('pengurus'))->post('/ruang/quest/'.$quest->id.'/tutup')->assertSessionHasNoErrors();
         $this->actingAs($this->user('atlet2'))->post('/ruang/quest/'.$quest->id.'/lapor', ['note' => 'Saya juga mengajak teman latihan.'])->assertSessionHasErrors('action');

@@ -47,6 +47,8 @@ GOOGLE_REDIRECT_URI=https://DOMAIN-RESMI/auth/google/callback
 GOOGLE_ALLOWED_DOMAIN=DOMAIN-EMAIL-KAMPUS
 TURNSTILE_SITE_KEY=ISI-DARI-CLOUDFLARE
 TURNSTILE_SECRET_KEY=ISI-DARI-CLOUDFLARE
+PANGI_BASE_URL=ALAMAT-PANGI
+PANGI_TOKEN=ISI-DARI-PENGELOLA-PANGI
 ```
 
 Nilai kapital adalah placeholder, bukan kredensial nyata.
@@ -55,6 +57,8 @@ Nilai kapital adalah placeholder, bukan kredensial nyata.
 
 - **Google SSO**: buat OAuth Client (Web application) di Google Cloud Console dengan *Authorized redirect URI* `https://DOMAIN-RESMI/auth/google/callback`. Google hanya menautkan akun yang sudah ada di BRUDEL (hasil impor), tidak pernah membuat akun baru. `GOOGLE_ALLOWED_DOMAIN` membatasi ke email kampus; kosongkan bila mahasiswa memakai Gmail pribadi yang terdaftar. Biarkan kosong untuk menyembunyikan tombol.
 - **Cloudflare Turnstile**: buat widget untuk domain resmi; isi site key dan secret key. Widget otomatis muncul di login, aktivasi, dan lupa kata sandi. Kosongkan keduanya untuk menonaktifkan (mis. lokal). Server memerlukan akses keluar ke `challenges.cloudflare.com`.
+- **Banner halaman depan**: video slide maksimal 20 MB. Pastikan `upload_max_filesize` ≥ 20M dan `post_max_size` ≥ 25M di PHP, serta `client_max_body_size 25m` di Nginx. File disajikan publik dengan cache 1 hari; URL berisi versi sehingga perubahan langsung terlihat.
+- **Pangi (perjadin mahasiswa)**: menu Perjadin Delegasi sudah menyiapkan data; `PANGI_BASE_URL` dan `PANGI_TOKEN` disediakan untuk integrasi berikutnya dan belum dipakai untuk mengirim data.
 - **Akun lomba otomatis**: kata sandinya dienkripsi dengan `APP_KEY`. Merotasi `APP_KEY` membuat kata sandi tersimpan tidak terbaca; setelah rotasi, ganti kata sandi akun lomba lewat halaman Akun lomba.
 - **Jurusan**: migrasi `2026_10_16_000001` membuat 7 jurusan dan memetakan prodi lama berdasarkan nama. Periksa Pengaturan Kampus setelah migrasi; prodi yang "Belum dipetakan" harus dipilihkan jurusannya sebelum persetujuan lomba per jurusan dipakai. Jangan menjalankan konfigurasi placeholder. Untuk hosting non-Docker, ganti `DB_HOST` sesuai jaringan privat.
 

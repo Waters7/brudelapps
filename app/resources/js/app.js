@@ -9,3 +9,81 @@ function connectionState() {
 window.addEventListener('online', connectionState);
 window.addEventListener('offline', connectionState);
 connectionState();
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Front-page banner: auto-advancing, swipeable slides; only the visible video plays.
+document.querySelectorAll('[data-slider]').forEach((slider) => {
+    const track = slider.querySelector('[data-slider-track]');
+    const slides = Array.from(track.children);
+    const dots = slider.querySelector('[data-slider-dots]');
+    let index = 0;
+    let timer = null;
+    if (slides.length < 2) slider.classList.add('is-single');
+
+    const update = () => {
+        Array.from(dots.children).forEach((dot, i) => dot.setAttribute('aria-current', i === index ? 'true' : 'false'));
+        slides.forEach((slide, i) => {
+            const video = slide.querySelector('video');
+            if (!video) return;
+            if (i === index && !reducedMotion) video.play().catch(() => {});
+            else video.pause();
+        });
+    };
+    const stop = () => clearInterval(timer);
+    const start = () => {
+        stop();
+        if (!reducedMotion && slides.length > 1) timer = setInterval(() => go(index + 1), 7000);
+    };
+    const go = (target, byUser = false) => {
+        index = (target + slides.length) % slides.length;
+        track.scrollTo({ left: slides[index].offsetLeft, behavior: reducedMotion ? 'auto' : 'smooth' });
+        update();
+        if (byUser) start();
+    };
+
+    slides.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.setAttribute('aria-label', 'Tampilkan slide ' + (i + 1));
+        dot.addEventListener('click', () => go(i, true));
+        dots.appendChild(dot);
+    });
+    slider.querySelector('[data-slider-prev]').addEventListener('click', () => go(index - 1, true));
+    slider.querySelector('[data-slider-next]').addEventListener('click', () => go(index + 1, true));
+    let settle = null;
+    track.addEventListener('scroll', () => {
+        clearTimeout(settle);
+        settle = setTimeout(() => {
+            const current = Math.round(track.scrollLeft / track.clientWidth);
+            if (current !== index) {
+                index = current;
+                update();
+                start();
+            }
+        }, 120);
+    }, { passive: true });
+    slider.addEventListener('mouseenter', stop);
+    slider.addEventListener('mouseleave', start);
+    slider.addEventListener('focusin', stop);
+    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+    update();
+    start();
+});
+
+// Sign-in buffer: show the BRUDEL loader while the login (or account link) request is on its way.
+const loader = document.getElementById('brand-loader');
+if (loader) {
+    const show = () => {
+        loader.hidden = false;
+        document.body.setAttribute('aria-busy', 'true');
+    };
+    document.querySelectorAll('form[data-loader]').forEach((form) => form.addEventListener('submit', () => {
+        if (form.checkValidity()) show();
+    }));
+    document.querySelectorAll('a[data-loader]').forEach((link) => link.addEventListener('click', show));
+    window.addEventListener('pageshow', () => {
+        loader.hidden = true;
+        document.body.removeAttribute('aria-busy');
+    });
+}

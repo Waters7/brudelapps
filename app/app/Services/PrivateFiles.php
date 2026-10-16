@@ -6,6 +6,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -70,6 +72,57 @@ class PrivateFiles
     public function storeBanner(UploadedFile $file, string $directory): array
     {
         return $this->storeImage($file, $directory, 1200, 480, 'banner');
+    }
+
+    /**
+     * Front-page banner image, re-encoded to 1600×640 JPEG (5:2).
+     *
+     * @return array{0: string, 1: string}
+     */
+    public function storeSlideImage(UploadedFile $file, string $directory): array
+    {
+        return $this->storeImage($file, $directory, 1600, 640, 'media');
+    }
+
+    /**
+     * Front-page banner video kept as uploaded after checking it really is MP4 or WebM.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public function storeVideo(UploadedFile $file, string $directory): array
+    {
+        $head = $this->signature($file, 12);
+        $mp4 = substr($head, 4, 4) === 'ftyp';
+        $webm = str_starts_with($head, "\x1A\x45\xDF\xA3");
+        if (! $mp4 && ! $webm) {
+            throw ValidationException::withMessages(['media' => 'Video harus MP4 atau WebM yang valid.']);
+        }
+        $disk = config('brudel.document_disk');
+        $path = Storage::disk($disk)->putFileAs(trim($directory, '/'), $file, Str::random(32).($mp4 ? '.mp4' : '.webm'), ['visibility' => 'private']);
+        if (! $path) {
+            throw ValidationException::withMessages(['media' => 'Penyimpanan video gagal.']);
+        }
+
+        return [$path, $disk];
+    }
+
+    /**
+     * Serve a public banner medium. Local files go through BinaryFileResponse, which answers HTTP range
+     * requests so browsers can stream and loop video.
+     */
+    public function media(string $path, string $disk): Response
+    {
+        abort_unless(Storage::disk($disk)->exists($path), 404);
+        $type = match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'mp4' => 'video/mp4',
+            'webm' => 'video/webm',
+            default => 'image/jpeg',
+        };
+        $headers = ['Content-Type' => $type, 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'public, max-age=86400'];
+
+        return config("filesystems.disks.{$disk}.driver") === 'local'
+            ? new BinaryFileResponse(Storage::disk($disk)->path($path), 200, $headers, false, 'inline')
+            : Storage::disk($disk)->response($path, null, $headers + ['Content-Disposition' => 'inline']);
     }
 
     /**

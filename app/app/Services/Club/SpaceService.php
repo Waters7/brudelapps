@@ -185,6 +185,23 @@ class SpaceService extends DomainService
     }
 
     /**
+     * Progress toward the next level, for the progress bar in the member space.
+     *
+     * @return array{next: ?string, needed: int, percent: int}
+     */
+    public static function progress(int $points): array
+    {
+        $levels = collect(self::LEVELS);
+        $floor = $levels->keys()->filter(fn ($minimum) => $points >= $minimum)->last();
+        $next = $levels->keys()->first(fn ($minimum) => $minimum > $points);
+        if ($next === null) {
+            return ['next' => null, 'needed' => 0, 'percent' => 100];
+        }
+
+        return ['next' => $levels[$next], 'needed' => $next - $points, 'percent' => (int) round(100 * ($points - $floor) / ($next - $floor))];
+    }
+
+    /**
      * @return Collection<int, User>
      */
     private function members(Club $club, User $except): Collection

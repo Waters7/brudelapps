@@ -12,6 +12,7 @@ use App\Models\Competition;
 use App\Models\Delegation;
 use App\Models\DepartmentApproval;
 use App\Models\Event;
+use App\Models\LandingSlide;
 use App\Models\Membership;
 use App\Models\Participant;
 use App\Models\PaymentAccount;
@@ -40,6 +41,8 @@ class PortalController extends Controller
         }
 
         return view('landing', [
+            'slides' => LandingSlide::shown()->get(),
+            'organizations' => Club::where('active', true)->ordered()->get(),
             'competitions' => Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))
                 ->where('closes_at', '>', now())->orderBy('closes_at')->limit(6)->get(),
             'activities' => ClubActivity::with('club')->confirmed()->where('is_public', true)->where('status', '!=', 'cancelled')
