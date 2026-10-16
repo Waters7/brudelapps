@@ -22,6 +22,10 @@
 @case('download') <path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/> @break
 @case('shield') <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6Z"/><path d="m9 12 2 2 4-4"/> @break
 @case('flag') <path d="M5 21V4m0 0h11l-2 4 2 4H5"/> @break
+@case('chat') <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.4A8 8 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/> @break
+@case('close') <path d="M6 6l12 12M18 6 6 18"/> @break
+@case('megaphone') <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Zm12-3a5 5 0 0 1 0 8m3-11a9 9 0 0 1 0 14"/> @break
+@case('star') <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/> @break
 @default <path d="m12 3 2.7 6.3L21 12l-6.3 2.7L12 21l-2.7-6.3L3 12l6.3-2.7ZM20 2v4m-2-2h4"/>
 @endswitch
 </svg>

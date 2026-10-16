@@ -8,7 +8,7 @@
     <div class="inline-actions"><x-status :value="$m->status"/>@if($m->division)<span class="chip">Divisi {{ $m->division }}</span>@endif</div>
     <p class="muted">Bergabung {{ \App\Services\Wita::show($m->joined_at, 'd M Y') }}@if($m->left_at) · berakhir {{ \App\Services\Wita::show($m->left_at, 'd M Y') }}@endif</p>
     <x-history :items="$m->histories"/>
-    <a class="button outline full" href="/ukm/{{ $m->club_id }}">Lihat profil UKM →</a>
+    @if($m->status === 'active')<a class="button primary full" href="/ruang/{{ $m->club_id }}">Masuk ruang organisasi →</a>@endif<a class="text-link" href="/ukm/{{ $m->club_id }}">Lihat profil →</a>
 </article>
 @empty<div class="panel empty"><h2>Temukan tempatmu bertumbuh.</h2><p>Belum ada keanggotaan. Pendaftaran yang menunggu tinjauan tersedia di Pendaftaran Saya.</p><a href="/ukm" class="text-link">Jelajahi UKM →</a></div>@endforelse
 </div>

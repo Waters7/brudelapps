@@ -2,7 +2,8 @@
 <a class="back-link" href="/penilaian">← Penugasan penilaian</a>
 <div class="page-heading"><div><p class="eyebrow">LEMBAR NILAI · {{ $competition->event->name }}</p><h1>{{ $competition->name }}</h1><p>Nilai 0–100 per kriteria. Nilai akhir = rata-rata penilai atas Σ(nilai × bobot).</p></div></div>
 @if($competition->resultsPublished())<div class="alert success">Hasil sudah disahkan. Nilai terkunci.</div>@endif
-@if($competition->criteria->isEmpty())<div class="alert warning">Rubrik belum disusun oleh admin event.</div>@endif
+@if($competition->criteria->isEmpty())<div class="alert warning">Lembar nilai belum dapat diisi: rubrik belum disusun oleh pengelola lomba. Hubungi pengelola lomba atau admin event; lembar terbuka otomatis setelah rubrik disimpan.</div>@endif
+@if($entries->isEmpty())<div class="panel empty">Belum ada peserta yang diterima pada nomor lomba ini. Peserta muncul di sini setelah pendaftarannya diterima pengelola lomba.</div>@endif
 @foreach($entries as $entry)
 @php($mine = ($scores[$entry->id] ?? collect())->keyBy('rubric_criterion_id'))
 @php($conflict = $entry->participants->contains('user_id', auth()->id()))

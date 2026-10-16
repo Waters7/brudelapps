@@ -1,7 +1,7 @@
 <x-layout :title="'Kelola '.$club->name">
 <a class="back-link" href="/kelola/ukm">← Kelola UKM</a>
 <div class="page-heading"><div><p class="eyebrow">DASHBOARD {{ strtoupper($club->categoryShort()) }}@if($club->field) · {{ strtoupper($club->field) }}@endif</p><h1>{{ $club->name }}</h1><p>Keanggotaan dipisahkan dari jabatan pengurus. Pergantian ketua tidak menghapus riwayat anggota.</p></div>
-<div class="inline-actions"><a class="button outline" href="/ukm/{{ $club->id }}">Lihat profil publik</a><a class="button outline" href="/kelola/ukm/{{ $club->id }}/ekspor">CSV anggota ↓</a><a class="button outline" href="/tinjauan">Tinjau pendaftar</a></div></div>
+<div class="inline-actions"><a class="button primary" href="/ruang/{{ $club->id }}">Ruang organisasi</a><a class="button outline" href="/ukm/{{ $club->id }}">Lihat profil publik</a><a class="button outline" href="/kelola/ukm/{{ $club->id }}/ekspor">CSV anggota ↓</a><a class="button outline" href="/tinjauan">Tinjau pendaftar</a></div></div>
 
 <div class="kpi-grid">
     @foreach(config('brudel.membership_statuses') as $key => $label)<div class="kpi"><span>{{ $label }}</span><strong>{{ $counts[$key] ?? 0 }}</strong></div>@endforeach
@@ -30,23 +30,44 @@
 </section>
 
 <section class="panel">
+    <h2>Banner kartu Jelajahi UKM</h2>
+    <p class="muted">Ukuran 1200 × 480 px (rasio 5:2), JPG/PNG/WebP, maksimal 3 MB. Gambar dengan ukuran lain dipotong otomatis di tengah. Hindari teks penting di pojok kiri atas karena tertutup label kategori.</p>
+    @if($club->banner_path)<img class="banner-preview" src="/banner/{{ $club->id }}?v={{ $club->updated_at?->timestamp }}" alt="Banner saat ini">@else<div class="card-banner banner-preview {{ $club->tone() }}"><x-icon :name="$club->symbol"/><span class="badge">Belum ada banner</span></div>@endif
+    <form class="inline-form" method="post" action="/kelola/ukm/{{ $club->id }}/banner" enctype="multipart/form-data">@csrf
+        <input type="file" name="banner" accept="image/jpeg,image/png,image/webp" required aria-label="Berkas banner">
+        <button class="button primary">Unggah banner</button>
+    </form>
+    <div class="inline-actions"><a class="text-link" href="/templates/banner-ukm-1200x480.png" download>Unduh template ukuran (PNG) ↓</a>@if($club->banner_path)<form method="post" action="/kelola/ukm/{{ $club->id }}/banner/hapus">@csrf<button class="button outline small">Hapus banner</button></form>@endif</div>
+</section>
+
+<section class="panel">
     <h2>Kepengurusan per periode</h2>
-    <p class="muted">{{ $canLead ? 'Sebagai ketua/kemahasiswaan Anda dapat menambah atau mengakhiri pengurus.' : 'Perubahan pengurus dilakukan ketua UKM atau kemahasiswaan.' }}</p>
+    <p class="muted">{{ $canLead ? 'Anda dapat menambah atau mengakhiri pengurus. Pengurus dipilih dari anggota aktif.' : 'Perubahan pengurus dilakukan Ketua, Wakil Ketua, Sekretaris, atau kemahasiswaan.' }}</p>
     @forelse($officers as $officer)
         <div class="list-row"><div><strong>{{ $officer->user->name }} · {{ $officer->position }}</strong><small>{{ $officer->period ?? 'Periode tidak dicatat' }} · {{ \App\Services\Wita::show($officer->starts_at, 'd M Y') }} – {{ \App\Services\Wita::show($officer->ends_at, 'd M Y') }} · {{ $officer->isCurrent() ? 'Berlaku' : 'Tidak berlaku' }}</small></div>
         @if($canLead && $officer->ends_at->isFuture() && $officer->user_id !== auth()->id())<form class="inline-form" method="post" action="/kelola/penugasan/{{ $officer->id }}/akhiri">@csrf<input name="reason" required minlength="5" placeholder="Alasan"><button class="button outline small">Akhiri</button></form>@endif</div>
     @empty<p class="muted">Belum ada pengurus tercatat.</p>@endforelse
     @if($canLead)
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
-        <input type="hidden" name="scope_id" value="{{ $club->id }}">
-        <label>Email/NIM<input name="user" required maxlength="190"></label>
-        <label>Peran<select name="role"><option value="pengurus">Pengurus</option><option value="pembina">Pelatih/pembina</option></select></label>
-        <label>Jabatan pengurus<select name="position"><option>Ketua</option><option>Wakil Ketua</option><option>Sekretaris</option><option>Bendahara</option><option>Koordinator Divisi</option><option selected>Anggota pengurus</option></select></label>
+        <input type="hidden" name="scope_id" value="{{ $club->id }}"><input type="hidden" name="role" value="pengurus">
+        <label class="span-2">Anggota aktif<select name="user" required><option value="">Pilih anggota…</option>@foreach($candidates as $candidate)<option value="{{ $candidate->user->nim ?? $candidate->user->email }}">{{ $candidate->user->name }} · {{ $candidate->user->nim }}{{ $candidate->division ? ' · '.$candidate->division : '' }}</option>@endforeach</select></label>
+        <label>Jabatan pengurus<select name="position">@foreach(config('brudel.officer_positions') as $position)<option @selected($position === 'Anggota pengurus')>{{ $position }}</option>@endforeach</select></label>
         <label>Periode<input name="period" maxlength="30" placeholder="2026/2027"></label>
         <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i') }}"></label>
         <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ now()->timezone('Asia/Makassar')->addYear()->format('Y-m-d\TH:i') }}"></label>
-        <div class="span-2"><button class="button outline">Tambah pengurus/pembina</button></div>
+        <div class="span-2"><button class="button outline">Tambah pengurus</button>@if($candidates->isEmpty()) <span class="muted">Belum ada anggota aktif untuk dipilih.</span>@endif</div>
     </form>
+    @endif
+    @if($canAssignCoach)
+    <details class="collapsible"><summary><strong>+ Tambah pelatih/pembina</strong></summary>
+    <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
+        <input type="hidden" name="scope_id" value="{{ $club->id }}"><input type="hidden" name="role" value="pembina">
+        <label class="span-2">Email pelatih/pembina<input name="user" required maxlength="190"></label>
+        <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i') }}"></label>
+        <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ now()->timezone('Asia/Makassar')->addYear()->format('Y-m-d\TH:i') }}"></label>
+        <div class="span-2"><button class="button outline">Tambah pelatih/pembina</button></div>
+    </form>
+    </details>
     @endif
 </section>
 </div>

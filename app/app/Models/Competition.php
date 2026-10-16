@@ -38,6 +38,11 @@ class Competition extends Model
         return $this->hasMany(Registration::class);
     }
 
+    public function scores(): HasMany
+    {
+        return $this->hasMany(Score::class);
+    }
+
     public function criteria(): HasMany
     {
         return $this->hasMany(RubricCriterion::class)->orderBy('position');

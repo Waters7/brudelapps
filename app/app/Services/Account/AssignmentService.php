@@ -11,8 +11,9 @@ use App\Services\Wita;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Role assignments with validity windows. Kemahasiswaan grants any role; a Ketua UKM may manage officers
- * and coaches of their own club only. Nobody changes their own rights.
+ * Role assignments with validity windows. Kemahasiswaan direktorat grants any role; Ketua, Wakil Ketua and Sekretaris
+ * pick officers from the active members of their own club, kemahasiswaan jurusan does the same for its HIMAJU.
+ * Nobody changes their own rights.
  */
 class AssignmentService extends DomainService
 {
@@ -33,6 +34,10 @@ class AssignmentService extends DomainService
         $user = User::where('email', mb_strtolower($identifier))->orWhere('nim', $identifier)->first();
         $this->ensure($user !== null && $user->active, 'Pengguna aktif dengan email/NIM tersebut tidak ditemukan.');
         abort_if($user->id === $actor->id, 403, 'Tidak dapat mengubah hak akses sendiri.');
+        if ($data['role'] === 'pengurus') {
+            $this->ensure($user->memberships()->where('club_id', $scopeId)->where('status', 'active')->exists(), 'Pengurus dipilih dari anggota aktif organisasi ini.');
+            $this->ensure(in_array($data['position'] ?? 'Anggota pengurus', config('brudel.officer_positions'), true), 'Jabatan pengurus tidak dikenal.');
+        }
 
         $starts = Wita::toUtc($data['starts_at']);
         $ends = Wita::toUtc($data['ends_at']);
@@ -84,8 +89,11 @@ class AssignmentService extends DomainService
         if ($actor->isStudentAffairs()) {
             return true;
         }
-        if (in_array($role, ['pengurus', 'pembina'], true)) {
-            return $scopeId !== null && $actor->leadsClub($scopeId);
+        if ($role === 'pengurus') {
+            return $scopeId !== null && $actor->managesOfficers($scopeId);
+        }
+        if ($role === 'pembina') {
+            return $scopeId !== null && ($actor->leadsClub($scopeId) || $actor->administersHimaju($scopeId));
         }
         if (in_array($role, ['penilai', 'operator'], true)) {
             $competition = $scopeId ? Competition::find($scopeId) : null;

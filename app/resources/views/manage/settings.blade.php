@@ -8,6 +8,12 @@
         <label>Definisi tingkat regional<textarea name="regional_definition" rows="3" required maxlength="1000">{{ old('regional_definition', $settings['regional_definition']) }}</textarea></label>
         <label>Kebijakan pembatalan & pengembalian dana<textarea name="refund_policy" rows="4" required maxlength="3000">{{ old('refund_policy', $settings['refund_policy']) }}</textarea></label>
         <label>Awalan nomor sertifikat<input name="certificate_prefix" required maxlength="30" value="{{ old('certificate_prefix', $settings['certificate_prefix']) }}"></label>
+        @php($openDays = array_map('intval', explode(',', (string) $settings['operating_days'])))
+        <fieldset class="plain-fieldset"><legend>Jam operasional kampus (WITA)</legend>
+            <p class="form-note">Kegiatan UKM di luar hari dan jam ini, atau yang meminjam ruangan, memerlukan izin kemahasiswaan.</p>
+            <div class="inline-actions">@foreach([1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Min'] as $day => $label)<label class="checkbox-label"><input type="checkbox" name="operating_days[]" value="{{ $day }}" @checked(in_array($day, $openDays, true))><span>{{ $label }}</span></label>@endforeach</div>
+            <div class="form-grid"><label>Buka<input type="time" name="operating_open" required value="{{ $settings['operating_open'] }}"></label><label>Tutup<input type="time" name="operating_close" required value="{{ $settings['operating_close'] }}"></label></div>
+        </fieldset>
         <button class="button primary">Simpan kebijakan</button>
     </form>
     <hr>

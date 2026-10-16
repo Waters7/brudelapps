@@ -15,6 +15,9 @@
 ['book','Jurusan','7 jurusan resmi; persetujuan lomba per jurusan; mahasiswa & UKM yang diikuti, yang tidak aktif di UKM, sertifikat juara dan prestasi jurusan sendiri.'],
 ['users','Akun lomba otomatis','Pengelola, operator skor/live score, dan 1–5 juri per lomba; hanya pengaju lomba dan superadmin yang melihat kata sandinya; log setiap nilai juri.'],
 ['calendar','Jelajah Kegiatan','Latihan, persahabatan, meeting internal; kode kehadiran dari pelatih/Ketua UKM; laporan hadir/tidak hadir, skor & catatan, notulen; cetak/PDF dan CSV.'],
+['chat','Bantuan live','Tombol chat mengambang untuk melapor kendala atau mengusulkan fitur ke Kemahasiswaan Direktorat; balasan tampil langsung.'],
+['star','Ruang organisasi','Pengumuman, obrolan live, quest berpoin, papan peringkat dan level untuk setiap UKM, HIMAJU, BEM, dan MPM.'],
+['calendar','Izin kegiatan','Peminjaman ruangan atau kegiatan di luar jam operasional diputuskan Kemahasiswaan Jurusan (HIMAJU) atau Direktorat.'],
 ['shield','Akun & keamanan','Halaman depan publik, menu akun dengan Keluar, ubah kata sandi, foto profil, masuk dengan Google, Cloudflare Turnstile.']]],
 ['02','Dibuat, belum diverifikasi operasional','Perlu lingkungan nyata','submitted',[
 ['grid','PostgreSQL produksi','Seluruh tes dan uji konkurensi dua proses lulus di PostgreSQL 17 lokal; belum dijalankan di staging Docker/VPS.'],

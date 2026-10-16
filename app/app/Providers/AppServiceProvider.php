@@ -31,5 +31,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public', fn (Request $request) => Limit::perMinute(60)->by('public|'.$request->ip()));
         RateLimiter::for('google', fn (Request $request) => Limit::perMinute(20)->by('google|'.$request->ip()));
         RateLimiter::for('checkin', fn (Request $request) => Limit::perMinute(10)->by('checkin|'.($request->user()?->id ?? $request->ip())));
+        // Catalog pages load many banners at once and campus users often share one public IP.
+        RateLimiter::for('banner', fn (Request $request) => Limit::perMinute(600)->by('banner|'.$request->ip()));
+        RateLimiter::for('chat', fn (Request $request) => Limit::perMinute(30)->by('chat|'.($request->user()?->id ?? $request->ip())));
     }
 }

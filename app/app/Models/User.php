@@ -121,11 +121,21 @@ class User extends Authenticatable
 
     public function managesClub(int $club): bool
     {
-        return $this->isStudentAffairs() || $this->assigned('pengurus', $club);
+        return $this->isStudentAffairs() || $this->assigned('pengurus', $club) || $this->administersHimaju($club);
     }
 
     /**
-     * Ketua UKM (or kemahasiswaan) may change the officer roster of the club.
+     * Kemahasiswaan jurusan administers the HIMAJU of its own jurusan; everything else belongs to kemahasiswaan direktorat.
+     */
+    public function administersHimaju(int $club): bool
+    {
+        $departments = $this->scopeIds('jurusan', 'department_id');
+
+        return $departments->isNotEmpty() && Club::whereKey($club)->where('category', 'himaju')->whereIn('department_id', $departments)->exists();
+    }
+
+    /**
+     * Ketua (or kemahasiswaan) proposes events on behalf of the club.
      */
     public function leadsClub(int $club): bool
     {
@@ -134,11 +144,20 @@ class User extends Authenticatable
     }
 
     /**
-     * Pelatih/pembina and the Ketua UKM run club activities and attendance.
+     * Ketua, Wakil Ketua and Sekretaris (or kemahasiswaan) maintain the officer roster.
+     */
+    public function managesOfficers(int $club): bool
+    {
+        return $this->isStudentAffairs() || $this->administersHimaju($club) || $this->currentAssignments()->where('role', 'pengurus')
+            ->where('club_id', $club)->whereIn('position', config('brudel.officer_managers'))->exists();
+    }
+
+    /**
+     * Every pengurus and the pelatih/pembina run club activities and attendance.
      */
     public function coachesClub(int $club): bool
     {
-        return $this->leadsClub($club) || $this->assigned('pembina', $club);
+        return $this->managesClub($club) || $this->assigned('pembina', $club);
     }
 
     public function managesEvent(int $event): bool

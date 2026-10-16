@@ -3,6 +3,24 @@
 <div class="page-heading"><div><p class="eyebrow">{{ strtoupper($activity->club->name) }} · {{ strtoupper($activity->typeLabel()) }}</p><h1>{{ $activity->title }}</h1>
 <p>{{ \App\Services\Wita::show($activity->starts_at, 'l, d F Y · H:i') }}–{{ \App\Services\Wita::show($activity->ends_at, 'H:i') }} WITA · {{ $activity->location }}</p></div><x-status :value="$activity->status"/></div>
 
+@if($activity->permit_status)
+<section class="panel permit-panel">
+    <div class="section-heading"><h2>Izin kegiatan</h2><x-status :value="$activity->permit_status === 'pending' ? 'submitted' : ($activity->permit_status === 'approved' ? 'accepted' : 'rejected')"/></div>
+    <p>Alasan izin: <strong>{{ $activity->permit_reasons }}</strong>@if($activity->room) · Ruangan: <strong>{{ $activity->room }}</strong>@endif · Diputuskan oleh {{ $activity->permitLevelLabel() }}@if($activity->permit_level === 'jurusan' && $activity->club->department) {{ $activity->club->department->name }}@endif.</p>
+    @if($activity->awaitsPermit())
+        <p class="muted">Kegiatan belum tampil untuk anggota dan kode kehadiran belum dapat dibuka sampai izin disetujui.</p>
+        @if($canDecide)
+        <form class="form-grid" method="post" action="/kegiatan/{{ $activity->id }}/izin">@csrf
+            <label class="span-2">Catatan (wajib bila menolak)<input name="note" maxlength="1000" placeholder="Mis. ruangan dipakai ujian; silakan pindah ke hari Jumat"></label>
+            <div class="span-2 inline-actions"><button class="button primary" name="decision" value="approved">Setujui izin</button><button class="button outline danger" name="decision" value="rejected">Tolak izin</button></div>
+        </form>
+        @endif
+    @else
+        <p class="muted">{{ $activity->permit_status === 'approved' ? 'Disetujui' : 'Ditolak' }} oleh {{ $activity->decider?->name }} · {{ \App\Services\Wita::show($activity->permit_decided_at) }} WITA{{ $activity->permit_note ? ' · '.$activity->permit_note : '' }}</p>
+    @endif
+</section>
+@endif
+
 <div class="detail-columns">
 <section class="panel">
     <h2>Tentang kegiatan</h2>
@@ -24,7 +42,7 @@
         <div class="attendance-code" aria-label="Kode kehadiran">{{ $activity->attendance_code }}</div>
         <p class="muted">Berlaku sampai {{ \App\Services\Wita::show($activity->code_expires_at, 'H:i') }} WITA · {{ $summary['present']->count() }} hadir dari {{ $summary['members'] }} anggota aktif</p>
         <form method="post" action="/kegiatan/{{ $activity->id }}/kode/tutup">@csrf<button class="button outline small">Tutup kode</button></form>
-    @elseif($activity->status === 'scheduled')
+    @elseif($activity->status === 'scheduled' && ! $activity->awaitsPermit())
         <p>Buat kode saat kegiatan dimulai. Anggota memasukkan kode ini di menu Jelajah Kegiatan.</p>
         <form class="inline-form" method="post" action="/kegiatan/{{ $activity->id }}/kode">@csrf<label>Berlaku (menit)<input type="number" name="minutes" min="5" max="480" value="{{ config('brudel.activity_code_minutes') }}"></label><button class="button primary small">Buat kode kehadiran</button></form>
     @else

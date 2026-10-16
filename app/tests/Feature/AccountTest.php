@@ -118,9 +118,13 @@ class AccountTest extends DemoTestCase
         $window = ['starts_at' => now()->format('Y-m-d\TH:i'), 'ends_at' => now()->addMonths(6)->format('Y-m-d\TH:i')];
         $chair = $this->user('pengurus');
 
-        $this->actingAs($chair)->post('/kelola/penugasan', ['user' => 'DEMO001', 'role' => 'pengurus', 'scope_id' => $badminton->id, 'position' => 'Sekretaris'] + $window)->assertSessionHasNoErrors();
-        $this->assertTrue($this->user('mahasiswa')->managesClub($badminton->id));
-        $this->post('/kelola/penugasan', ['user' => 'DEMO001', 'role' => 'pengurus', 'scope_id' => $badminton->id] + $window)->assertSessionHasErrors('action');
+        $this->actingAs($chair)->post('/kelola/penugasan', ['user' => 'DEMO001', 'role' => 'pengurus', 'scope_id' => $badminton->id, 'position' => 'Sekretaris'] + $window)->assertSessionHasErrors('action');
+        $this->post('/kelola/penugasan', ['user' => 'DEMO004', 'role' => 'pengurus', 'scope_id' => $badminton->id, 'position' => 'Sekretaris'] + $window)->assertSessionHasNoErrors();
+        $this->assertTrue($this->user('atlet1')->managesClub($badminton->id));
+        $this->post('/kelola/penugasan', ['user' => 'DEMO004', 'role' => 'pengurus', 'scope_id' => $badminton->id] + $window)->assertSessionHasErrors('action');
+        $this->actingAs($this->user('atlet1'))->post('/kelola/penugasan', ['user' => 'DEMO005', 'role' => 'pengurus', 'scope_id' => $badminton->id, 'position' => 'Bendahara'] + $window)->assertSessionHasNoErrors();
+        $this->actingAs($this->user('atlet2'))->post('/kelola/penugasan', ['user' => 'DEMO006', 'role' => 'pengurus', 'scope_id' => $badminton->id] + $window)->assertForbidden();
+        $this->actingAs($chair);
         $this->post('/kelola/penugasan', ['user' => 'DEMO002', 'role' => 'pengurus', 'scope_id' => $choir->id] + $window)->assertForbidden();
         $this->post('/kelola/penugasan', ['user' => 'DEMO002', 'role' => 'admin_event', 'scope_id' => 1] + $window)->assertForbidden();
         $this->post('/kelola/penugasan', ['user' => 'DEMO003', 'role' => 'pengurus', 'scope_id' => $badminton->id] + $window)->assertForbidden();

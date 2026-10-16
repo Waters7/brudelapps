@@ -85,6 +85,7 @@
 <section class="panel">
     <h2>Rubrik penilaian</h2>
     <p class="muted">Bobot total harus 100%. Rubrik terkunci setelah penilaian dimulai.</p>
+    @if($competition->criteria->isEmpty())<div class="alert warning">Lembar nilai juri belum terbuka sampai rubrik disimpan.</div>@endif
     <form method="post" action="/kelola/lomba/{{ $competition->id }}/rubrik">@csrf
         <div class="table-wrap"><table class="compact"><thead><tr><th>Kriteria</th><th>Bobot %</th><th>Keterangan</th></tr></thead><tbody>
         @php($rows = $competition->criteria->values())

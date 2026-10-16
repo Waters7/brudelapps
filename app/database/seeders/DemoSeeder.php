@@ -42,7 +42,7 @@ class DemoSeeder extends Seeder
 
             $people = [
                 ['Bintang Mandagi', 'mahasiswa', 'DEMO001', 'KEP'], ['Michelle Sumual', 'anggota', 'DEMO002', 'GIZ'], ['Andre Runtuwene', 'pengurus', 'DEMO003', 'KEP'],
-                ['Pengelola Kemahasiswaan', 'admin', null, null], ['Admin Pekan Prestasi', 'event', null, null], ['Koordinator Jurusan Keperawatan', 'jurusan', null, null],
+                ['Pengelola Kemahasiswaan Direktorat', 'admin', null, null], ['Admin Pekan Prestasi', 'event', null, null], ['Kemahasiswaan Jurusan Keperawatan', 'jurusan', null, null],
                 ['Juri Poster Kesehatan', 'juri', null, null], ['Operator Pertandingan', 'operator', null, null], ['Wakil Direktur III', 'pimpinan', null, null],
                 ['Pelatih Badminton', 'pembina', null, null], ['Rifky Lasut', 'atlet1', 'DEMO004', 'KESLING'], ['Grace Wowor', 'atlet2', 'DEMO005', 'GIZ'],
                 ['Yosua Pangemanan', 'atlet3', 'DEMO006', 'KEP'], ['Natalia Rumengan', 'atlet4', 'DEMO007', 'KESLING'], ['Kevin Tumbel', 'atlet5', 'DEMO008', 'GIZ'],
@@ -105,9 +105,15 @@ class DemoSeeder extends Seeder
 
             Assignment::firstOrCreate(['user_id' => $users['juri']->id, 'role' => 'penilai', 'competition_id' => $made['Lomba Poster Kesehatan']->id], $window);
             Assignment::firstOrCreate(['user_id' => $users['operator']->id, 'role' => 'operator', 'competition_id' => $made['Tenis Meja Tunggal']->id], $window);
-            if (! $made['Lomba Poster Kesehatan']->criteria()->exists()) {
-                foreach ([['Kesesuaian pesan kesehatan', 40], ['Kreativitas visual', 35], ['Keterbacaan', 25]] as $position => [$criterion, $weight]) {
-                    $made['Lomba Poster Kesehatan']->criteria()->create(['name' => $criterion, 'weight' => $weight, 'position' => $position + 1]);
+            $rubrics = [
+                'Lomba Poster Kesehatan' => [['Kesesuaian pesan kesehatan', 40], ['Kreativitas visual', 35], ['Keterbacaan', 25]],
+                'Debat Bahasa Inggris' => [['Argumentasi', 40], ['Penguasaan bahasa', 30], ['Penyampaian', 30]],
+            ];
+            foreach ($rubrics as $competition => $criteria) {
+                if (! $made[$competition]->criteria()->exists()) {
+                    foreach ($criteria as $position => [$criterion, $weight]) {
+                        $made[$competition]->criteria()->create(['name' => $criterion, 'weight' => $weight, 'position' => $position + 1]);
+                    }
                 }
             }
 
@@ -128,6 +134,8 @@ class DemoSeeder extends Seeder
             Membership::firstOrCreate(['club_id' => $all[2]->id, 'user_id' => $users['mahasiswa']->id], ['club_application_id' => $application->id, 'joined_at' => now()->subDays(2), 'division' => 'Riset']);
             // HIMAJU memberships are created automatically with each student; BEM members are appointed.
             Membership::firstOrCreate(['club_id' => Club::where('name', 'Badan Eksekutif Mahasiswa (BEM)')->value('id'), 'user_id' => $users['anggota']->id], ['joined_at' => now()->subMonth(), 'division' => 'Kementerian Kesehatan', 'status_reason' => 'Hasil Pemilihan Raya Mahasiswa 2026 (demo)']);
+            // Officers are chosen from active members, so the Ketua is a member too.
+            Membership::firstOrCreate(['club_id' => $all[0]->id, 'user_id' => $users['pengurus']->id], ['joined_at' => now()->subYear(), 'division' => 'Badminton']);
             foreach (['atlet1', 'atlet2', 'atlet3'] as $key) {
                 Membership::firstOrCreate(['club_id' => $all[0]->id, 'user_id' => $users[$key]->id], ['joined_at' => now()->subMonths(2), 'division' => 'Badminton']);
             }

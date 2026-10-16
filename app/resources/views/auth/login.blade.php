@@ -17,8 +17,8 @@
 <dl>
     <dt>Mahasiswa</dt><dd>mahasiswa@demo.brudel.test · anggota@demo.brudel.test</dd>
     <dt>Ketua UKM Olahraga · Pelatih</dt><dd>pengurus@demo.brudel.test · pembina@demo.brudel.test</dd>
-    <dt>Kemahasiswaan (superadmin) · Admin event</dt><dd>admin@demo.brudel.test · event@demo.brudel.test</dd>
-    <dt>Jurusan Keperawatan · Pimpinan</dt><dd>jurusan@demo.brudel.test · pimpinan@demo.brudel.test</dd>
+    <dt>Kemahasiswaan Direktorat (superadmin) · Admin event</dt><dd>admin@demo.brudel.test · event@demo.brudel.test</dd>
+    <dt>Kemahasiswaan Jurusan Keperawatan · Pimpinan</dt><dd>jurusan@demo.brudel.test · pimpinan@demo.brudel.test</dd>
     <dt>Juri · Operator</dt><dd>juri@demo.brudel.test · operator@demo.brudel.test</dd>
 </dl><small>Semua nama, kegiatan dan nilai pada demo bersifat ilustratif.</small></div>
 @endif

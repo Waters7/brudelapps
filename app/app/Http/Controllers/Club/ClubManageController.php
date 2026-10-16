@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Membership;
 use App\Models\Recruitment;
 use App\Services\Club\ClubService;
+use App\Services\PrivateFiles;
 use App\Services\Report\ReportService;
 use App\Services\Wita;
 use Illuminate\Http\RedirectResponse;
@@ -22,11 +23,13 @@ class ClubManageController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isStudentAffairs() || $user->assigned('pengurus'), 403);
+        abort_unless($user->isStudentAffairs() || $user->assigned('pengurus') || $user->assigned('jurusan'), 403);
         $clubs = Club::withCount([
             'memberships as active_members' => fn ($q) => $q->where('status', 'active'),
             'recruitments as open_recruitments' => fn ($q) => $q->where('opens_at', '<=', now())->where('closes_at', '>', now()),
-        ])->when(! $user->isStudentAffairs(), fn ($q) => $q->whereIn('id', $user->scopeIds('pengurus', 'club_id')))->ordered()->get();
+        ])->when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($scope) => $scope->whereIn('id', $user->scopeIds('pengurus', 'club_id'))
+            ->orWhere(fn ($himaju) => $himaju->where('category', 'himaju')->whereIn('department_id', $user->scopeIds('jurusan', 'department_id')))))
+            ->ordered()->get();
 
         return view('clubs.manage-index', ['clubs' => $clubs, 'departments' => Department::orderBy('id')->get()]);
     }
@@ -46,7 +49,9 @@ class ClubManageController extends Controller
                 ->orderByRaw("status = 'active' desc")->orderBy('division')->get(),
             'officers' => $club->officers()->with('user')->latest('starts_at')->get(),
             'counts' => Membership::where('club_id', $club->id)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
-            'canLead' => $request->user()->leadsClub($club->id),
+            'canLead' => $request->user()->managesOfficers($club->id),
+            'canAssignCoach' => $request->user()->leadsClub($club->id) || $request->user()->administersHimaju($club->id),
+            'candidates' => Membership::with('user')->where('club_id', $club->id)->where('status', 'active')->get()->sortBy('user.name'),
             'departments' => Department::orderBy('id')->get(),
         ]);
     }
@@ -79,6 +84,31 @@ class ClubManageController extends Controller
         $this->clubs->saveRecruitment($request->user(), $club, $recruitment, $data);
 
         return back()->with('success', 'Periode rekrutmen disimpan.');
+    }
+
+    public function banner(Request $request, Club $club): RedirectResponse
+    {
+        $request->validate(['banner' => PrivateFiles::BANNER_RULES]);
+        $this->clubs->updateBanner($request->user(), $club, $request->file('banner'));
+
+        return back()->with('success', 'Banner kartu diperbarui.');
+    }
+
+    public function removeBanner(Request $request, Club $club): RedirectResponse
+    {
+        $this->clubs->removeBanner($request->user(), $club);
+
+        return back()->with('success', 'Banner kartu dihapus; kartu kembali memakai warna bidang.');
+    }
+
+    /**
+     * Banner image for catalog cards and the profile header; public like the rest of the club profile.
+     */
+    public function showBanner(Club $club, PrivateFiles $files): StreamedResponse
+    {
+        abort_unless($club->banner_path, 404);
+
+        return $files->inlineImage($club->banner_path, $club->banner_disk);
     }
 
     public function appointMember(Request $request, Club $club): RedirectResponse

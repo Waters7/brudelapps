@@ -28,7 +28,8 @@ class ActivityController extends Controller
         $user = $request->user();
         $myClubs = Membership::where('user_id', $user->id)->where('status', 'active')->pluck('club_id');
         $coached = Club::orderBy('name')->get()->filter(fn ($club) => $user->coachesClub($club->id))->values();
-        $visible = fn ($q) => $q->where('is_public', true)->orWhereIn('club_id', $myClubs->merge($coached->pluck('id')));
+        $visible = fn ($q) => $q->where(fn ($open) => $open->confirmed()->where(fn ($q) => $q->where('is_public', true)->orWhereIn('club_id', $myClubs)))
+            ->orWhereIn('club_id', $coached->pluck('id'));
 
         return view('activities.index', [
             'upcoming' => ClubActivity::with('club')->where($visible)->where('status', '!=', 'cancelled')->where('ends_at', '>', now())
@@ -55,10 +56,38 @@ class ActivityController extends Controller
             'starts_at' => 'required|date',
             'ends_at' => 'required|date',
             'is_public' => 'nullable|boolean',
+            'needs_room' => 'nullable|boolean',
+            'room' => 'nullable|string|max:150',
         ]);
         $activity = $this->activities->create($request->user(), $club, $data);
 
-        return redirect('/kegiatan/'.$activity->id)->with('success', 'Kegiatan dibuat dan anggota aktif mendapat notifikasi.');
+        return redirect('/kegiatan/'.$activity->id)->with('success', $activity->awaitsPermit()
+            ? 'Kegiatan dibuat dan menunggu izin '.$activity->permitLevelLabel().' ('.$activity->permit_reasons.'). Anggota diberi tahu setelah izin disetujui.'
+            : 'Kegiatan dibuat dan anggota aktif mendapat notifikasi.');
+    }
+
+    /**
+     * Permit requests the user decides: HIMAJU for kemahasiswaan jurusan, all other organizations for direktorat.
+     */
+    public function permits(Request $request): View
+    {
+        $user = $request->user();
+        abort_unless($user->isStudentAffairs() || $user->assigned('jurusan'), 403);
+        $candidates = ClubActivity::with('club.department', 'creator', 'decider')->whereNotNull('permit_status')->latest('id')->limit(200)->get()
+            ->filter(fn ($activity) => $this->activities->canDecidePermit($user, $activity) || $activity->permit_decided_by === $user->id);
+
+        return view('activities.permits', [
+            'pending' => $candidates->where('permit_status', 'pending')->sortBy('starts_at'),
+            'decided' => $candidates->where('permit_status', '!=', 'pending')->take(20),
+        ]);
+    }
+
+    public function decidePermit(Request $request, ClubActivity $activity): RedirectResponse
+    {
+        $data = $request->validate(['decision' => 'required|in:approved,rejected', 'note' => 'nullable|string|max:1000']);
+        $this->activities->decidePermit($request->user(), $activity, $data['decision'], $data['note'] ?? null);
+
+        return back()->with('success', $data['decision'] === 'approved' ? 'Izin disetujui; anggota mendapat notifikasi.' : 'Izin ditolak dan kegiatan dibatalkan.');
     }
 
     public function show(Request $request, ClubActivity $activity): View
@@ -67,8 +96,9 @@ class ActivityController extends Controller
         $canManage = $this->activities->canManage($request->user(), $activity);
 
         return view('activities.show', [
-            'activity' => $activity->load('club', 'creator'),
+            'activity' => $activity->load('club', 'creator', 'decider'),
             'canManage' => $canManage,
+            'canDecide' => $this->activities->canDecidePermit($request->user(), $activity),
             'summary' => $canManage ? $this->activities->attendanceSummary($activity) : null,
             'attended' => $activity->attendances()->where('user_id', $request->user()->id)->first(),
         ]);

@@ -10,6 +10,7 @@ use App\Http\Controllers\Campus\SettingsController;
 use App\Http\Controllers\Certificate\CertificateController;
 use App\Http\Controllers\Club\ActivityController;
 use App\Http\Controllers\Club\ClubManageController;
+use App\Http\Controllers\Club\SpaceController;
 use App\Http\Controllers\Delegation\DelegationController;
 use App\Http\Controllers\Department\DepartmentController;
 use App\Http\Controllers\EnrollmentController;
@@ -47,6 +48,7 @@ Route::get('/verifikasi/{token}', [CertificateController::class, 'verify'])->mid
 Route::get('/mahasiswa/{slug}', [AchievementController::class, 'profile']);
 Route::get('/live', [LiveController::class, 'index']);
 Route::get('/live/{competition}', [LiveController::class, 'show']);
+Route::get('/banner/{club}', [ClubManageController::class, 'showBanner'])->middleware('throttle:banner');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -69,7 +71,20 @@ Route::middleware('auth')->group(function () {
     /* Jelajah kegiatan UKM dan absensi berkode */
     Route::get('/kegiatan', [ActivityController::class, 'index']);
     Route::post('/kegiatan', [ActivityController::class, 'store']);
+    Route::view('/bantuan', 'support');
+
+    /* Ruang organisasi: pengumuman, obrolan, quest, peringkat */
+    Route::get('/ruang/{club}', [SpaceController::class, 'show']);
+    Route::post('/ruang/{club}/pengumuman', [SpaceController::class, 'storePost']);
+    Route::post('/ruang/pengumuman/{post}/sematkan', [SpaceController::class, 'pinPost']);
+    Route::post('/ruang/pengumuman/{post}/hapus', [SpaceController::class, 'destroyPost']);
+    Route::post('/ruang/{club}/quest', [SpaceController::class, 'storeQuest']);
+    Route::post('/ruang/quest/{quest}/tutup', [SpaceController::class, 'closeQuest']);
+    Route::post('/ruang/quest/{quest}/lapor', [SpaceController::class, 'submitQuest']);
+    Route::post('/ruang/laporan-quest/{submission}', [SpaceController::class, 'reviewQuest']);
     Route::post('/kegiatan/hadir', [ActivityController::class, 'checkIn'])->middleware('throttle:checkin');
+    Route::get('/kegiatan/izin', [ActivityController::class, 'permits']);
+    Route::post('/kegiatan/{activity}/izin', [ActivityController::class, 'decidePermit']);
     Route::get('/kegiatan/{activity}', [ActivityController::class, 'show']);
     Route::post('/kegiatan/{activity}/kode', [ActivityController::class, 'openCode']);
     Route::post('/kegiatan/{activity}/kode/tutup', [ActivityController::class, 'closeCode']);
@@ -124,6 +139,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/ukm/{club}', [ClubManageController::class, 'update']);
     Route::post('/kelola/ukm/{club}/rekrutmen/{recruitment?}', [ClubManageController::class, 'saveRecruitment']);
     Route::post('/kelola/ukm/{club}/anggota', [ClubManageController::class, 'appointMember']);
+    Route::post('/kelola/ukm/{club}/banner', [ClubManageController::class, 'banner']);
+    Route::post('/kelola/ukm/{club}/banner/hapus', [ClubManageController::class, 'removeBanner']);
     Route::post('/kelola/anggota/{membership}', [ClubManageController::class, 'updateMember']);
     Route::get('/kelola/ukm/{club}/ekspor', [ClubManageController::class, 'export']);
 

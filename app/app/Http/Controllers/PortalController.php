@@ -21,6 +21,8 @@ use App\Models\Registration;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Achievement\AchievementService;
+use App\Services\Club\ActivityService;
+use App\Services\Club\SpaceService;
 use App\Services\Report\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,7 +42,7 @@ class PortalController extends Controller
         return view('landing', [
             'competitions' => Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))
                 ->where('closes_at', '>', now())->orderBy('closes_at')->limit(6)->get(),
-            'activities' => ClubActivity::with('club')->where('is_public', true)->where('status', '!=', 'cancelled')
+            'activities' => ClubActivity::with('club')->confirmed()->where('is_public', true)->where('status', '!=', 'cancelled')
                 ->where('ends_at', '>', now())->orderBy('starts_at')->limit(6)->get(),
             'recruitments' => Recruitment::with('club')->whereHas('club', fn ($q) => $q->where('active', true))
                 ->where('opens_at', '<=', now())->where('closes_at', '>', now())->orderBy('closes_at')->limit(6)->get(),
@@ -117,6 +119,8 @@ class PortalController extends Controller
         }
         if ($all || $departments->isNotEmpty()) {
             $tasks[] = ['Persetujuan jurusan menunggu', DepartmentApproval::where('status', 'pending')->when(! $all, fn ($q) => $q->whereIn('department_id', $departments))->count(), '/jurusan'];
+            $activities = app(ActivityService::class);
+            $tasks[] = ['Izin kegiatan menunggu', ClubActivity::with('club')->where('permit_status', 'pending')->get()->filter(fn ($activity) => $activities->canDecidePermit($user, $activity))->count(), '/kegiatan/izin'];
         }
         if ($all) {
             $tasks[] = ['Pengajuan event menunggu', Event::where('status', 'submitted')->count(), '/kelola/event'];
@@ -128,7 +132,7 @@ class PortalController extends Controller
         if ($user->assigned('penilai')) {
             $tasks[] = ['Nomor lomba untuk dinilai', $user->scopeIds('penilai', 'competition_id')->count(), '/penilaian'];
         }
-        $coached = $user->scopeIds('pembina', 'club_id')->merge($user->currentAssignments()->where('role', 'pengurus')->where('position', 'Ketua')->pluck('club_id'))->unique();
+        $coached = $user->scopeIds('pembina', 'club_id')->merge($clubs)->unique();
         if ($coached->isNotEmpty()) {
             $tasks[] = ['Laporan kegiatan UKM belum dibuat', ClubActivity::whereIn('club_id', $coached)->where('status', 'scheduled')->where('ends_at', '<', now())->count(), '/kegiatan'];
         }
@@ -143,13 +147,14 @@ class PortalController extends Controller
             'officers' => fn ($q) => $q->where('starts_at', '<=', now())->where('ends_at', '>', now())->with('user'),
             'events' => fn ($q) => $q->where('status', 'approved')->latest(),
             'awards' => fn ($q) => $q->latest('awarded_on')->limit(6),
-            'clubActivities' => fn ($q) => $q->where('is_public', true)->where('ends_at', '>', now())->orderBy('starts_at')->limit(5),
+            'clubActivities' => fn ($q) => $q->confirmed()->where('is_public', true)->where('status', '!=', 'cancelled')->where('ends_at', '>', now())->orderBy('starts_at')->limit(5),
         ])->findOrFail($id);
 
         return view('club', [
             'club' => $club,
             'activeMembers' => $club->memberships()->where('status', 'active')->count(),
             'applications' => ClubApplication::where('user_id', auth()->id())->whereIn('recruitment_id', $club->recruitments->pluck('id'))->get()->keyBy('recruitment_id'),
+            'canEnterSpace' => app(SpaceService::class)->canEnter(auth()->user(), $club),
         ]);
     }
 

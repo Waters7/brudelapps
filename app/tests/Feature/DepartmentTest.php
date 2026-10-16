@@ -29,7 +29,7 @@ class DepartmentTest extends DemoTestCase
         $this->actingAs($reviewer)->get('/jurusan')->assertOk()
             ->assertSee('Bintang Mandagi')->assertSee('UKM Inovasi dan Pengabmas')
             ->assertSee('Yosua Pangemanan')->assertDontSee('Michelle Sumual')->assertDontSee('Grace Wowor');
-        $this->get('/jurusan?ukm=tidak')->assertOk()->assertViewHas('students', fn ($students) => $students->pluck('name')->contains('Andre Runtuwene')
+        $this->get('/jurusan?ukm=tidak')->assertOk()->assertViewHas('students', fn ($students) => $students->pluck('name')->contains('Mahasiswa Belum Aktivasi')
             && ! $students->pluck('name')->contains('Bintang Mandagi') && ! $students->pluck('name')->contains('Yosua Pangemanan'));
         $gizi = Department::where('code', 'GIZ')->first();
         $this->get('/jurusan?jurusan='.$gizi->id)->assertOk()->assertDontSee('Michelle Sumual');

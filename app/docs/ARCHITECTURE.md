@@ -10,7 +10,7 @@ Aturan bisnis berada di service per modul; controller hanya memvalidasi input da
 |---|---|---|
 | Akun | `Account\AccountService` (aktivasi, pemulihan, ubah kata sandi, foto, Google), `StudentImportService`, `AssignmentService` | `AuthController`, `Account\GoogleController`, `Account\ProfileController`, `Account\StudentController`, `Account\AssignmentController`; aturan `Rules\Turnstile` |
 | Data kampus & jurusan | `Campus\CampusService` | `Campus\SettingsController`, `Department\DepartmentController` |
-| UKM & kegiatan | `Club\ClubService`, `Club\ActivityService` | `Club\ClubManageController`, `Club\ActivityController` |
+| UKM & kegiatan | `Club\ClubService`, `Club\ActivityService` (izin kegiatan), `Club\SpaceService` (ruang organisasi) | `Club\ClubManageController`, `Club\ActivityController`, `Club\SpaceController`, Livewire `ClubChat` |
 | Event & akun lomba | `Event\EventService`, `Event\CompetitionAccountService` | `Event\EventManageController`, `Event\CompetitionAccountController` |
 | Pendaftaran | `Registration\EnrollmentService` (termasuk persetujuan jurusan) | `EnrollmentController`, `Department\DepartmentController` |
 | Pembayaran | `Payment\PaymentService` | `Payment\PaymentController` |
@@ -20,6 +20,7 @@ Aturan bisnis berada di service per modul; controller hanya memvalidasi input da
 | Sertifikat | `Certificate\CertificateService` | `Certificate\CertificateController` |
 | Prestasi | `Achievement\AchievementService` | `Achievement\AchievementController` |
 | Laporan | `Report\ReportService` | `Report\ReportController` |
+| Bantuan | `Support\SupportService` | Livewire `SupportChat` (tombol mengambang dan `/bantuan`) |
 
 Bersama: `DomainService` (aturan, audit, riwayat status), `PrivateFiles` (PDF privat dengan pemeriksaan tanda tangan berkas), notifikasi `BrudelNotice` (database, queue) dan `AccountLink` (email).
 
@@ -92,13 +93,13 @@ Keunikan penting: NIM, email, kode prodi, rekrutmen/pengguna, UKM/pengguna, nomo
 | Peran | Lingkup | Hak |
 |---|---|---|
 | Mahasiswa aktif teraktivasi | Diri dan tim | Daftar UKM/lomba, draf, undang/konfirmasi, unggah dokumen dan bukti bayar, status, Sertifikat Saya, Prestasi Saya, ajukan prestasi eksternal, persetujuan publikasi |
-| Kemahasiswaan (superadmin) | Seluruh kampus | Impor dan status mahasiswa, jurusan/prodi, rekening dan kebijakan, semua peran, UKM, keputusan event, akun lomba semua event, verifikasi prestasi, surat tugas, buka koreksi hasil, semua laporan |
+| Kemahasiswaan Direktorat (superadmin) | Seluruh kampus | Impor dan status mahasiswa, jurusan/prodi, rekening dan kebijakan, semua peran, UKM, keputusan event, akun lomba semua event, verifikasi prestasi, surat tugas, buka koreksi hasil, semua laporan |
 | Pengurus UKM (Ketua) | UKM pada penugasan | Profil UKM, rekrutmen, tinjau pendaftar, anggota/divisi/status, ekspor UKM; Ketua: tambah/akhiri pengurus dan pembina, ajukan event, melihat dan mengganti kata sandi akun lomba event yang diajukannya, membuat kegiatan dan kode kehadiran |
 | Admin event | Event pada penugasan | Nomor lomba event approved, tinjau pendaftaran, verifikasi pembayaran, bagan, rubrik, tugaskan penilai/operator, sahkan hasil, penghargaan, sertifikat, usulan delegasi, laporan event |
 | Pengelola lomba (akun otomatis) | Satu nomor lomba | Hak admin event, terbatas pada nomor lomba itu |
-| Jurusan | Satu dari 7 jurusan | Persetujuan pendaftaran untuk anggota jurusannya; melihat UKM yang diikuti mahasiswa, mahasiswa tidak aktif di UKM, sertifikat juara dan bukti prestasi jurusannya; ekspor CSV |
+| Kemahasiswaan Jurusan (admin + koordinator jurusan) | Satu dari 7 jurusan | Mengelola HIMAJU jurusannya (profil, anggota, pengurus, pembina) dan memutuskan izin kegiatan HIMAJU; tidak dapat mengelola organisasi lain, pengaturan kampus, atau peran lain; persetujuan pendaftaran untuk anggota jurusannya; melihat UKM yang diikuti mahasiswa, mahasiswa tidak aktif di UKM, sertifikat juara dan bukti prestasi jurusannya; ekspor CSV |
 | Juri/penilai (maks. 5 per nomor lomba) | Nomor lomba | Mengisi nilai rubrik (setiap perubahan tercatat di log); tidak untuk diri/tim sendiri; terkunci setelah pengesahan |
-| Pelatih/pembina | UKM | Membuat kegiatan, kode kehadiran, dan laporan kegiatan UKM; melihat delegasi yang didampingi |
+| Pelatih/pembina | UKM | Membuat kegiatan, kode kehadiran, dan laporan kegiatan UKM; mengelola pengumuman dan quest di ruang organisasi; melihat delegasi yang didampingi |
 | Pimpinan (Direktur, Wakil Direktur I–III) | Seluruh kampus (baca) | Dashboard pimpinan (ringkasan laporan, IKU per jurusan, notifikasi delegasi), laporan; memutuskan usulan delegasi yang tidak melibatkan dirinya |
 | Operator skor & live score | Nomor lomba | Skor sementara, status tampil, pencatatan pemenang; tidak untuk pertandingan yang diikutinya |
 

@@ -17,7 +17,8 @@ class ActivityTest extends DemoTestCase
     public function test_coach_creates_activities_and_members_are_notified(): void
     {
         $badminton = Club::where('name', 'UKM Olahraga')->first();
-        $data = ['club_id' => $badminton->id, 'type' => 'latihan', 'title' => 'Latihan fisik', 'location' => 'GOR', 'starts_at' => now()->addDay()->format('Y-m-d\TH:i'), 'ends_at' => now()->addDay()->addHours(2)->format('Y-m-d\TH:i'), 'is_public' => 1];
+        $monday = now(config('brudel.timezone'))->next('Monday')->setTime(9, 0);
+        $data = ['club_id' => $badminton->id, 'type' => 'latihan', 'title' => 'Latihan fisik', 'location' => 'GOR', 'starts_at' => $monday->format('Y-m-d\TH:i'), 'ends_at' => $monday->copy()->addHours(2)->format('Y-m-d\TH:i'), 'is_public' => 1];
         $this->actingAs($this->user('mahasiswa'))->post('/kegiatan', $data)->assertForbidden();
         $this->actingAs($this->user('pembina'))->post('/kegiatan', $data)->assertRedirect();
         $this->actingAs($this->user('pengurus'))->post('/kegiatan', ['type' => 'meeting', 'title' => 'Rapat', 'is_public' => 1] + $data)->assertRedirect();

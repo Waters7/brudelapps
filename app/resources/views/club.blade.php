@@ -1,6 +1,7 @@
 <x-layout :title="$club->name">
 <a class="back-link" href="/ukm">← Jelajahi UKM</a>
-<div class="detail-header"><span class="large-icon {{ $club->tone() }}"><x-icon :name="$club->symbol"/></span><div><span class="eyebrow">{{ strtoupper($club->categoryLabel()) }}@if($club->field) · {{ strtoupper($club->field) }}@endif</span><h1>{{ $club->name }}</h1><p>{{ $activeMembers }} anggota aktif · Poltekkes Kemenkes Manado @unless($club->active)· <strong>Sedang tidak menerima anggota</strong>@endunless</p></div></div>
+@if($club->banner_path)<img class="profile-banner" src="/banner/{{ $club->id }}?v={{ $club->updated_at?->timestamp }}" alt="Banner {{ $club->name }}">@endif
+<div class="detail-header"><span class="large-icon {{ $club->tone() }}"><x-icon :name="$club->symbol"/></span><div><span class="eyebrow">{{ strtoupper($club->categoryLabel()) }}@if($club->field) · {{ strtoupper($club->field) }}@endif</span><h1>{{ $club->name }}</h1>@if($canEnterSpace)<a class="button primary space-enter" href="/ruang/{{ $club->id }}">Masuk ruang organisasi →</a>@endif<p>{{ $activeMembers }} anggota aktif · Poltekkes Kemenkes Manado @unless($club->active)· <strong>Sedang tidak menerima anggota</strong>@endunless</p></div></div>
 <div class="detail-columns">
 <div>
 <section class="panel"><h2>Tumbuh bersama {{ $club->name }}</h2><p>{{ $club->description }}</p><hr>

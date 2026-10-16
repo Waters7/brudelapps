@@ -122,6 +122,7 @@ class EnrollmentTest extends TestCase
         $a = $this->service->applyClub($this->student, $r->id, 'Saya ingin bergabung dan belajar bersama komunitas.');
         $this->actingAs($this->manager)->post('/tinjauan/ukm/'.$a->id, ['decision' => 'accepted'])->assertForbidden();
         $this->get('/tinjauan')->assertDontSee($a->motivation);
+        Membership::where('user_id', $this->manager->id)->where('club_id', Recruitment::first()->club_id)->update(['status' => 'left']);
         $self = $this->service->applyClub($this->manager, Recruitment::first()->id, 'Saya ingin bergabung dan belajar bersama komunitas.');
         $this->post('/tinjauan/ukm/'.$self->id, ['decision' => 'accepted'])->assertForbidden();
         $reg = $this->draft();

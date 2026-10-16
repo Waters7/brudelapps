@@ -18,7 +18,11 @@ class JudgeController extends Controller
         $ids = $request->user()->scopeIds('penilai', 'competition_id');
 
         return view('scoring.index', [
-            'competitions' => Competition::with('event')->whereIn('id', $ids)->withCount(['registrations as accepted_count' => fn ($q) => $q->where('status', 'accepted')])->get(),
+            'competitions' => Competition::with('event')->whereIn('id', $ids)->withCount([
+                'registrations as accepted_count' => fn ($q) => $q->where('status', 'accepted'),
+                'criteria as criteria_count',
+                'scores as my_scores' => fn ($q) => $q->where('judge_id', $request->user()->id),
+            ])->get(),
         ]);
     }
 

@@ -48,7 +48,7 @@ npm run build
 php artisan view:cache
 ```
 
-82 tes lulus di PostgreSQL 17.11 (termasuk uji konkurensi dua proses); di SQLite 78 lulus dan 4 tes khusus PostgreSQL dilewati (16 Oktober 2026). Hasil, cara menjalankan di PostgreSQL, trial lokal dengan `TrialSeeder`, serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
+94 tes lulus di PostgreSQL 17.11 (termasuk uji konkurensi dua proses); di SQLite 90 lulus dan 4 tes khusus PostgreSQL dilewati (16 Oktober 2026). Hasil, cara menjalankan di PostgreSQL, trial lokal dengan `TrialSeeder`, serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
 
 ## Dokumentasi
 

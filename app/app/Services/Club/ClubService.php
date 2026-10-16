@@ -10,7 +10,9 @@ use App\Models\Recruitment;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
 use App\Services\DomainService;
+use App\Services\PrivateFiles;
 use App\Services\Wita;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -19,6 +21,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ClubService extends DomainService
 {
+    public function __construct(private PrivateFiles $files) {}
+
     /**
      * @param  array{name: string, field: string, description: string, mentor: string, contact: string, symbol?: ?string, activities?: ?string, active?: bool}  $data
      */
@@ -115,6 +119,27 @@ class ClubService extends DomainService
             }
             $this->audit($actor, 'membership.updated', $membership, ['from' => $from, 'to' => $data['status'], 'division' => $membership->division]);
         });
+    }
+
+    /**
+     * Replace the card banner shown in Jelajahi UKM; the image is re-encoded to 1200×480.
+     */
+    public function updateBanner(User $actor, Club $club, UploadedFile $file): void
+    {
+        abort_unless($actor->managesClub($club->id), 403);
+        [$path, $disk] = $this->files->storeBanner($file, 'club-banners/'.$club->id);
+        $old = [$club->banner_path, $club->banner_disk];
+        $club->update(['banner_path' => $path, 'banner_disk' => $disk]);
+        $this->files->delete($old[0], $old[1]);
+        $this->audit($actor, 'club.banner_updated', $club);
+    }
+
+    public function removeBanner(User $actor, Club $club): void
+    {
+        abort_unless($actor->managesClub($club->id), 403);
+        $this->files->delete($club->banner_path, $club->banner_disk);
+        $club->update(['banner_path' => null, 'banner_disk' => null]);
+        $this->audit($actor, 'club.banner_removed', $club);
     }
 
     /**

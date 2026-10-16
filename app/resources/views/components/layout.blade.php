@@ -31,9 +31,10 @@
         ]),
         'PENGELOLAAN' => array_filter([
             $me->isReviewer() ? ['/tinjauan', 'check', 'Tinjau Pengajuan'] : null,
-            $has('kemahasiswaan', 'pengurus') ? ['/kelola/ukm', 'users', 'Kelola UKM'] : null,
+            $has('kemahasiswaan', 'pengurus', 'jurusan') ? ['/kelola/ukm', 'users', 'Kelola UKM'] : null,
             $has('kemahasiswaan', 'admin_event', 'pengurus', 'pengelola_lomba') ? ['/kelola/event', 'calendar', 'Kelola Event & Lomba'] : null,
             $has('kemahasiswaan', 'jurusan') ? ['/jurusan', 'book', 'Jurusan'] : null,
+            $has('kemahasiswaan', 'jurusan') ? ['/kegiatan/izin', 'calendar', 'Izin Kegiatan'] : null,
             $managesCompetition ? ['/pembayaran', 'file', 'Verifikasi Pembayaran'] : null,
             $has('penilai') ? ['/penilaian', 'check', 'Penilaian Juri'] : null,
             $has('operator', 'admin_event', 'pengelola_lomba', 'kemahasiswaan') ? ['/operator', 'clock', 'Operator Skor & Live'] : null,
@@ -49,6 +50,7 @@
     ];
     $sections['LAINNYA'] = [
         ['/notifikasi', 'bell', 'Notifikasi', $unread ? (string) min($unread, 99) : null],
+        ['/bantuan', 'chat', $has('kemahasiswaan') ? 'Kotak Bantuan' : 'Bantuan'],
         ['/rekomendasi', 'spark', 'Status Fitur'],
         ['/profil', 'user', 'Profil & Kata Sandi'],
     ];
@@ -93,4 +95,6 @@
 @if($errors->any())<div class="alert error" role="alert"><strong>Periksa kembali isian Anda.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 {{ $slot }}
 <footer class="footer"><span>© {{ date('Y') }} BRUDEL · Poltekkes Kemenkes Manado</span><span>Sportif Berkompetisi, Unggul Berprestasi.</span></footer>
-</main></div></div>@livewireScripts</body></html>
+</main></div></div>
+@unless(request()->is('bantuan'))<livewire:support-chat />@endunless
+@livewireScripts</body></html>

@@ -17,6 +17,9 @@ class PrivateFiles
 
     public const DOCUMENT_RULES = 'required|file|mimes:pdf,docx|extensions:pdf,docx|max:5120';
 
+    /** UKM card banner: any image of at least 600×240 px; stored as 1200×480 (see public/templates). */
+    public const BANNER_RULES = 'required|file|image|mimes:jpg,jpeg,png,webp|extensions:jpg,jpeg,png,webp|max:3072|dimensions:min_width=600,min_height=240,max_width=8000,max_height=8000';
+
     public const PHOTO_RULES = 'required|file|image|mimes:jpg,jpeg,png,webp|extensions:jpg,jpeg,png,webp|max:2048|dimensions:min_width=100,min_height=100,max_width=6000,max_height=6000';
 
     /**
@@ -56,13 +59,35 @@ class PrivateFiles
      */
     public function storePhoto(UploadedFile $file, string $directory): array
     {
+        return $this->storeImage($file, $directory, 320, 320, 'photo');
+    }
+
+    /**
+     * Re-encode a UKM card banner to a 1200×480 JPEG (5:2, center-cropped).
+     *
+     * @return array{0: string, 1: string}
+     */
+    public function storeBanner(UploadedFile $file, string $directory): array
+    {
+        return $this->storeImage($file, $directory, 1200, 480, 'banner');
+    }
+
+    /**
+     * Center-crop to the target aspect ratio, resize, and re-encode as JPEG.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function storeImage(UploadedFile $file, string $directory, int $width, int $height, string $field): array
+    {
         $source = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));
         if (! $source) {
-            throw ValidationException::withMessages(['photo' => 'Gambar tidak dapat dibaca.']);
+            throw ValidationException::withMessages([$field => 'Gambar tidak dapat dibaca.']);
         }
-        $side = min(imagesx($source), imagesy($source));
-        $target = imagecreatetruecolor(320, 320);
-        imagecopyresampled($target, $source, 0, 0, intdiv(imagesx($source) - $side, 2), intdiv(imagesy($source) - $side, 2), 320, 320, $side, $side);
+        [$sourceWidth, $sourceHeight] = [imagesx($source), imagesy($source)];
+        $cropWidth = min($sourceWidth, (int) round($sourceHeight * $width / $height));
+        $cropHeight = min($sourceHeight, (int) round($cropWidth * $height / $width));
+        $target = imagecreatetruecolor($width, $height);
+        imagecopyresampled($target, $source, 0, 0, intdiv($sourceWidth - $cropWidth, 2), intdiv($sourceHeight - $cropHeight, 2), $width, $height, $cropWidth, $cropHeight);
         ob_start();
         imagejpeg($target, null, 85);
         $jpeg = (string) ob_get_clean();
@@ -72,7 +97,7 @@ class PrivateFiles
         $disk = config('brudel.document_disk');
         $path = trim($directory, '/').'/'.Str::random(32).'.jpg';
         if (! Storage::disk($disk)->put($path, $jpeg, ['visibility' => 'private'])) {
-            throw ValidationException::withMessages(['photo' => 'Penyimpanan foto gagal.']);
+            throw ValidationException::withMessages([$field => 'Penyimpanan gambar gagal.']);
         }
 
         return [$path, $disk];

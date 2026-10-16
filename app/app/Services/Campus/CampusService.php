@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  */
 class CampusService extends DomainService
 {
-    public const SETTING_KEYS = ['regional_definition', 'refund_policy', 'certificate_prefix'];
+    public const SETTING_KEYS = ['regional_definition', 'refund_policy', 'certificate_prefix', 'operating_days', 'operating_open', 'operating_close'];
 
     /**
      * @param  array{name: string, department_id: int, code?: ?string}  $data

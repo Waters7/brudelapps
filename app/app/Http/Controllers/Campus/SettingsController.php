@@ -34,7 +34,14 @@ class SettingsController extends Controller
             'regional_definition' => 'required|string|max:1000',
             'refund_policy' => 'required|string|max:3000',
             'certificate_prefix' => 'required|string|max:30',
+            'operating_days' => 'sometimes|required|array|min:1',
+            'operating_days.*' => 'integer|between:1,7',
+            'operating_open' => 'sometimes|required|date_format:H:i',
+            'operating_close' => 'sometimes|required|date_format:H:i|after:operating_open',
         ]);
+        if (isset($data['operating_days'])) {
+            $data['operating_days'] = collect($data['operating_days'])->map(fn ($day) => (int) $day)->unique()->sort()->join(',');
+        }
         $this->campus->saveSettings($request->user(), $data);
 
         return back()->with('success', 'Pengaturan kampus disimpan.');

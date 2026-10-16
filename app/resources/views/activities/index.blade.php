@@ -33,13 +33,17 @@
 @if($coached->isNotEmpty())
 <section class="panel">
     <h2>Buat kegiatan UKM</h2>
-    <form class="form-grid" method="post" action="/kegiatan" x-data="{ type: 'latihan' }">@csrf
+    @php($days = collect(explode(',', (string) \App\Models\Setting::value('operating_days')))->map(fn ($day) => [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'][(int) $day] ?? null)->filter()->join(', '))
+    <p class="muted">Kegiatan langsung terbit, kecuali meminjam ruangan atau di luar jam operasional kampus ({{ $days }}, {{ \App\Models\Setting::value('operating_open') }}–{{ \App\Models\Setting::value('operating_close') }} WITA). Kegiatan seperti itu menunggu izin Kemahasiswaan Jurusan (HIMAJU) atau Kemahasiswaan Direktorat (BEM, MPM, dan UKM).</p>
+    <form class="form-grid" method="post" action="/kegiatan" x-data="{ type: 'latihan', room: false }">@csrf
         <label>UKM<select name="club_id" required>@foreach($coached as $club)<option value="{{ $club->id }}">{{ $club->name }}</option>@endforeach</select></label>
         <label>Jenis kegiatan<select name="type" x-model="type">@foreach(\App\Models\ClubActivity::TYPES as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach</select></label>
         <label class="span-2">Judul<input name="title" required maxlength="150" placeholder="Latihan rutin Rabu sore"></label>
         <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required></label>
         <label>Selesai (WITA)<input type="datetime-local" name="ends_at" required></label>
         <label class="span-2">Lokasi<input name="location" required maxlength="190"></label>
+        <label class="checkbox-label span-2"><input type="hidden" name="needs_room" value="0"><input type="checkbox" name="needs_room" value="1" x-model="room"><span>Perlu meminjam ruangan kampus (memerlukan izin)</span></label>
+        <label class="span-2" x-show="room" x-cloak>Ruangan yang dipinjam<input name="room" maxlength="150" placeholder="Mis. Aula Gedung A, Lab Komputer 2" x-bind:required="room"></label>
         <label class="span-2">Keterangan (opsional)<textarea name="description" rows="2" maxlength="3000"></textarea></label>
         <label class="checkbox-label span-2" x-show="type !== 'meeting'"><input type="hidden" name="is_public" value="0"><input type="checkbox" name="is_public" value="1" checked><span>Tampilkan di halaman depan dan Jelajah Kegiatan (meeting internal selalu tertutup)</span></label>
         <div class="span-2"><button class="button primary">Buat kegiatan</button>

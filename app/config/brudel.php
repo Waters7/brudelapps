@@ -45,14 +45,18 @@ return [
         'regional_definition' => 'Regional: kegiatan lintas provinsi dalam negeri. Klasifikasi mengikuti cakupan resmi penyelenggara.',
         'refund_policy' => 'Kebijakan pembatalan dan pengembalian dana belum ditetapkan kampus. Hubungi kemahasiswaan sebelum mentransfer.',
         'certificate_prefix' => 'BRUDEL',
+        // Campus operating hours (WITA, ISO weekdays 1 = Senin). Activities outside them need a permit.
+        'operating_days' => '1,2,3,4,5',
+        'operating_open' => '07:30',
+        'operating_close' => '16:00',
     ],
 
     'roles' => [
-        'kemahasiswaan' => ['label' => 'Kemahasiswaan (superadmin)', 'scope' => null],
+        'kemahasiswaan' => ['label' => 'Kemahasiswaan Direktorat (superadmin)', 'scope' => null],
         'pengurus' => ['label' => 'Pengurus UKM', 'scope' => 'club_id'],
         'admin_event' => ['label' => 'Admin event', 'scope' => 'event_id'],
         'pengelola_lomba' => ['label' => 'Pengelola lomba', 'scope' => 'competition_id'],
-        'jurusan' => ['label' => 'Jurusan', 'scope' => 'department_id'],
+        'jurusan' => ['label' => 'Kemahasiswaan Jurusan', 'scope' => 'department_id'],
         'penilai' => ['label' => 'Juri/penilai', 'scope' => 'competition_id'],
         'pembina' => ['label' => 'Pelatih/pembina', 'scope' => 'club_id'],
         'pimpinan' => ['label' => 'Pimpinan', 'scope' => null],
@@ -60,6 +64,11 @@ return [
     ],
 
     'pimpinan_positions' => ['Direktur', 'Wakil Direktur I', 'Wakil Direktur II', 'Wakil Direktur III'],
+
+    'officer_positions' => ['Ketua', 'Wakil Ketua', 'Sekretaris', 'Bendahara', 'Koordinator Divisi', 'Anggota pengurus'],
+
+    /** Officer positions that may add or end other officers. */
+    'officer_managers' => ['Ketua', 'Wakil Ketua', 'Sekretaris'],
 
     /** Judges per competition (generated juri accounts plus manual penilai assignments). */
     'max_judges' => 5,

@@ -21,18 +21,21 @@ abstract class DomainService
     }
 
     /**
-     * Record an important action inside the caller's transaction.
+     * Record an important action inside the caller's transaction. Subjects with a text key (settings) keep
+     * the key in the details, since audit_logs.subject_id is numeric.
      *
      * @param  array<string, mixed>  $details
      */
     public function audit(User $actor, string $action, Model $subject, array $details = []): void
     {
+        $key = $subject->getKey();
+        $numeric = is_int($key) || ctype_digit((string) $key);
         DB::table('audit_logs')->insert([
             'user_id' => $actor->id,
             'action' => $action,
             'subject_type' => $subject->getTable(),
-            'subject_id' => $subject->getKey(),
-            'details' => json_encode($details),
+            'subject_id' => $numeric ? $key : null,
+            'details' => json_encode($numeric ? $details : $details + ['key' => $key]),
             'created_at' => now(),
         ]);
     }

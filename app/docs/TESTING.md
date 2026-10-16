@@ -70,12 +70,12 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 16 Oktober 2026 (82 tes):
+Hasil 16 Oktober 2026 (94 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **82 lulus**, termasuk 4 tes konkurensi dua proses |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **78 lulus, 4 dilewati, 1.160 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **94 lulus**, termasuk 4 tes konkurensi dua proses |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **90 lulus, 4 dilewati, 1.310 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
 
 Tes tahap ketiga: `DepartmentTest` (7 jurusan, isolasi jurusan, unduhan sertifikat juara/bukti prestasi jurusan sendiri, IKU per jurusan, dashboard pimpinan), `CompetitionAccountTest` (akun otomatis, hanya pengaju/superadmin, ganti kata sandi, lingkup pengelola, juri maks. 5, log nilai), `AccountSecurityTest` (ubah kata sandi, foto, Google SSO dengan respons tiruan, Turnstile), `ActivityTest` (kode kehadiran, anggota saja, laporan per jenis, halaman depan).
 
