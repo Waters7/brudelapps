@@ -33,6 +33,18 @@ class ClubActivity extends Model
         $query->where(fn (Builder $q) => $q->whereNull('permit_status')->orWhere('permit_status', 'approved'));
     }
 
+    /**
+     * What a user may see (Jelajah Kegiatan, calendar): confirmed public activities and those of the user's active
+     * memberships, plus every activity of the clubs the user coaches.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        $memberOf = Membership::where('user_id', $user->id)->where('status', 'active')->select('club_id');
+        $query->where(fn (Builder $visible) => $visible
+            ->where(fn (Builder $open) => $open->confirmed()->where(fn (Builder $q) => $q->where('is_public', true)->orWhereIn('club_id', $memberOf)))
+            ->orWhereIn('club_id', Club::coachedBy($user)->select('id')));
+    }
+
     public function awaitsPermit(): bool
     {
         return $this->permit_status === 'pending';

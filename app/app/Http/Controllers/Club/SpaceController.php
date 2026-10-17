@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Club;
 
 use App\Http\Controllers\Controller;
+use App\Models\Broadcast;
 use App\Models\Club;
 use App\Models\ClubActivity;
 use App\Models\ClubPost;
@@ -40,6 +41,7 @@ class SpaceController extends Controller
             'leaderboard' => $board['rows'],
             'memberCount' => $board['total'],
             'search' => $search,
+            'broadcasts' => Broadcast::with('author')->shown()->forClubs([$club->id])->latest('id')->limit(5)->get(),
             'posts' => ClubPost::with('author')->where('club_id', $club->id)->orderByDesc('pinned')->latest('id')->limit(30)->get(),
             'activities' => ClubActivity::where('club_id', $club->id)->confirmed()->where('status', 'scheduled')->where('ends_at', '>', now())->orderBy('starts_at')->limit(5)->get(),
             'quests' => ClubQuest::where('club_id', $club->id)->withCount(['submissions as done_count' => fn ($q) => $q->where('status', 'approved')])

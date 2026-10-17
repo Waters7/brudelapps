@@ -29,6 +29,7 @@
             @php($value = $option->meta($key))
             @if($field['type'] === 'bool' && $value)<span class="chip">{{ \Illuminate\Support\Str::before($field['label'], ' (') }}</span>
             @elseif($field['type'] === 'select' && $value)<span class="chip">{{ $field['options'][$value] ?? $value }}</span>
+            @elseif($field['type'] === 'date' && $value)<span class="chip">{{ \Illuminate\Support\Carbon::parse($value)->locale('id')->translatedFormat('d F Y') }}</span>
             @elseif(in_array($field['type'], ['number', 'field'], true) && $value !== null)<span class="chip">{{ $field['label'] }}: {{ $value }}</span>@endif
         @endforeach
         <span class="muted">{{ $usage[$option->id] ? 'Dipakai '.$usage[$option->id].' data' : 'Belum dipakai' }} · kode {{ $option->code }}</span>

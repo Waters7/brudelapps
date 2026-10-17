@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\MasterOption;
 use App\Models\User;
 use App\Services\DomainService;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -73,6 +74,15 @@ class MasterData extends DomainService
             'label' => 'Dokumen pendaftaran lomba', 'icon' => 'file',
             'description' => 'Dokumen yang disiapkan untuk pendaftaran delegasi ke penyelenggara lomba (menu Perjadin Delegasi dan data untuk Pangi).',
             'meta' => ['per_student' => ['type' => 'bool', 'label' => 'Dibuat per mahasiswa']],
+        ],
+        'holiday' => [
+            'label' => 'Hari libur (tanggal merah)', 'icon' => 'calendar',
+            'description' => 'Tanggal merah di kalender halaman depan dan dashboard. Tambahkan libur nasional dan cuti bersama sesuai SKB 3 Menteri setiap tahun; libur bertanggal tetap (mis. 17 Agustus) cukup ditandai berulang.',
+            'meta' => [
+                'date' => ['type' => 'date', 'label' => 'Tanggal'],
+                'kind' => ['type' => 'select', 'label' => 'Jenis libur', 'options' => ['nasional' => 'Libur nasional', 'cuti' => 'Cuti bersama', 'kampus' => 'Libur kampus']],
+                'yearly' => ['type' => 'bool', 'label' => 'Berulang setiap tahun pada tanggal yang sama'],
+            ],
         ],
     ];
 
@@ -205,6 +215,32 @@ class MasterData extends DomainService
     }
 
     /**
+     * Active tanggal merah between two dates (inclusive), yearly holidays repeated in every year of the range.
+     *
+     * @return array<string, list<array{name: string, kind: string}>> keyed by Y-m-d
+     */
+    public function holidays(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $days = [];
+        foreach ($this->active('holiday') as $holiday) {
+            $date = $holiday->meta('date');
+            if (! is_string($date) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                continue;
+            }
+            $years = $holiday->meta('yearly') ? range($from->year, $to->year) : [(int) substr($date, 0, 4)];
+            foreach ($years as $year) {
+                $day = $year.substr($date, 4);
+                if ($day >= $from->format('Y-m-d') && $day <= $to->format('Y-m-d') && checkdate((int) substr($day, 5, 2), (int) substr($day, 8, 2), $year)) {
+                    $days[$day][] = ['name' => $holiday->label, 'kind' => (string) $holiday->meta('kind', 'nasional')];
+                }
+            }
+        }
+        ksort($days);
+
+        return $days;
+    }
+
+    /**
      * @param  array{label: string, position?: ?int, active?: ?bool, meta?: array<string, mixed>}  $data
      */
     public function save(User $actor, string $type, ?MasterOption $option, array $data): MasterOption
@@ -220,7 +256,7 @@ class MasterData extends DomainService
         $meta = $this->meta($type, $data['meta'] ?? []);
         $active = (bool) ($data['active'] ?? true);
         if ($option && ! $active) {
-            $this->ensure($this->active($type)->whereNotIn('id', [$option->id])->isNotEmpty() || in_array($type, ['location', 'competition_type', 'award', 'registration_document'], true),
+            $this->ensure($this->active($type)->whereNotIn('id', [$option->id])->isNotEmpty() || in_array($type, ['location', 'competition_type', 'award', 'registration_document', 'holiday'], true),
                 'Minimal satu pilihan '.mb_strtolower(self::TYPES[$type]['label']).' harus tetap aktif.');
         }
         if ($type === 'officer_position' && $option) {
@@ -286,7 +322,12 @@ class MasterData extends DomainService
                 'number' => $value === null || $value === '' ? null : (int) $value,
                 'select' => $value,
                 'field' => $value === null || $value === '' ? null : $value,
+                'date' => is_string($value) ? trim($value) : null,
             };
+            if ($spec['type'] === 'date') {
+                $valid = is_string($meta[$key]) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $meta[$key], $parts) && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
+                $this->ensure($valid, $spec['label'].' wajib diisi dengan tanggal yang valid.');
+            }
             if ($spec['type'] === 'select') {
                 $this->ensure(array_key_exists((string) $value, $spec['options']), $spec['label'].' wajib dipilih.');
             }

@@ -1,6 +1,6 @@
 @props(['title' => 'BRUDEL'])
 @php
-    $nav = [['#info-lomba', 'Lomba'], ['#organisasi', 'Organisasi'], ['#info-kegiatan', 'Kegiatan'], ['#cara-bergabung', 'Cara bergabung'], ['/live', 'Live score']];
+    $nav = [['#info-lomba', 'Lomba'], ['#kalender', 'Kalender'], ['#organisasi', 'Organisasi'], ['#info-kegiatan', 'Kegiatan'], ['#cara-bergabung', 'Cara bergabung'], ['/live', 'Live score']];
 @endphp
 <!DOCTYPE html><html lang="id" class="scroll-smooth"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#00B9AD"><meta name="description" content="BRUDEL — Bakat, Rekognisi, Unjuk Diri, dan Eksplorasi Lomba Poltekkes Kemenkes Manado."><title>{{ $title }} · BRUDEL</title><link rel="icon" href="/brand/favicon.ico"><link rel="apple-touch-icon" href="/brand/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">@vite(['resources/css/app.css','resources/js/app.js'])@livewireStyles</head>
 <body class="landing-page bg-brand-paper text-brand-ink antialiased">
@@ -54,7 +54,6 @@
             <p class="text-xs font-bold tracking-[0.18em] text-brand-lime">AKUN</p>
             <ul class="mt-4 space-y-2 text-sm">
                 <li><a href="/login" class="text-white/75 transition hover:text-white">Masuk</a></li>
-                <li><a href="/aktivasi" class="text-white/75 transition hover:text-white">Aktivasi akun</a></li>
                 <li><a href="/lupa-sandi" class="text-white/75 transition hover:text-white">Lupa kata sandi</a></li>
             </ul>
         </div>

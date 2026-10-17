@@ -136,6 +136,11 @@
     <p class="mt-6 hidden rounded-2xl bg-white p-6 text-center text-sm text-brand-ink/60" data-filter-empty>Tidak ada lomba di bidang ini.</p>
 </section>
 
+{{-- Month calendar: competitions, public UKM activities, tanggal merah --}}
+<div class="mx-auto mt-24 max-w-7xl px-4 sm:px-6 lg:px-8" data-reveal>
+    <x-event-calendar :calendar="$calendar"/>
+</div>
+
 {{-- Organizations: category filter + search --}}
 @if($organizations->isNotEmpty())
 <section class="mt-24 scroll-mt-24 bg-white py-20" id="organisasi" data-filter-scope>
@@ -271,7 +276,7 @@
         <p class="relative mx-auto mt-3 max-w-xl text-white/85">Akun mahasiswa berasal dari data resmi kampus. Masuk sekarang dan mulai perjalanan prestasimu.</p>
         <div class="relative mt-8 flex flex-wrap justify-center gap-3">
             <a class="rounded-full bg-brand-ink px-7 py-3.5 text-sm font-bold text-white shadow-xl transition hover:-translate-y-0.5" href="/login">Masuk</a>
-            <a class="rounded-full bg-white/90 px-7 py-3.5 text-sm font-bold text-brand-ink transition hover:-translate-y-0.5 hover:bg-white" href="/aktivasi">Aktivasi akun</a>
+            <a class="rounded-full bg-white/90 px-7 py-3.5 text-sm font-bold text-brand-ink transition hover:-translate-y-0.5 hover:bg-white" href="#cara-bergabung">Cara bergabung</a>
         </div>
     </div>
 </section>

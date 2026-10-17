@@ -52,7 +52,7 @@ class SpaceService extends DomainService
         return DB::transaction(function () use ($actor, $club, $title, $body, $pinned) {
             $post = ClubPost::create(['club_id' => $club->id, 'user_id' => $actor->id, 'title' => trim($title), 'body' => trim($body), 'pinned' => $pinned]);
             $this->audit($actor, 'space.announced', $post);
-            Notification::send($this->members($club, $actor), new BrudelNotice('Pengumuman '.$club->name, $post->title, '/ruang/'.$club->id));
+            Notification::send($this->members($club, $actor), new BrudelNotice('Pengumuman pengurus '.$club->name, $post->title, '/ruang/'.$club->id));
 
             return $post;
         });

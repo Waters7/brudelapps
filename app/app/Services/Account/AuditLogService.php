@@ -24,7 +24,7 @@ class AuditLogService
         'competition_accounts' => 'Akun lomba', 'registration' => 'Pendaftaran lomba', 'team' => 'Tim', 'payment' => 'Pembayaran', 'payment_account' => 'Rekening',
         'department' => 'Persetujuan jurusan', 'rubric' => 'Rubrik', 'score' => 'Penilaian', 'bracket' => 'Bagan', 'match' => 'Pertandingan', 'results' => 'Hasil lomba',
         'performance' => 'Penampilan', 'certificate' => 'Sertifikat', 'award' => 'Prestasi', 'delegation' => 'Delegasi', 'report' => 'Laporan', 'support' => 'Bantuan',
-        'profile' => 'Profil',
+        'profile' => 'Profil', 'broadcast' => 'Pengumuman kemahasiswaan',
     ];
 
     private const VERBS = [

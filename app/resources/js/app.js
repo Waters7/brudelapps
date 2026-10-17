@@ -188,3 +188,47 @@ document.querySelectorAll('[data-filter-scope]').forEach((scope) => {
     }));
     search?.addEventListener('input', apply);
 });
+
+// Calendar: choosing a day shows only its agenda; choosing it again (or "Semua tanggal") shows the whole month.
+document.querySelectorAll('[data-calendar]').forEach((calendar) => {
+    const days = calendar.querySelectorAll('[data-calendar-day]');
+    const groups = calendar.querySelectorAll('[data-calendar-date]');
+    const reset = calendar.querySelector('[data-calendar-all]');
+    const empty = calendar.querySelector('[data-calendar-empty]');
+    const title = calendar.querySelector('[data-calendar-title]');
+    const show = (date, label) => {
+        let shown = 0;
+        groups.forEach((group) => {
+            group.hidden = Boolean(date) && group.dataset.calendarDate !== date;
+            if (!group.hidden) shown++;
+        });
+        days.forEach((day) => day.setAttribute('aria-pressed', day.dataset.calendarDay === date ? 'true' : 'false'));
+        empty?.classList.toggle('hidden', shown > 0);
+        reset?.classList.toggle('hidden', !date);
+        if (title) title.textContent = date ? label : title.dataset.monthLabel;
+    };
+    days.forEach((day) => day.addEventListener('click', () => {
+        const again = day.getAttribute('aria-pressed') === 'true';
+        show(again ? null : day.dataset.calendarDay, day.dataset.calendarLabel);
+    }));
+    reset?.addEventListener('click', () => show(null));
+});
+
+// Sign-in: show or hide the password, and warn while Caps Lock is on.
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    const input = button.parentElement.querySelector('input');
+    button.addEventListener('click', () => {
+        const reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        button.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+        button.setAttribute('aria-label', reveal ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+        input.focus();
+    });
+});
+document.querySelectorAll('[data-capslock-for]').forEach((hint) => {
+    const input = document.getElementById(hint.dataset.capslockFor);
+    const check = (event) => hint.classList.toggle('hidden', !(event.getModifierState && event.getModifierState('CapsLock')));
+    input?.addEventListener('keydown', check);
+    input?.addEventListener('keyup', check);
+    input?.addEventListener('blur', () => hint.classList.add('hidden'));
+});

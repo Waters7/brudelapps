@@ -25,6 +25,17 @@ class Club extends Model
         $query->orderByRaw("case category when 'lembaga' then 1 when 'himaju' then 2 else 3 end")->orderBy('id');
     }
 
+    /**
+     * Clubs whose activities the user manages: every club for direktorat, otherwise the clubs the user leads or
+     * coaches and the HIMAJU of the user's jurusan (same rule as User::coachesClub, for all clubs at once).
+     */
+    public function scopeCoachedBy(Builder $query, User $user): void
+    {
+        $query->when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($scope) => $scope
+            ->whereIn('id', $user->scopeIds('pengurus', 'club_id')->merge($user->scopeIds('pembina', 'club_id')))
+            ->orWhere(fn ($himaju) => $himaju->where('category', 'himaju')->whereIn('department_id', $user->scopeIds('jurusan', 'department_id')))));
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);

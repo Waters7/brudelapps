@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Broadcast;
 use App\Models\User;
 use App\Rules\Turnstile;
 use App\Services\Account\AccountService;
@@ -17,6 +18,16 @@ class AuthController extends Controller
     private const NEUTRAL = 'Jika email terdaftar dan memenuhi syarat, tautan telah dikirim. Periksa kotak masuk email kampus Anda.';
 
     public function __construct(private AccountService $accounts) {}
+
+    /**
+     * Sign-in page, with the announcements kemahasiswaan made public.
+     */
+    public function showLogin(): View
+    {
+        return view('auth.login', [
+            'announcements' => Broadcast::with('author')->shown()->public()->latest('id')->limit(3)->get(),
+        ]);
+    }
 
     public function login(Request $request): RedirectResponse
     {

@@ -22,7 +22,9 @@ use App\Models\Registration;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Achievement\AchievementService;
+use App\Services\Campus\CalendarService;
 use App\Services\Club\ActivityService;
+use App\Services\Club\BroadcastService;
 use App\Services\Club\SpaceService;
 use App\Services\Report\ReportService;
 use Illuminate\Http\RedirectResponse;
@@ -34,13 +36,14 @@ class PortalController extends Controller
     /**
      * Public front page for guests; the personal dashboard for signed-in users.
      */
-    public function home(Request $request, ReportService $reports): View
+    public function home(Request $request, ReportService $reports, CalendarService $calendar): View
     {
         if ($request->user()) {
-            return $this->dashboard($request, $reports);
+            return $this->dashboard($request, $reports, $calendar);
         }
 
         return view('landing', [
+            'calendar' => $calendar->month($calendar->resolveMonth($request->query('kalender')), null),
             'slides' => LandingSlide::shown()->get(),
             'organizations' => Club::where('active', true)->ordered()->get(),
             'competitions' => Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))
@@ -57,7 +60,7 @@ class PortalController extends Controller
         ]);
     }
 
-    public function dashboard(Request $request, ReportService $reports): View
+    public function dashboard(Request $request, ReportService $reports, CalendarService $calendar): View
     {
         $user = $request->user();
         if ($user->isLeadership() && ! $user->isStudentAffairs() && ! $user->nim) {
@@ -66,6 +69,8 @@ class PortalController extends Controller
         $uid = $user->id;
 
         return view('dashboard', [
+            'calendar' => $calendar->month($calendar->resolveMonth($request->query('kalender')), $user),
+            'broadcasts' => app(BroadcastService::class)->forUser($user),
             'clubs' => Club::where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
                 ->withExists(['recruitments as recruiting' => fn ($q) => $q->where('opens_at', '<=', now())->where('closes_at', '>', now())])
                 ->orderByDesc('recruiting')->ordered()->limit(3)->get(),

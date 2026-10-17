@@ -13,6 +13,7 @@ use App\Http\Controllers\Campus\SettingsController;
 use App\Http\Controllers\Campus\SystemSettingsController;
 use App\Http\Controllers\Certificate\CertificateController;
 use App\Http\Controllers\Club\ActivityController;
+use App\Http\Controllers\Club\BroadcastController;
 use App\Http\Controllers\Club\ClubManageController;
 use App\Http\Controllers\Club\SpaceController;
 use App\Http\Controllers\Delegation\DelegationController;
@@ -35,7 +36,7 @@ Route::get('/', [PortalController::class, 'home'])->name('dashboard');
 
 /* Akun: masuk, Google, aktivasi, pemulihan kata sandi. */
 Route::middleware('guest')->group(function () {
-    Route::get('/login', fn () => view('auth.login'))->name('login');
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/auth/google', [GoogleController::class, 'redirect'])->middleware('throttle:google');
     Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->middleware('throttle:google');
@@ -216,6 +217,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/penugasan/impor-ketua', [AssignmentController::class, 'importOfficers']);
     Route::get('/kelola/penugasan/template-ketua.csv', [AssignmentController::class, 'officerTemplate']);
     Route::post('/kelola/penugasan/{assignment}/akhiri', [AssignmentController::class, 'end']);
+    Route::get('/kelola/pengumuman', [BroadcastController::class, 'index']);
+    Route::post('/kelola/pengumuman', [BroadcastController::class, 'store']);
+    Route::post('/kelola/pengumuman/{broadcast}/hapus', [BroadcastController::class, 'destroy']);
+    Route::get('/pengumuman/{broadcast}', [BroadcastController::class, 'show']);
     Route::get('/kelola/pengguna', [SignedInUserController::class, 'index']);
     Route::get('/kelola/audit', [SignedInUserController::class, 'audit']);
     Route::get('/kelola/sistem', [SystemSettingsController::class, 'index']);

@@ -41,14 +41,18 @@
         </form>
     </details>
     @endif
+    @if($broadcasts->isNotEmpty())
+    <div class="mb-4 space-y-3">@foreach($broadcasts as $broadcast)<x-broadcast-card :broadcast="$broadcast"/>@endforeach</div>
+    @endif
     @forelse($posts as $post)
+    @php($position = $officers->firstWhere('user_id', $post->user_id)?->position)
     <article class="panel space-post {{ $post->pinned ? 'is-pinned' : '' }}">
-        <div class="section-heading"><div>@if($post->pinned)<span class="badge status-accepted">Disematkan</span>@endif<h2>{{ $post->title }}</h2><small class="muted">{{ $post->author->name }} · {{ \App\Services\Wita::show($post->created_at, 'd M Y H:i') }} WITA</small></div>
+        <div class="section-heading"><div><span class="mb-1 inline-flex items-center gap-1.5 rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-bold text-brand-teal [&_.icon]:size-3.5!"><x-icon name="megaphone"/> Pengurus {{ $club->name }}</span> @if($post->pinned)<span class="badge status-accepted">Disematkan</span>@endif<h2>{{ $post->title }}</h2><small class="muted">{{ $post->author->name }}{{ $position ? ' · '.$position : '' }} · {{ \App\Services\Wita::show($post->created_at, 'd M Y H:i') }} WITA</small></div>
         @if($canLead)<div class="inline-actions"><form method="post" action="/ruang/pengumuman/{{ $post->id }}/sematkan">@csrf<button class="button outline small">{{ $post->pinned ? 'Lepas sematan' : 'Sematkan' }}</button></form><form method="post" action="/ruang/pengumuman/{{ $post->id }}/hapus" onsubmit="return confirm('Hapus pengumuman ini?')">@csrf<button class="button outline small danger">Hapus</button></form></div>@endif</div>
         <p class="prewrap">{{ $post->body }}</p>
     </article>
     @empty
-    <div class="panel empty"><x-icon name="megaphone"/><p>Belum ada pengumuman.</p></div>
+    <div class="panel empty"><x-icon name="megaphone"/><p>Belum ada pengumuman dari pengurus.</p></div>
     @endforelse
 </div>
 <div>
