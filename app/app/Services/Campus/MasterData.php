@@ -329,6 +329,7 @@ class MasterData extends DomainService
         }
         if ($type === 'officer_position') {
             Assignment::where('role', 'pengurus')->where('position', $old)->update(['position' => $new]);
+            Assignment::$revision++;
         }
     }
 }

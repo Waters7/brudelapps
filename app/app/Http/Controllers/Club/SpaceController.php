@@ -28,21 +28,27 @@ class SpaceController extends Controller
         $user = $request->user();
         abort_unless($this->space->canEnter($user, $club), 403, 'Ruang ini khusus anggota aktif dan pengurus '.$club->name.'.');
         $tab = array_key_exists($request->query('tab'), self::TABS) ? $request->query('tab') : 'beranda';
-        $leaderboard = $this->space->leaderboard($club);
+        $board = $this->space->leaderboard($club, $tab === 'peringkat' ? 50 : 5, $user);
+        $search = trim((string) $request->query('cari'));
 
         return view('clubs.space', [
             'club' => $club,
             'tab' => $tab,
             'canLead' => $this->space->canLead($user, $club),
             'isMember' => $this->space->isMember($user, $club),
-            'me' => $leaderboard->firstWhere('user.id', $user->id),
-            'leaderboard' => $leaderboard,
+            'me' => $board['me'],
+            'leaderboard' => $board['rows'],
+            'memberCount' => $board['total'],
+            'search' => $search,
             'posts' => ClubPost::with('author')->where('club_id', $club->id)->orderByDesc('pinned')->latest('id')->limit(30)->get(),
             'activities' => ClubActivity::where('club_id', $club->id)->confirmed()->where('status', 'scheduled')->where('ends_at', '>', now())->orderBy('starts_at')->limit(5)->get(),
             'quests' => ClubQuest::where('club_id', $club->id)->withCount(['submissions as done_count' => fn ($q) => $q->where('status', 'approved')])
                 ->with(['submissions' => fn ($q) => $q->where('user_id', $user->id)])->orderByRaw("status = 'open' desc")->latest('id')->limit(50)->get(),
             'reviews' => QuestSubmission::with('user', 'quest')->where('status', 'submitted')->whereHas('quest', fn ($q) => $q->where('club_id', $club->id))->oldest()->get(),
-            'members' => Membership::with('user')->where('club_id', $club->id)->where('status', 'active')->get()->sortBy('user.name'),
+            'members' => $tab === 'anggota' ? Membership::with('user')->where('memberships.club_id', $club->id)->where('memberships.status', 'active')
+                ->join('users', 'users.id', '=', 'memberships.user_id')->select('memberships.*')
+                ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->whereRaw('LOWER(users.name) LIKE ?', ['%'.mb_strtolower($search).'%'])->orWhere('users.nim', $search)))
+                ->orderBy('users.name')->paginate(60)->withQueryString() : collect(),
             'officers' => $club->officers()->with('user')->where('starts_at', '<=', now())->where('ends_at', '>', now())->get(),
         ]);
     }

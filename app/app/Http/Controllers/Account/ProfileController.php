@@ -9,11 +9,26 @@ use App\Services\PrivateFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProfileController extends Controller
 {
     public function __construct(private AccountService $accounts) {}
+
+    public function initialPasswordForm(Request $request): View|RedirectResponse
+    {
+        return $request->user()->must_change_password ? view('auth.initial-password') : redirect('/');
+    }
+
+    public function initialPassword(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['password' => ['required', 'confirmed', Password::min(10)->letters()->numbers()]]);
+        $this->accounts->setInitialPassword($request->user(), $data['password'], $request->session()->getId());
+        $request->session()->regenerate();
+
+        return redirect('/')->with('success', 'Kata sandi baru tersimpan. Selamat datang di BRUDEL!');
+    }
 
     public function password(Request $request): RedirectResponse
     {

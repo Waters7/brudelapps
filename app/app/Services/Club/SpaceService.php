@@ -159,24 +159,34 @@ class SpaceService extends DomainService
     }
 
     /**
-     * Active members ranked by points: approved quests plus attendance at the organization's activities.
+     * Active members ranked by points (approved quests plus attendance at the organization's activities):
+     * the top $limit rows, the viewer's own row, and the member count.
      *
-     * @return Collection<int, array{user: User, points: int, quests: int, attended: int, level: string, rank: int}>
+     * @return array{rows: Collection<int, array{user: User, points: int, quests: int, attended: int, level: string, rank: int, id: int}>, me: ?array<string, mixed>, total: int}
      */
-    public function leaderboard(Club $club): Collection
+    public function leaderboard(Club $club, int $limit = 50, ?User $viewer = null): array
     {
-        $members = Membership::with('user')->where('club_id', $club->id)->where('status', 'active')->get()->pluck('user');
+        // Scores come from two grouped queries; user records are loaded only for the rows shown, so a HIMAJU
+        // with thousands of members stays fast.
+        $members = Membership::where('club_id', $club->id)->where('status', 'active')->orderBy('user_id')->pluck('user_id');
         $quests = QuestSubmission::where('status', 'approved')->whereHas('quest', fn ($q) => $q->where('club_id', $club->id))
             ->selectRaw('user_id, sum(points_awarded) as points, count(*) as total')->groupBy('user_id')->get()->keyBy('user_id');
         $attended = ActivityAttendance::whereHas('activity', fn ($q) => $q->where('club_id', $club->id))
             ->selectRaw('user_id, count(*) as total')->groupBy('user_id')->pluck('total', 'user_id');
+        $scores = $members->map(fn (int $id) => [
+            'id' => $id, 'points' => (int) ($quests[$id]->points ?? 0) + self::ATTENDANCE_POINTS * (int) ($attended[$id] ?? 0),
+            'quests' => (int) ($quests[$id]->total ?? 0), 'attended' => (int) ($attended[$id] ?? 0),
+        ])->sortBy([['points', 'desc'], ['id', 'asc']])->values()->map(fn (array $row, int $index) => $row + ['rank' => $index + 1]);
+        $mine = $viewer ? $scores->firstWhere('id', $viewer->id) : null;
+        $shown = $scores->take($limit);
+        $users = User::whereIn('id', $shown->pluck('id')->push($mine['id'] ?? 0))->get()->keyBy('id');
+        $row = fn (array $score) => ['user' => $users[$score['id']], 'level' => self::level($score['points'])] + $score;
 
-        return $members->map(function (User $user) use ($quests, $attended) {
-            $points = (int) ($quests[$user->id]->points ?? 0) + self::ATTENDANCE_POINTS * (int) ($attended[$user->id] ?? 0);
-
-            return ['user' => $user, 'points' => $points, 'quests' => (int) ($quests[$user->id]->total ?? 0), 'attended' => (int) ($attended[$user->id] ?? 0), 'level' => self::level($points)];
-        })->sortBy([['points', 'desc'], fn ($a, $b) => strcmp($a['user']->name, $b['user']->name)])->values()
-            ->map(fn (array $row, int $index) => $row + ['rank' => $index + 1]);
+        return [
+            'rows' => $shown->map($row)->values(),
+            'me' => $mine ? $row($mine) : null,
+            'total' => $scores->count(),
+        ];
     }
 
     public static function level(int $points): string

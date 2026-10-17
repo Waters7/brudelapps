@@ -9,6 +9,8 @@ class PrivateResponse
 {
     public function handle(Request $request, Closure $next)
     {
+        // Permission checks cache the user's active assignments; start every request fresh.
+        $request->user()?->flushAssignments();
         if ($request->user() && ! $request->user()->active && ! $request->routeIs('logout')) {
             abort(403, 'Akun mahasiswa nonaktif. Hubungi kemahasiswaan.');
         }

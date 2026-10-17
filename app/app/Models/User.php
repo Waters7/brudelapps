@@ -8,7 +8,6 @@ use App\Services\Club\ClubService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 
-#[Fillable(['name', 'email', 'password', 'nim', 'program_id', 'active', 'publication_consent', 'email_verified_at', 'public_slug', 'status_changed_at', 'photo_path', 'photo_disk', 'google_sub'])]
+#[Fillable(['name', 'email', 'username', 'password', 'nim', 'program_id', 'active', 'publication_consent', 'email_verified_at', 'public_slug', 'status_changed_at', 'photo_path', 'photo_disk', 'google_sub'])]
 #[Hidden(['password', 'remember_token', 'google_sub'])]
 class User extends Authenticatable
 {
@@ -64,17 +63,47 @@ class User extends Authenticatable
         return $this->assignments()->where('starts_at', '<=', now())->where('ends_at', '>', now());
     }
 
+    /** @var Collection<int, Assignment>|null */
+    private ?Collection $loadedAssignments = null;
+
+    /** @var Collection<int, int>|null */
+    private ?Collection $loadedHimajuClubs = null;
+
+    private int $assignmentsRevision = -1;
+
+    /**
+     * Active assignments loaded once per request: every permission check below filters this collection
+     * instead of querying again. Any assignment change reloads it; PrivateResponse flushes it per request.
+     *
+     * @return Collection<int, Assignment>
+     */
+    public function activeAssignments(): Collection
+    {
+        if ($this->loadedAssignments === null || $this->assignmentsRevision !== Assignment::$revision) {
+            $this->loadedHimajuClubs = null;
+            $this->assignmentsRevision = Assignment::$revision;
+            $this->loadedAssignments = $this->currentAssignments()->get();
+        }
+
+        return $this->loadedAssignments;
+    }
+
+    public function flushAssignments(): void
+    {
+        $this->loadedAssignments = null;
+        $this->loadedHimajuClubs = null;
+    }
+
     /**
      * Check an active assignment, optionally limited to one club, event, jurusan or competition.
      */
     public function assigned(string $role, ?int $club = null, ?int $event = null, ?int $department = null, ?int $competition = null): bool
     {
-        return $this->currentAssignments()->where('role', $role)
-            ->when($club !== null, fn (Builder $q) => $q->where('club_id', $club))
-            ->when($event !== null, fn (Builder $q) => $q->where('event_id', $event))
-            ->when($department !== null, fn (Builder $q) => $q->where('department_id', $department))
-            ->when($competition !== null, fn (Builder $q) => $q->where('competition_id', $competition))
-            ->exists();
+        return $this->activeAssignments()->contains(fn (Assignment $a) => $a->role === $role
+            && ($club === null || $a->club_id === $club)
+            && ($event === null || $a->event_id === $event)
+            && ($department === null || $a->department_id === $department)
+            && ($competition === null || $a->competition_id === $competition));
     }
 
     /**
@@ -84,7 +113,7 @@ class User extends Authenticatable
      */
     public function scopeIds(string $role, string $column): Collection
     {
-        return $this->currentAssignments()->where('role', $role)->whereNotNull($column)->pluck($column)->unique()->values();
+        return $this->activeAssignments()->where('role', $role)->whereNotNull($column)->pluck($column)->unique()->values();
     }
 
     /**
@@ -94,7 +123,7 @@ class User extends Authenticatable
      */
     public function activeRoles(): Collection
     {
-        return $this->currentAssignments()->pluck('role')->unique()->values();
+        return $this->activeAssignments()->pluck('role')->unique()->values();
     }
 
     public function isStudentAffairs(): bool
@@ -131,8 +160,11 @@ class User extends Authenticatable
     public function administersHimaju(int $club): bool
     {
         $departments = $this->scopeIds('jurusan', 'department_id');
+        if ($departments->isEmpty()) {
+            return false;
+        }
 
-        return $departments->isNotEmpty() && Club::whereKey($club)->where('category', 'himaju')->whereIn('department_id', $departments)->exists();
+        return ($this->loadedHimajuClubs ??= Club::where('category', 'himaju')->whereIn('department_id', $departments)->pluck('id'))->contains($club);
     }
 
     /**
@@ -140,8 +172,7 @@ class User extends Authenticatable
      */
     public function leadsClub(int $club): bool
     {
-        return $this->isStudentAffairs() || $this->currentAssignments()->where('role', 'pengurus')
-            ->where('club_id', $club)->whereIn('position', app(MasterData::class)->chairPositions())->exists();
+        return $this->isStudentAffairs() || $this->holdsPosition($club, app(MasterData::class)->chairPositions());
     }
 
     /**
@@ -149,8 +180,15 @@ class User extends Authenticatable
      */
     public function managesOfficers(int $club): bool
     {
-        return $this->isStudentAffairs() || $this->administersHimaju($club) || $this->currentAssignments()->where('role', 'pengurus')
-            ->where('club_id', $club)->whereIn('position', app(MasterData::class)->officerManagers())->exists();
+        return $this->isStudentAffairs() || $this->administersHimaju($club) || $this->holdsPosition($club, app(MasterData::class)->officerManagers());
+    }
+
+    /**
+     * @param  list<string>  $positions
+     */
+    private function holdsPosition(int $club, array $positions): bool
+    {
+        return $this->activeAssignments()->contains(fn (Assignment $a) => $a->role === 'pengurus' && $a->club_id === $club && in_array($a->position, $positions, true));
     }
 
     /**
@@ -213,7 +251,7 @@ class User extends Authenticatable
 
     public function isStaff(): bool
     {
-        return $this->currentAssignments()->exists();
+        return $this->activeAssignments()->isNotEmpty();
     }
 
     public function initial(): string
@@ -234,6 +272,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'active' => 'boolean',
             'publication_consent' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 }

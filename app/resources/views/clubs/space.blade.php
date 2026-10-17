@@ -7,13 +7,13 @@
         <div>
             <span class="eyebrow">RUANG {{ strtoupper($club->categoryShort()) }}</span>
             <h1>{{ $club->name }}</h1>
-            <p><span class="space-stat"><x-icon name="users"/>{{ $members->count() }} anggota</span><span class="space-stat"><x-icon name="star"/>{{ $quests->where('status', 'open')->count() }} quest</span><span class="space-stat"><x-icon name="calendar"/>{{ $activities->count() }} kegiatan</span></p>
+            <p><span class="space-stat"><x-icon name="users"/>{{ $memberCount }} anggota</span><span class="space-stat"><x-icon name="star"/>{{ $quests->where('status', 'open')->count() }} quest</span><span class="space-stat"><x-icon name="calendar"/>{{ $activities->count() }} kegiatan</span></p>
         </div>
     </div>
     @if($me)
     @php($progress = \App\Services\Club\SpaceService::progress($me['points']))
     <div class="space-me">
-        <div class="space-me-top"><span class="space-level"><x-icon name="star"/>{{ $me['level'] }}</span><span class="space-rank">#{{ $me['rank'] }}<small>/{{ $leaderboard->count() }}</small></span></div>
+        <div class="space-me-top"><span class="space-level"><x-icon name="star"/>{{ $me['level'] }}</span><span class="space-rank">#{{ $me['rank'] }}<small>/{{ $memberCount }}</small></span></div>
         <strong>{{ $me['points'] }} <small>poin</small></strong>
         <div class="space-progress" role="progressbar" aria-valuenow="{{ $progress['percent'] }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progres level"><i style="width: {{ $progress['percent'] }}%"></i></div>
         <small>{{ $progress['next'] ? $progress['needed'].' poin lagi menuju '.$progress['next'] : 'Level tertinggi tercapai!' }}</small>
@@ -136,6 +136,7 @@
 <tr class="{{ $row['user']->id === auth()->id() ? 'is-me' : '' }}"><td>{{ $row['rank'] <= 3 ? ['🥇', '🥈', '🥉'][$row['rank'] - 1] : $row['rank'] }}</td><td><div class="person"><x-avatar :user="$row['user']"/><span>{{ $row['user']->name }}</span></div></td><td>{{ $row['level'] }}</td><td>{{ $row['quests'] }}</td><td>{{ $row['attended'] }}</td><td><strong>{{ $row['points'] }}</strong></td></tr>
 @empty<tr><td colspan="6" class="empty">Belum ada anggota aktif.</td></tr>@endforelse
 </tbody></table></div></section>
+@if($memberCount > $leaderboard->count())<p class="muted">Menampilkan {{ $leaderboard->count() }} teratas dari {{ $memberCount }} anggota.@if($me && $me['rank'] > $leaderboard->count()) Posisi Anda: <strong>#{{ $me['rank'] }}</strong> · {{ $me['points'] }} poin.@endif</p>@endif
 <p class="muted">Poin = quest yang disetujui + {{ \App\Services\Club\SpaceService::ATTENDANCE_POINTS }} poin setiap hadir kegiatan dengan kode kehadiran. Level: @foreach(\App\Services\Club\SpaceService::LEVELS as $minimum => $title){{ $title }} ({{ $minimum }}+)@if(! $loop->last), @endif @endforeach.</p>
 
 @else
@@ -143,8 +144,10 @@
 <section class="panel"><h2>Pengurus</h2>
     <ul class="plain-list">@forelse($officers as $officer)<li><div class="person"><x-avatar :user="$officer->user"/><span>{{ $officer->user->name }}<small>{{ $officer->position }}{{ $officer->period ? ' · '.$officer->period : '' }}</small></span></div></li>@empty<li class="muted">Belum ditetapkan.</li>@endforelse</ul>
 </section>
-<section class="panel"><h2>Anggota aktif <span class="count-pill">{{ $members->count() }}</span></h2>
+<section class="panel"><h2>Anggota aktif <span class="count-pill">{{ $members->total() }}</span></h2>
+    <form class="inline-form" method="get"><input type="hidden" name="tab" value="anggota"><input name="cari" value="{{ $search }}" maxlength="100" placeholder="Cari nama atau NIM" aria-label="Cari anggota"><button class="button outline small">Cari</button></form>
     <ul class="plain-list">@foreach($members as $member)<li><div class="person"><x-avatar :user="$member->user"/><span>{{ $member->user->name }}<small>{{ $member->division ?? 'Anggota' }}</small></span></div></li>@endforeach</ul>
+    {{ $members->links() }}
 </section>
 </div>
 @endif

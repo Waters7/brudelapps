@@ -9,6 +9,17 @@ class Assignment extends Model
 {
     protected $guarded = [];
 
+    /**
+     * Bumped on every change so users drop their memoized permission checks (see User::activeAssignments).
+     */
+    public static int $revision = 0;
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => self::$revision++);
+        static::deleted(fn () => self::$revision++);
+    }
+
     protected function casts(): array
     {
         return ['starts_at' => 'datetime', 'ends_at' => 'datetime'];

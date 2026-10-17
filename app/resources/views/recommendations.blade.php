@@ -15,6 +15,7 @@
 ['book','Jurusan','7 jurusan resmi; persetujuan lomba per jurusan; mahasiswa & UKM yang diikuti, yang tidak aktif di UKM, sertifikat juara dan prestasi jurusan sendiri.'],
 ['users','Akun lomba otomatis','Pengelola, operator skor/live score, dan 1–5 juri per lomba; hanya pengaju lomba dan superadmin yang melihat kata sandinya; log setiap nilai juri.'],
 ['calendar','Jelajah Kegiatan','Latihan, persahabatan, meeting internal; kode kehadiran dari pelatih/Ketua UKM; laporan hadir/tidak hadir, skor & catatan, notulen; cetak/PDF dan CSV.'],
+['user','Impor SIAKAD & masuk dengan NIM','Ekspor laporan_daftarmhs.xls diimpor lewat perintah server; kata sandi awal tanggal lahir yang wajib diganti saat masuk pertama.'],
 ['grid','Master data & pengaturan sistem','Sub menu master data (bidang, jenis kegiatan, lokasi, jenis lomba, jabatan, penghargaan, dokumen) dan pengaturan sistem pengganti .env yang aman.'],
 ['globe','Perjadin delegasi (Pangi)','Data surat perjalanan dinas delegasi terpilih untuk modul mahasiswa perjadin Pangi; integrasi menyusul.'],
 ['spark','Halaman depan & banner video','Banner bergulir video/gambar yang dikelola direktorat, deretan organisasi, dan animasi memuat saat login.'],

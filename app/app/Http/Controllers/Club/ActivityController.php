@@ -29,7 +29,11 @@ class ActivityController extends Controller
     {
         $user = $request->user();
         $myClubs = Membership::where('user_id', $user->id)->where('status', 'active')->pluck('club_id');
-        $coached = Club::orderBy('name')->get()->filter(fn ($club) => $user->coachesClub($club->id))->values();
+        // Same rule as User::coachesClub, resolved for all clubs at once instead of one check per club.
+        $coached = Club::when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($scope) => $scope
+            ->whereIn('id', $user->scopeIds('pengurus', 'club_id')->merge($user->scopeIds('pembina', 'club_id')))
+            ->orWhere(fn ($himaju) => $himaju->where('category', 'himaju')->whereIn('department_id', $user->scopeIds('jurusan', 'department_id')))))
+            ->orderBy('name')->get();
         $visible = fn ($q) => $q->where(fn ($open) => $open->confirmed()->where(fn ($q) => $q->where('is_public', true)->orWhereIn('club_id', $myClubs)))
             ->orWhereIn('club_id', $coached->pluck('id'));
 

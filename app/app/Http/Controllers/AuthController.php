@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Rules\Turnstile;
 use App\Services\Account\AccountService;
 use Illuminate\Http\RedirectResponse;
@@ -19,18 +20,22 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => 'required|email', 'password' => 'required|string', 'cf-turnstile-response' => [new Turnstile]]);
-        unset($data['cf-turnstile-response']);
-        if (! Auth::attempt([...$data, 'active' => true])) {
-            throw ValidationException::withMessages(['email' => 'Email atau kata sandi tidak sesuai, atau akun nonaktif.']);
+        $data = $request->validate(['email' => 'required|string|max:190', 'password' => 'required|string', 'cf-turnstile-response' => [new Turnstile]]);
+        // Students may sign in with their NIM and staff with a username; the account is still found by its email.
+        $identifier = trim($data['email']);
+        $email = str_contains($identifier, '@') ? mb_strtolower($identifier)
+            : User::where('nim', $identifier)->orWhere('username', mb_strtolower($identifier))->value('email');
+        if (! $email || ! Auth::attempt(['email' => $email, 'password' => $data['password'], 'active' => true])) {
+            throw ValidationException::withMessages(['email' => 'Email/NIM atau kata sandi tidak sesuai, atau akun nonaktif.']);
         }
-        if (! $request->user()->email_verified_at) {
+        $user = $request->user();
+        if (! $user->email_verified_at && ! $user->must_change_password) {
             Auth::logout();
             throw ValidationException::withMessages(['email' => 'Akun belum diaktivasi. Gunakan menu Aktivasi akun.']);
         }
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        return $user->must_change_password ? redirect('/sandi-baru') : redirect()->intended('/');
     }
 
     public function logout(Request $request): RedirectResponse

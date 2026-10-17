@@ -22,6 +22,20 @@ class AccountService extends DomainService
     /**
      * Change the password of a signed-in user and end every other session of that user.
      */
+    /**
+     * First login of an imported student: replace the birth-date password. This also activates the account.
+     */
+    public function setInitialPassword(User $user, string $new, ?string $keepSession): void
+    {
+        $this->ensure($user->must_change_password, 'Kata sandi awal sudah diganti.');
+        $this->ensure(! Hash::check($new, $user->password), 'Kata sandi baru harus berbeda dari kata sandi awal (tanggal lahir).');
+        DB::transaction(function () use ($user, $new, $keepSession) {
+            $user->forceFill(['password' => $new, 'remember_token' => Str::random(60), 'must_change_password' => false, 'email_verified_at' => $user->email_verified_at ?? now()])->save();
+            DB::table('sessions')->where('user_id', $user->id)->when($keepSession, fn ($q) => $q->where('id', '!=', $keepSession))->delete();
+            $this->audit($user, 'account.initial_password_set', $user);
+        });
+    }
+
     public function changePassword(User $user, string $current, string $new, ?string $keepSession): void
     {
         $this->ensure(! $user->isCompetitionAccount(), 'Kata sandi akun lomba diatur oleh pengaju lomba atau kemahasiswaan.');

@@ -22,7 +22,7 @@ class EventManageController extends Controller
     {
         $user = $request->user();
         abort_unless($user->managesAnyCompetition() || $user->assigned('pengurus') || Event::where('proposed_by', $user->id)->exists(), 403);
-        $leadClubs = $user->currentAssignments()->where('role', 'pengurus')->where('position', 'Ketua')->pluck('club_id');
+        $leadClubs = $user->scopeIds('pengurus', 'club_id')->filter(fn ($club) => $user->leadsClub($club))->values();
         $events = Event::with('club')->withCount('competitions')
             ->when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($w) => $w->whereIn('id', $user->scopeIds('admin_event', 'event_id'))
                 ->orWhereIn('club_id', $user->scopeIds('pengurus', 'club_id'))->orWhere('proposed_by', $user->id)))

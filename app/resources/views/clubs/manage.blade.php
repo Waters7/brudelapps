@@ -50,12 +50,13 @@
     @if($canLead)
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
         <input type="hidden" name="scope_id" value="{{ $club->id }}"><input type="hidden" name="role" value="pengurus">
-        <label class="span-2">Anggota aktif<select name="user" required><option value="">Pilih anggota…</option>@foreach($candidates as $candidate)<option value="{{ $candidate->user->nim ?? $candidate->user->email }}">{{ $candidate->user->name }} · {{ $candidate->user->nim }}{{ $candidate->division ? ' · '.$candidate->division : '' }}</option>@endforeach</select></label>
+        @if($candidates === null)<label class="span-2">NIM anggota aktif<input name="user" required maxlength="30" placeholder="Ketik NIM ({{ $activeCount }} anggota aktif)"></label>@else
+        <label class="span-2">Anggota aktif<select name="user" required><option value="">Pilih anggota…</option>@foreach($candidates as $candidate)<option value="{{ $candidate->user->nim ?? $candidate->user->email }}">{{ $candidate->user->name }} · {{ $candidate->user->nim }}{{ $candidate->division ? ' · '.$candidate->division : '' }}</option>@endforeach</select></label>@endif
         <label>Jabatan pengurus<select name="position">@foreach($master->officerPositions() as $position)<option @selected($position === 'Anggota pengurus')>{{ $position }}</option>@endforeach</select></label>
         <label>Periode<input name="period" maxlength="30" placeholder="2026/2027"></label>
         <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i') }}"></label>
         <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ now()->timezone('Asia/Makassar')->addYear()->format('Y-m-d\TH:i') }}"></label>
-        <div class="span-2"><button class="button outline">Tambah pengurus</button>@if($candidates->isEmpty()) <span class="muted">Belum ada anggota aktif untuk dipilih.</span>@endif</div>
+        <div class="span-2"><button class="button outline">Tambah pengurus</button>@if($activeCount === 0) <span class="muted">Belum ada anggota aktif untuk dipilih.</span>@endif</div>
     </form>
     @endif
     @if($canAssignCoach)
@@ -99,8 +100,8 @@
 @endif
 
 <section class="section-block">
-<div class="section-heading"><h2>Anggota <span class="count-pill">{{ $members->count() }}</span></h2>
-<form method="get" class="inline-form"><select name="status" onchange="this.form.submit()"><option value="">Semua status</option>@foreach(config('brudel.membership_statuses') as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select></form></div>
+<div class="section-heading"><h2>Anggota <span class="count-pill">{{ $members->total() }}</span></h2>
+<form method="get" class="inline-form"><input name="cari" value="{{ $search }}" maxlength="100" placeholder="Cari nama atau NIM" aria-label="Cari anggota"><select name="status" onchange="this.form.submit()"><option value="">Semua status</option>@foreach(config('brudel.membership_statuses') as $key => $label)<option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>@endforeach</select><button class="button outline small">Cari</button></form></div>
 <div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Anggota</th><th>Bergabung</th><th>Status & divisi</th></tr></thead><tbody>
 @forelse($members as $m)
 <tr><td><strong>{{ $m->user->name }}</strong><small>{{ $m->user->nim }} · {{ $m->user->program?->name }}</small><x-history :items="$m->histories"/></td><td>{{ \App\Services\Wita::show($m->joined_at, 'd M Y') }}@if($m->left_at)<small>Berakhir {{ \App\Services\Wita::show($m->left_at, 'd M Y') }}</small>@endif</td>
@@ -111,5 +112,6 @@
     <button class="button outline small">Simpan</button></form></td></tr>
 @empty<tr><td colspan="3" class="empty">Belum ada anggota.</td></tr>@endforelse
 </tbody></table></div></div>
+{{ $members->links() }}
 </section>
 </x-layout>

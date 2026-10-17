@@ -70,6 +70,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil', [PortalController::class, 'profile'])->name('profile');
     Route::post('/profil', [PortalController::class, 'saveProfile']);
     Route::post('/profil/sandi', [ProfileController::class, 'password'])->middleware('throttle:account-token');
+    Route::get('/sandi-baru', [ProfileController::class, 'initialPasswordForm']);
+    Route::post('/sandi-baru', [ProfileController::class, 'initialPassword'])->middleware('throttle:account-token');
     Route::post('/profil/foto', [ProfileController::class, 'photo']);
     Route::post('/profil/foto/hapus', [ProfileController::class, 'removePhoto']);
     Route::get('/foto/{user}', [ProfileController::class, 'show']);

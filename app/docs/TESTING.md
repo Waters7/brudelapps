@@ -70,18 +70,35 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 16 Oktober 2026 (107 tes):
+Hasil 17 Oktober 2026 (112 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **107 lulus**, termasuk 4 tes konkurensi dua proses |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **103 lulus, 4 dilewati, 1.532 assertions**; tes konkurensi grup `pgsql` hanya berjalan di PostgreSQL |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **112 lulus, 2.548 assertions**, termasuk 4 tes konkurensi dua proses |
+| MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions**; seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **108 lulus, 4 dilewati, 2.503 assertions** |
+
+Menjalankan di MySQL sama seperti PostgreSQL di bawah, dengan `DB_CONNECTION=mysql`, `DB_PORT=3306`, dan database uji kosong (`CREATE DATABASE brudel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`). Kolom `timestampTz` menjadi `TIMESTAMP` di MySQL (rentang 1970–2038). BRUDEL tidak menyimpan tanggal lahir atau tanggal di luar rentang itu.
+
+### Anggaran performa (`PerformanceBudgetTest`)
+
+Uji menu sebelum deploy menemukan halaman organisasi besar (HIMAJU Keperawatan, ±1.500 anggota) butuh 3–4,5 detik, dan `/kegiatan` menjalankan 100+ query karena pengecekan penugasan berulang. Perbaikannya:
+
+- Penugasan aktif dimuat sekali per request dan dimuat ulang otomatis bila ada penugasan berubah.
+- Daftar anggota di Ruang dan Kelola dipaginasi dan bisa dicari nama/NIM.
+- Peringkat dihitung dengan query agregat dan hanya memuat data pengguna untuk baris yang tampil.
+- Pemilihan pengurus memakai input NIM bila anggota aktif lebih dari 300.
+
+Hasilnya, semua menu di bawah 300 ms dan maksimal 33 query pada data SIAKAD ±3.500 mahasiswa. Tes ini menguncinya:
+
+- Setiap menu navigasi tiap peran maksimal 45 query, dan tidak ada query yang sama berulang lebih dari 10 kali (indikasi N+1).
+- Halaman Ruang (beranda, anggota, peringkat), Kelola UKM, dan profil UKM menjalankan jumlah query yang sama untuk 70 maupun 220 anggota.
 
 Tes tahap ketiga: `DepartmentTest` (7 jurusan, isolasi jurusan, unduhan sertifikat juara/bukti prestasi jurusan sendiri, IKU per jurusan, dashboard pimpinan), `CompetitionAccountTest` (akun otomatis, hanya pengaju/superadmin, ganti kata sandi, lingkup pengelola, juri maks. 5, log nilai), `AccountSecurityTest` (ubah kata sandi, foto, Google SSO dengan respons tiruan, Turnstile), `ActivityTest` (kode kehadiran, anggota saja, laporan per jenis, halaman depan).
 
 Temuan khusus PostgreSQL yang sudah diperbaiki dan dikunci tes:
 
-- Pencarian mahasiswa: `LIKE` peka huruf besar/kecil, kini memakai `ILIKE`.
+- Pencarian mahasiswa: `LIKE` peka huruf besar/kecil. Kini memakai `whereLike` (menjadi `ILIKE` di PostgreSQL, `LIKE` di MySQL), dan pencarian anggota memakai `LOWER(...) LIKE`.
 - Zona waktu: koneksi kini memaksa zona sesi UTC. Sebelumnya, server yang zonanya bukan UTC (mesin ini `Asia/Kuala_Lumpur`) menggeser semua `timestampTz` sebanyak selisih zonanya (`CompetitionTest::test_times_are_stored_in_utc…`).
 - `DemoSeeder` tidak lagi menulis id prodi eksplisit. Id eksplisit membuat sequence PostgreSQL tertinggal, sehingga "tambah prodi" gagal (`ManagementTest::test_student_affairs_can_add_a_program…`). Tes tidak lagi mengandalkan id tetap, karena sequence PostgreSQL tidak ikut di-rollback antar tes.
 

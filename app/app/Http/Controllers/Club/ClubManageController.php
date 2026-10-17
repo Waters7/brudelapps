@@ -44,16 +44,25 @@ class ClubManageController extends Controller
             'applications as accepted_count' => fn ($a) => $a->where('status', 'accepted'),
         ])->latest('opens_at')]);
 
+        $search = trim((string) $request->query('cari'));
+        $activeCount = Membership::where('club_id', $club->id)->where('status', 'active')->count();
+
         return view('clubs.manage', [
             'club' => $club,
-            'members' => Membership::with('user.program', 'histories')->where('club_id', $club->id)
-                ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
-                ->orderByRaw("status = 'active' desc")->orderBy('division')->get(),
+            'search' => $search,
+            // A HIMAJU can hold thousands of members: page and search instead of rendering them all.
+            'members' => Membership::with('user.program', 'histories')->where('memberships.club_id', $club->id)
+                ->join('users', 'users.id', '=', 'memberships.user_id')->select('memberships.*')
+                ->when($request->query('status'), fn ($q, $status) => $q->where('memberships.status', $status))
+                ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->whereRaw('LOWER(users.name) LIKE ?', ['%'.mb_strtolower($search).'%'])->orWhere('users.nim', $search)))
+                ->orderByRaw("memberships.status = 'active' desc")->orderBy('memberships.division')->orderBy('users.name')->paginate(50)->withQueryString(),
             'officers' => $club->officers()->with('user')->latest('starts_at')->get(),
             'counts' => Membership::where('club_id', $club->id)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
             'canLead' => $request->user()->managesOfficers($club->id),
             'canAssignCoach' => $request->user()->leadsClub($club->id) || $request->user()->administersHimaju($club->id),
-            'candidates' => Membership::with('user')->where('club_id', $club->id)->where('status', 'active')->get()->sortBy('user.name'),
+            // Large organizations pick officers by NIM (still checked as an active member) instead of a huge list.
+            'candidates' => $activeCount <= 300 ? Membership::with('user')->where('club_id', $club->id)->where('status', 'active')->get()->sortBy('user.name') : null,
+            'activeCount' => $activeCount,
             'departments' => Department::orderBy('id')->get(),
         ]);
     }
