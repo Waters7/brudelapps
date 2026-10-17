@@ -3,6 +3,7 @@
 use App\Http\Controllers\Account\AssignmentController;
 use App\Http\Controllers\Account\GoogleController;
 use App\Http\Controllers\Account\ProfileController;
+use App\Http\Controllers\Account\SignedInUserController;
 use App\Http\Controllers\Account\StudentController;
 use App\Http\Controllers\Achievement\AchievementController;
 use App\Http\Controllers\AuthController;
@@ -215,6 +216,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/penugasan/impor-ketua', [AssignmentController::class, 'importOfficers']);
     Route::get('/kelola/penugasan/template-ketua.csv', [AssignmentController::class, 'officerTemplate']);
     Route::post('/kelola/penugasan/{assignment}/akhiri', [AssignmentController::class, 'end']);
+    Route::get('/kelola/pengguna', [SignedInUserController::class, 'index']);
+    Route::get('/kelola/audit', [SignedInUserController::class, 'audit']);
     Route::get('/kelola/sistem', [SystemSettingsController::class, 'index']);
     Route::post('/kelola/sistem', [SystemSettingsController::class, 'update']);
     Route::post('/kelola/sistem/uji-email', [SystemSettingsController::class, 'testMail'])->middleware('throttle:account-link');

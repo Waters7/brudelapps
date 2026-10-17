@@ -48,6 +48,10 @@
             ['/kelola/penugasan', 'users', 'Penugasan Peran'],
             ['/kelola/perjadin', 'globe', 'Perjadin Delegasi (Pangi)'],
             ['/kelola/banner-depan', 'spark', 'Banner Halaman Depan'],
+        ] : [],
+        'PENGATURAN' => $has('kemahasiswaan') ? [
+            ['/kelola/pengguna', 'user', 'Pengguna Login'],
+            ['/kelola/audit', 'file', 'Audit Log'],
             ['/kelola/pengaturan', 'spark', 'Pengaturan Kampus'],
             ['/kelola/sistem', 'shield', 'Pengaturan Sistem'],
         ] : [],
@@ -89,9 +93,10 @@
 </aside>
 <div class="main-shell"><header class="topbar"><div class="crumb"><button class="icon-button mobile-toggle" @click="menu=!menu" aria-label="Buka navigasi"><x-icon name="menu"/></button><span>{{ $leadershipOnly ? 'Ruang Pimpinan' : ($staff ? 'Ruang Pengelola' : 'Ruang Mahasiswa') }}</span><span class="crumb-divider">/</span><strong>{{ $title }}</strong></div>
 <div class="topbar-right"><span class="term">Zona waktu WITA</span>@if(config('brudel.demo'))<span class="demo-tag">MODE DEMO</span>@endif<a class="bell" href="/notifikasi" aria-label="Notifikasi{{ $unread ? ', '.$unread.' belum dibaca' : '' }}"><x-icon name="bell"/>@if($unread)<span>{{ min($unread, 99) }}</span>@endif</a>
-    <div class="account-menu" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
-        <button class="account-trigger" type="button" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true" aria-label="Menu akun {{ $me->name }}"><x-avatar :user="$me"/><span class="account-name">{{ explode(' ', $me->name)[0] }}</span><span aria-hidden="true">▾</span></button>
-        <div class="account-dropdown" x-show="open" x-cloak>
+    {{-- Native <details>: the menu opens on click even when the page scripts have not loaded. --}}
+    <details class="account-menu" data-account-menu>
+        <summary class="account-trigger" aria-label="Menu akun {{ $me->name }}"><x-avatar :user="$me"/><span class="account-name">{{ explode(' ', $me->name)[0] }}</span><span aria-hidden="true">▾</span></summary>
+        <div class="account-dropdown">
             <div class="account-head"><strong>{{ $me->name }}</strong><small class="account-role">{{ $roleLabel }}</small><small>{{ $me->username ?? $me->nim ?? $me->email }}</small></div>
             <a href="/profil"><x-icon name="user"/> Profil & foto</a>
             <a href="/profil#kontak"><x-icon name="bell"/> Email & nomor HP</a>
@@ -99,7 +104,7 @@
             <hr>
             <form action="/logout" method="post">@csrf<button type="submit"><x-icon name="logout"/> Keluar</button></form>
         </div>
-    </div>
+    </details>
 </div></header>
 <main id="main" class="content"><div id="offline-banner" hidden class="alert warning">Anda sedang offline. Data pribadi tidak tersedia offline. Sambungkan kembali sebelum mengirim formulir.</div>
 @if(session('success'))<div class="alert success" role="status"><x-icon name="check"/>{{ session('success') }}</div>@endif
