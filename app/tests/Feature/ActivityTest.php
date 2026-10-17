@@ -95,7 +95,7 @@ class ActivityTest extends DemoTestCase
     {
         $this->get('/')->assertOk()->assertSee('Info lomba mahasiswa')->assertSee('Tenis Meja Tunggal')
             ->assertSee('Latihan rutin tunggal · Demo')->assertDontSee('Rapat evaluasi semester')
-            ->assertSee('Kegiatan UKM baru')->assertSee('UKM Manado Poltekkes Choir')->assertSee('href="/login"', false)
+            ->assertSee('UKM buka pendaftaran anggota')->assertSee('UKM Manado Poltekkes Choir')->assertSee('href="/login"', false)
             ->assertDontSee('DEMO001')->assertDontSee('@demo.brudel.test');
         $this->actingAs($this->user('mahasiswa'))->get('/kegiatan')->assertOk()->assertSee('Latihan rutin tunggal')->assertDontSee('Rapat evaluasi semester')->assertSee('Kode kehadiran');
         $this->actingAs($this->user('atlet1'))->get('/kegiatan')->assertSee('Persahabatan vs UKM Badminton Unsrat');

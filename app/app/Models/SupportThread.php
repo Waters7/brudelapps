@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A conversation from a user to kemahasiswaan direktorat: a problem report or a feature request.
+ * A conversation from a user to kemahasiswaan direktorat, or to the kemahasiswaan of the user's jurusan:
+ * a problem report or a feature request.
  */
 class SupportThread extends Model
 {
@@ -30,9 +31,19 @@ class SupportThread extends Model
         return $this->hasMany(SupportMessage::class)->orderBy('id');
     }
 
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     public function categoryLabel(): string
     {
         return self::CATEGORIES[$this->category] ?? $this->category;
+    }
+
+    public function recipientLabel(): string
+    {
+        return $this->department_id ? 'Kemahasiswaan Jurusan '.$this->department?->name : 'Kemahasiswaan Direktorat';
     }
 
     /**

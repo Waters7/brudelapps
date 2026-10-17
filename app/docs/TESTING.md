@@ -70,13 +70,13 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 17 Oktober 2026 (124 tes):
+Hasil 17 Oktober 2026 (125 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **124 lulus, 2.737 assertions**, termasuk 4 tes konkurensi dua proses |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **125 lulus, 2.756 assertions**, termasuk 4 tes konkurensi dua proses |
 | MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions** pada suite 112 tes (sebelum `DepartmentAccessTest` dan tes perintah impor ketua); seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **120 lulus, 4 dilewati, 2.692 assertions** |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **121 lulus, 4 dilewati, 2.711 assertions** |
 
 Tes konkurensi mengandalkan dua proses yang tertahan bersamaan pada row lock. Pada mesin yang sedang sibuk, salah satu worker kadang tiba terlambat sehingga tes gagal dengan pesan "Setiap worker harus tertahan bersamaan". Jalankan ulang `--group=pgsql` sebelum menyimpulkan ada regresi.
 

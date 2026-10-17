@@ -63,7 +63,7 @@
     ];
     $sections['LAINNYA'] = [
         ['/notifikasi', 'bell', 'Notifikasi', $unread ? (string) min($unread, 99) : null],
-        ['/bantuan', 'chat', $has('kemahasiswaan') ? 'Kotak Bantuan' : 'Bantuan'],
+        ['/bantuan', 'chat', $has('kemahasiswaan', 'jurusan') ? 'Kotak Bantuan' : 'Bantuan'],
         ['/rekomendasi', 'spark', 'Status Fitur'],
         ['/profil', 'user', 'Profil & Kata Sandi'],
     ];
