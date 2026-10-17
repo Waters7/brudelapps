@@ -122,9 +122,17 @@ class AchievementService extends DomainService
         }
     }
 
+    /**
+     * Direktorat verifies every achievement; kemahasiswaan jurusan those submitted by a student of its jurusan.
+     */
+    public function canVerify(User $user, AwardResult $award): bool
+    {
+        return $user->isStudentAffairs() || ($award->submitter !== null && $user->administersStudent($award->submitter));
+    }
+
     public function verify(User $actor, AwardResult $award, string $decision, ?string $reason): void
     {
-        abort_unless($actor->isStudentAffairs(), 403);
+        abort_unless($this->canVerify($actor, $award), 403);
         abort_if($award->submitted_by === $actor->id || $award->recipients()->where('user_id', $actor->id)->exists(), 403, 'Tidak dapat memverifikasi prestasi sendiri.');
         $this->ensure(in_array($decision, ['verified', 'rejected'], true), 'Keputusan tidak valid.');
         $this->requireReason($decision, $reason, ['verified']);
@@ -154,7 +162,7 @@ class AchievementService extends DomainService
 
     public function canViewEvidence(User $user, AwardResult $award): bool
     {
-        if ($user->isStudentAffairs() || $award->submitted_by === $user->id || $award->recipients()->where('user_id', $user->id)->exists()) {
+        if ($this->canVerify($user, $award) || $award->submitted_by === $user->id || $award->recipients()->where('user_id', $user->id)->exists()) {
             return true;
         }
 

@@ -1,5 +1,5 @@
 <x-layout title="Verifikasi Prestasi">
-<div class="page-heading"><div><p class="eyebrow">KEMAHASISWAAN</p><h1>Verifikasi prestasi.</h1><p>Prestasi eksternal masuk laporan resmi setelah bukti diperiksa. Satu penghargaan tim dihitung satu kali.</p></div><a class="button outline" href="/laporan/ekspor/prestasi">CSV prestasi ↓</a></div>
+<div class="page-heading"><div><p class="eyebrow">KEMAHASISWAAN</p><h1>Verifikasi prestasi.</h1><p>Prestasi eksternal masuk laporan resmi setelah bukti diperiksa. Satu penghargaan tim dihitung satu kali.@if($scoped) Anda memverifikasi prestasi yang diajukan mahasiswa jurusan Anda.@endif</p></div><a class="button outline" href="/laporan/ekspor/prestasi">CSV prestasi ↓</a></div>
 <section class="section-block"><h2>Menunggu verifikasi · {{ $pending->count() }}</h2>
 @forelse($pending as $award)
 @php($own = $award->submitted_by === auth()->id() || $award->recipients->contains('user_id', auth()->id()))

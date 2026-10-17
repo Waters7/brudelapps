@@ -56,11 +56,15 @@ class AchievementController extends Controller
 
     public function manage(Request $request): View
     {
-        abort_unless($request->user()->isStudentAffairs(), 403);
+        $user = $request->user();
+        abort_unless($user->isStudentAffairs() || $user->assigned('jurusan'), 403);
+        $scope = $user->studentDepartments();
+        $submittedInScope = fn ($q) => $q->when($scope !== null, fn ($w) => $w->whereHas('submitter.program', fn ($p) => $p->whereIn('department_id', $scope)));
 
         return view('achievements.manage', [
-            'pending' => AwardResult::with('recipients.user.program', 'submitter')->where('status', 'pending')->oldest()->get(),
-            'recent' => AwardResult::withCount('recipients')->where('status', '!=', 'pending')->latest('updated_at')->limit(20)->get(),
+            'pending' => AwardResult::with('recipients.user.program', 'submitter')->where('status', 'pending')->where($submittedInScope)->oldest()->get(),
+            'recent' => AwardResult::withCount('recipients')->where('status', '!=', 'pending')->where($submittedInScope)->latest('updated_at')->limit(20)->get(),
+            'scoped' => $scope !== null,
         ]);
     }
 

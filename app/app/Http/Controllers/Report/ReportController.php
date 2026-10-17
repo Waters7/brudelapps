@@ -20,18 +20,21 @@ class ReportController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isStudentAffairs() || $user->isLeadership() || $user->managesAnyCompetition() || $user->assigned('pengurus'), 403);
+        abort_unless($user->isStudentAffairs() || $user->isLeadership() || $user->managesAnyCompetition() || $user->assigned('pengurus') || $user->assigned('jurusan'), 403);
         $filters = $this->filters($request);
+        $scope = $this->reports->departmentScope($user);
+        $dashboard = $this->reports->canViewDashboard($user);
 
         return view('reports.index', [
             'filters' => $filters,
-            'dashboard' => $this->reports->canViewDashboard($user),
-            'summary' => $this->reports->canViewDashboard($user) ? $this->reports->summary($filters) : null,
-            'awards' => $this->reports->canViewDashboard($user) ? $this->reports->awards($filters)->withCount('recipients')->latest('awarded_on')->limit(15)->get() : collect(),
-            'iku' => $this->reports->canViewDashboard($user) ? $this->reports->ikuByDepartment($filters) : null,
-            'departments' => Department::orderBy('name')->get(),
+            'dashboard' => $dashboard,
+            'summary' => $dashboard ? $this->reports->summary($filters) : null,
+            'awards' => $dashboard ? $this->reports->awards($filters)->withCount('recipients')->latest('awarded_on')->limit(15)->get() : collect(),
+            'iku' => $dashboard ? $this->reports->ikuByDepartment($filters, $scope) : null,
+            'departments' => Department::when($scope !== null, fn ($q) => $q->whereIn('id', $scope))->orderBy('name')->get(),
+            'scoped' => $scope !== null,
             'clubs' => Club::orderBy('name')->get(),
-            'exports' => ReportService::EXPORTS,
+            'exports' => $this->reports->exportsFor($user),
         ]);
     }
 
@@ -65,11 +68,18 @@ class ReportController extends Controller
             'team' => 'nullable|in:tim,individu',
         ]);
 
+        $department = isset($data['department_id']) ? (int) $data['department_id'] : null;
+        // Kemahasiswaan jurusan always reports on its own jurusan, whatever the query string says.
+        $scope = $this->reports->departmentScope($request->user());
+        if ($scope !== null && ! $scope->contains($department)) {
+            $department = $scope->first();
+        }
+
         return [
             'year' => isset($data['year']) ? (int) $data['year'] : null,
             'level' => isset($data['level']) ? (int) $data['level'] : null,
             'field' => $data['field'] ?? null,
-            'department_id' => isset($data['department_id']) ? (int) $data['department_id'] : null,
+            'department_id' => $department,
             'club_id' => isset($data['club_id']) ? (int) $data['club_id'] : null,
             'team' => $data['team'] ?? null,
         ];

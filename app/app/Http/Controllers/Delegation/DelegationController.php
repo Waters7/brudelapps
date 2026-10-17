@@ -26,9 +26,11 @@ class DelegationController extends Controller
         $user = $request->user();
         $all = $user->isStudentAffairs() || $user->isLeadership();
         $managed = $user->managedCompetitionIds() ?? collect();
+        $departments = $user->scopeIds('jurusan', 'department_id');
         $delegations = Delegation::with('competition.event', 'members.user')->withCount('members')
             ->when(! $all, fn ($q) => $q->where(fn ($w) => $w->whereHas('members', fn ($m) => $m->where('user_id', $user->id))
-                ->orWhereIn('competition_id', $managed)))
+                ->orWhereIn('competition_id', $managed)
+                ->when($departments->isNotEmpty(), fn ($own) => $own->orWhereHas('members.user.program', fn ($p) => $p->whereIn('department_id', $departments)))))
             ->latest()->get();
         $canPropose = $user->isStudentAffairs() || $managed->isNotEmpty();
         $selections = $canPropose

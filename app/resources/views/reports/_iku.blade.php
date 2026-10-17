@@ -4,5 +4,5 @@
     @foreach($iku['rows'] as $row)
         <tr><td><strong>{{ $row['department']->name }}</strong></td>@foreach($row['levels'] as $count)<td class="{{ $count ? '' : 'muted' }}">{{ $count }}</td>@endforeach<td><strong>{{ $row['total'] }}</strong></td><td>{{ $row['students'] }}</td></tr>
     @endforeach
-    </tbody><tfoot><tr><th>Total kampus</th>@foreach($iku['totals']['levels'] as $count)<th>{{ $count }}</th>@endforeach<th>{{ $iku['totals']['total'] }}</th><th>{{ $iku['totals']['students'] }}</th></tr></tfoot></table></div>
+    </tbody><tfoot><tr><th>{{ ($iku['scoped'] ?? false) ? 'Total' : 'Total kampus' }}</th>@foreach($iku['totals']['levels'] as $count)<th>{{ $count }}</th>@endforeach<th>{{ $iku['totals']['total'] }}</th><th>{{ $iku['totals']['students'] }}</th></tr></tfoot></table></div>
 </section>

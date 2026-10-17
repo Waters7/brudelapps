@@ -76,4 +76,24 @@ class OfficerImportTest extends DemoTestCase
         $this->post('/kelola/mahasiswa/impor', ['file' => $official, 'mode' => 'commit']);
         $this->assertSame('ketua.resmi@kampus.ac.id', User::where('nim', 'UJI0101')->value('email'));
     }
+
+    public function test_chairs_can_be_imported_from_the_server_command(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'ketua');
+        file_put_contents($file, "organisasi,nama,nim,prodi,jabatan,email\nBEM,Uji Ketua BEM,UJI0201,D-III Farmasi,,\nUKM Antah Berantah,Uji Asing,UJI0202,D-III Farmasi,,\n");
+
+        try {
+            $this->artisan('brudel:impor-pengurus', ['file' => $file])->expectsOutputToContain('PRATINJAU')->assertFailed();
+            $this->assertFalse(User::where('nim', 'UJI0201')->exists(), 'Pratinjau tidak menulis data.');
+
+            $this->artisan('brudel:impor-pengurus', ['file' => $file, '--commit' => true])
+                ->expectsOutputToContain('1 ditugaskan, 1 akun baru, 1 baris gagal')->assertFailed();
+            $bem = Club::where('name', 'like', '%(BEM)')->firstOrFail();
+            $this->assertTrue(User::where('nim', 'UJI0201')->firstOrFail()->leadsClub($bem->id));
+
+            $this->artisan('brudel:impor-pengurus', ['file' => $file, '--admin' => $this->user('mahasiswa')->email])->assertFailed();
+        } finally {
+            unlink($file);
+        }
+    }
 }

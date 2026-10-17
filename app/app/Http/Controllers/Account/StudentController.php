@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\Program;
 use App\Models\StudentImport;
 use App\Models\User;
@@ -16,9 +17,13 @@ class StudentController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()->isStudentAffairs(), 403);
+        $user = $request->user();
+        abort_unless($user->isStudentAffairs() || $user->assigned('jurusan'), 403);
+        // Kemahasiswaan jurusan sees only the students of its own jurusan; importing stays with direktorat.
+        $scope = $user->studentDepartments();
         $search = mb_substr(trim((string) $request->query('q')), 0, 80);
         $students = User::with('program')->whereNotNull('nim')
+            ->when($scope !== null, fn ($q) => $q->whereHas('program', fn ($p) => $p->whereIn('department_id', $scope)))
             ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->whereLike('nim', '%'.$search.'%')->orWhereLike('name', '%'.$search.'%')->orWhereLike('email', '%'.$search.'%')))
             ->when($request->query('program'), fn ($q, $program) => $q->where('program_id', $program))
             ->when($request->query('status') === 'nonaktif', fn ($q) => $q->where('active', false))
@@ -27,9 +32,11 @@ class StudentController extends Controller
 
         return view('manage.students', [
             'students' => $students,
-            'programs' => Program::orderBy('name')->get(),
-            'imports' => StudentImport::with('user')->latest()->limit(8)->get(),
-            'lastImport' => session('import_id') ? StudentImport::find(session('import_id')) : null,
+            'canImport' => $scope === null,
+            'departments' => $scope === null ? collect() : Department::whereIn('id', $scope)->orderBy('name')->get(),
+            'programs' => Program::when($scope !== null, fn ($q) => $q->whereIn('department_id', $scope))->orderBy('name')->get(),
+            'imports' => $scope === null ? StudentImport::with('user')->latest()->limit(8)->get() : collect(),
+            'lastImport' => $scope === null && session('import_id') ? StudentImport::find(session('import_id')) : null,
         ]);
     }
 
@@ -54,7 +61,7 @@ class StudentController extends Controller
 
     public function sendActivation(Request $request, User $student, AccountService $accounts): RedirectResponse
     {
-        abort_unless($request->user()->isStudentAffairs(), 403);
+        abort_unless($request->user()->administersStudent($student), 403);
         $accounts->sendActivation($student->email);
 
         return back()->with('success', 'Tautan aktivasi diproses untuk '.$student->email.' (dikirim bila akun belum aktif dan tidak dikirim dalam 1 menit terakhir).');

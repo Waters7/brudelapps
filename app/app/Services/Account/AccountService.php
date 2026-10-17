@@ -143,7 +143,7 @@ class AccountService extends DomainService
 
     public function setStatus(User $actor, User $student, bool $active, string $reason): void
     {
-        abort_unless($actor->isStudentAffairs(), 403);
+        abort_unless($actor->administersStudent($student), 403);
         abort_if($actor->id === $student->id, 403, 'Tidak dapat mengubah status akun sendiri.');
         $this->ensure(mb_strlen(trim($reason)) >= 5, 'Alasan perubahan status minimal 5 karakter.');
         DB::transaction(function () use ($actor, $student, $active, $reason) {

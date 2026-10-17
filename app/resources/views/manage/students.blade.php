@@ -1,6 +1,7 @@
-<x-layout title="Mahasiswa & Impor">
-<div class="page-heading"><div><p class="eyebrow">ADMINISTRASI KAMPUS</p><h1>Data mahasiswa.</h1><p>Akun mahasiswa berasal dari impor data resmi kampus, lalu diaktifkan melalui email terdaftar.</p></div></div>
+<x-layout title="{{ $canImport ? 'Mahasiswa & Impor' : 'Mahasiswa Jurusan' }}">
+<div class="page-heading"><div><p class="eyebrow">{{ $canImport ? 'ADMINISTRASI KAMPUS' : 'KEMAHASISWAAN JURUSAN' }}</p><h1>Data mahasiswa.</h1><p>@if($canImport)Akun mahasiswa berasal dari impor data resmi kampus, lalu diaktifkan melalui email terdaftar.@else Hanya mahasiswa {{ $departments->map(fn ($d) => 'Jurusan '.$d->name)->join(', ', ' dan ') }}. Impor data resmi dilakukan Kemahasiswaan Direktorat.@endif</p></div></div>
 
+@if($canImport)
 <div class="detail-columns">
 <section class="panel">
     <h2>Impor CSV data resmi</h2>
@@ -30,6 +31,7 @@
     </tbody></table></div>
 </section>
 </div>
+@endif
 
 <section class="section-block">
 <form class="filters" method="get">

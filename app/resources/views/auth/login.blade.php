@@ -1,6 +1,6 @@
 <x-guest title="Masuk" heading="Selamat datang kembali." intro="Masuk dengan akun kampus untuk melanjutkan perjalananmu.">
 <form method="post" action="/login" data-loader>@csrf
-    <label>Email, NIM, atau username<input type="text" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="nama@email.kampus atau NIM"></label>
+    <label>Email, NIM, atau username<input type="text" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="Email, NIM, atau username"></label>
     <label>Kata sandi<input type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi"></label>
     <x-turnstile/>
     <button class="button primary full">Masuk ke BRUDEL <x-icon name="arrow"/></button>

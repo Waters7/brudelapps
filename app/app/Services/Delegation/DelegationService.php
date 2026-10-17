@@ -30,9 +30,15 @@ class DelegationService extends DomainService
         return $user->isStudentAffairs() || ($delegation->competition && $user->managesCompetition($delegation->competition));
     }
 
+    /**
+     * Kemahasiswaan jurusan follows (read-only) every delegation that includes a student of its jurusan.
+     */
     public function canView(User $user, Delegation $delegation): bool
     {
-        return $this->canManage($user, $delegation) || $user->isLeadership() || $delegation->members()->where('user_id', $user->id)->exists();
+        $departments = $user->scopeIds('jurusan', 'department_id');
+
+        return $this->canManage($user, $delegation) || $user->isLeadership() || $delegation->members()->where('user_id', $user->id)->exists()
+            || ($departments->isNotEmpty() && $delegation->members()->whereHas('user.program', fn ($q) => $q->whereIn('department_id', $departments))->exists());
     }
 
     /**

@@ -244,6 +244,25 @@ class User extends Authenticatable
         return $department !== null && ($this->isStudentAffairs() || $this->assigned('jurusan', department: $department));
     }
 
+    /**
+     * Jurusan whose students this user administers: null means every jurusan (kemahasiswaan direktorat),
+     * an empty collection means none.
+     *
+     * @return Collection<int, int>|null
+     */
+    public function studentDepartments(): ?Collection
+    {
+        return $this->isStudentAffairs() ? null : $this->scopeIds('jurusan', 'department_id');
+    }
+
+    /**
+     * Direktorat administers every account; kemahasiswaan jurusan only students of its own jurusan.
+     */
+    public function administersStudent(User $student): bool
+    {
+        return $this->isStudentAffairs() || ($student->nim !== null && $this->reviewsDepartment($student->program?->department_id));
+    }
+
     public function isReviewer(): bool
     {
         return $this->isStudentAffairs() || $this->assigned('pengurus') || $this->assigned('admin_event') || $this->assigned('pengelola_lomba');

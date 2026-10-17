@@ -70,13 +70,15 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 17 Oktober 2026 (112 tes):
+Hasil 17 Oktober 2026 (117 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **112 lulus, 2.548 assertions**, termasuk 4 tes konkurensi dua proses |
-| MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions**; seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **108 lulus, 4 dilewati, 2.503 assertions** |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **117 lulus, 2.617 assertions**, termasuk 4 tes konkurensi dua proses |
+| MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions** pada suite 112 tes (sebelum `DepartmentAccessTest` dan tes perintah impor ketua); seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **113 lulus, 4 dilewati, 2.572 assertions** |
+
+Tes konkurensi mengandalkan dua proses yang tertahan bersamaan pada row lock. Pada mesin yang sedang sibuk, salah satu worker kadang tiba terlambat sehingga tes gagal dengan pesan "Setiap worker harus tertahan bersamaan". Jalankan ulang `--group=pgsql` sebelum menyimpulkan ada regresi.
 
 Menjalankan di MySQL sama seperti PostgreSQL di bawah, dengan `DB_CONNECTION=mysql`, `DB_PORT=3306`, dan database uji kosong (`CREATE DATABASE brudel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`). Kolom `timestampTz` menjadi `TIMESTAMP` di MySQL (rentang 1970–2038). BRUDEL tidak menyimpan tanggal lahir atau tanggal di luar rentang itu.
 
