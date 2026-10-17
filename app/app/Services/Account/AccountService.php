@@ -23,16 +23,39 @@ class AccountService extends DomainService
      * Change the password of a signed-in user and end every other session of that user.
      */
     /**
-     * First login of an imported student: replace the birth-date password. This also activates the account.
+     * "+62 812-3456-7890" and "62812…" become "0812…"; the 08… pattern is validated afterwards.
      */
-    public function setInitialPassword(User $user, string $new, ?string $keepSession): void
+    public static function normalizePhone(string $phone): string
     {
-        $this->ensure($user->must_change_password, 'Kata sandi awal sudah diganti.');
-        $this->ensure(! Hash::check($new, $user->password), 'Kata sandi baru harus berbeda dari kata sandi awal (tanggal lahir).');
-        DB::transaction(function () use ($user, $new, $keepSession) {
-            $user->forceFill(['password' => $new, 'remember_token' => Str::random(60), 'must_change_password' => false, 'email_verified_at' => $user->email_verified_at ?? now()])->save();
-            DB::table('sessions')->where('user_id', $user->id)->when($keepSession, fn ($q) => $q->where('id', '!=', $keepSession))->delete();
-            $this->audit($user, 'account.initial_password_set', $user);
+        return (string) preg_replace('/^\+?62/', '0', (string) preg_replace('/[\s().\-]/', '', trim($phone)));
+    }
+
+    /**
+     * First sign-in of every account: confirm an active email and mobile number and, when the account still has
+     * an initial password (birth date or one set by kemahasiswaan), replace it. This also activates an imported account.
+     */
+    public function completeSetup(User $user, string $email, string $phone, ?string $password, ?string $keepSession): void
+    {
+        $this->ensure(! $user->isCompetitionAccount(), 'Akun lomba dikelola oleh pengaju lomba atau kemahasiswaan.');
+        $replacePassword = $user->must_change_password;
+        $this->ensure(! $replacePassword || ($password !== null && ! Hash::check($password, $user->password)), 'Kata sandi baru harus berbeda dari kata sandi awal.');
+        DB::transaction(function () use ($user, $email, $phone, $password, $replacePassword, $keepSession) {
+            $user->forceFill(['email' => $email, 'phone' => $phone, 'email_verified_at' => $user->email_verified_at ?? now()]
+                + ($replacePassword ? ['password' => $password, 'remember_token' => Str::random(60), 'must_change_password' => false] : []))->save();
+            if ($replacePassword) {
+                DB::table('sessions')->where('user_id', $user->id)->when($keepSession, fn ($q) => $q->where('id', '!=', $keepSession))->delete();
+            }
+            $this->audit($user, 'account.setup_completed', $user, ['password_replaced' => $replacePassword]);
+        });
+    }
+
+    public function updateContact(User $user, string $email, string $phone): void
+    {
+        $this->ensure(! $user->isCompetitionAccount(), 'Akun lomba dikelola oleh pengaju lomba atau kemahasiswaan.');
+        DB::transaction(function () use ($user, $email, $phone) {
+            $changed = array_keys(array_diff_assoc(['email' => $email, 'phone' => $phone], ['email' => $user->email, 'phone' => $user->phone]));
+            $user->forceFill(['email' => $email, 'phone' => $phone])->save();
+            $this->audit($user, 'account.contact_updated', $user, ['fields' => $changed]);
         });
     }
 

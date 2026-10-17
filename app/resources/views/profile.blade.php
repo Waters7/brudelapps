@@ -5,9 +5,9 @@
 <div class="detail-columns">
 <section class="panel">
     <div class="profile-top"><x-avatar :user="$user" size="big"/><div><h2>{{ $user->name }}</h2><x-status value="active"/></div></div>
-    <dl><dt>NIM</dt><dd>{{ $user->nim ?? 'Akun pegawai' }}</dd><dt>Email</dt><dd>{{ $user->email }}</dd>
+    <dl><dt>NIM</dt><dd>{{ $user->nim ?? 'Akun pegawai' }}</dd>@if($user->username)<dt>Username</dt><dd>{{ $user->username }}</dd>@endif<dt>Email</dt><dd>{{ $user->email }}</dd><dt>Nomor HP</dt><dd>{{ $user->phone ?? '—' }}</dd>
     <dt>Jurusan · program studi</dt><dd>{{ $user->program ? ($user->program->department?->name ?? '—').' · '.$user->program->name : 'Tidak berlaku' }}</dd><dt>Zona waktu</dt><dd>WITA · Asia/Makassar</dd>
-    <dt>Peran aktif</dt><dd>@forelse($user->currentAssignments()->with('club', 'event', 'department', 'competition')->get() as $a)<span class="chip">{{ config('brudel.roles')[$a->role]['label'] ?? $a->role }}{{ $a->position ? ' ('.$a->position.')' : '' }} · {{ $a->scopeLabel() }} · s.d. {{ \App\Services\Wita::show($a->ends_at, 'd M Y') }}</span>@empty Mahasiswa @endforelse</dd>
+    <dt>Peran aktif</dt><dd>@forelse($user->currentAssignments()->with('club', 'event', 'department', 'competition')->get() as $a)<span class="chip">{{ $a->roleLabel() }}{{ $a->position ? ' ('.$a->position.')' : '' }}{{ $a->role === 'jurusan' ? '' : ' · '.$a->scopeLabel() }} · s.d. {{ \App\Services\Wita::show($a->ends_at, 'd M Y') }}</span>@empty Mahasiswa @endforelse</dd>
     @if($googleEnabled)<dt>Google</dt><dd>{{ $user->google_sub ? 'Tertaut — dapat masuk dengan Google' : 'Belum tertaut. Masuk sekali dengan tombol Google di halaman login untuk menautkan.' }}</dd>@endif</dl>
     <hr>
     <h3>Foto profil</h3>
@@ -17,6 +17,15 @@
 </section>
 
 <section class="panel">
+    @unless($managedAccount)
+    <h2 id="kontak">Email & nomor HP</h2>
+    <form method="post" action="/profil/kontak">@csrf
+        <label>Email aktif<input type="email" name="email" required maxlength="190" autocomplete="email" value="{{ old('email', $user->email) }}"></label>
+        <label>Nomor HP aktif (WhatsApp)<input type="tel" name="phone" required maxlength="20" autocomplete="tel" inputmode="tel" value="{{ old('phone', $user->phone) }}" placeholder="081234567890"></label>
+        <button class="button outline">Simpan kontak</button>
+    </form>
+    <hr>
+    @endunless
     <h2 id="ubah-sandi">Ubah kata sandi</h2>
     @if($managedAccount)
         <div class="alert warning">Ini akun lomba yang dibuat otomatis. Kata sandi diatur oleh pengaju lomba atau kemahasiswaan.</div>

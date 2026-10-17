@@ -15,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 
-#[Fillable(['name', 'email', 'username', 'password', 'nim', 'program_id', 'active', 'publication_consent', 'email_verified_at', 'public_slug', 'status_changed_at', 'photo_path', 'photo_disk', 'google_sub'])]
+#[Fillable(['name', 'email', 'username', 'phone', 'password', 'nim', 'program_id', 'active', 'publication_consent', 'email_verified_at', 'public_slug', 'status_changed_at', 'photo_path', 'photo_disk', 'google_sub'])]
 #[Hidden(['password', 'remember_token', 'google_sub'])]
 class User extends Authenticatable
 {
@@ -139,6 +139,15 @@ class User extends Authenticatable
     public function isStudent(): bool
     {
         return $this->active && $this->nim !== null && $this->email_verified_at !== null;
+    }
+
+    /**
+     * Before using BRUDEL every account confirms an active email and mobile number and replaces an initial password.
+     * Competition accounts are managed by their proposer and are exempt.
+     */
+    public function needsAccountSetup(): bool
+    {
+        return ($this->must_change_password || $this->phone === null || str_ends_with((string) $this->email, '.invalid')) && ! $this->isCompetitionAccount();
     }
 
     /**

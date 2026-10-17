@@ -28,7 +28,8 @@ class CreateSystemAdmin extends Command
     {
         $username = mb_strtolower(trim($this->argument('username')));
         $password = $this->option('password') ?? $this->secret('Kata sandi');
-        $email = mb_strtolower(trim((string) $this->option('email'))) ?: $username.'@admin.brudel.invalid';
+        // Resetting the password keeps the active email the admin confirmed; a new admin starts with a placeholder.
+        $email = mb_strtolower(trim((string) $this->option('email'))) ?: (User::where('username', $username)->value('email') ?? $username.'@admin.brudel.invalid');
         $validator = Validator::make(compact('username', 'password', 'email'), [
             'username' => ['required', 'regex:/^[a-z0-9._-]{3,60}$/'],
             'password' => ['required', 'string', Password::min(10)->letters()->numbers()],

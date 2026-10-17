@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profil/sandi', [ProfileController::class, 'password'])->middleware('throttle:account-token');
     Route::get('/sandi-baru', [ProfileController::class, 'initialPasswordForm']);
     Route::post('/sandi-baru', [ProfileController::class, 'initialPassword'])->middleware('throttle:account-token');
+    Route::post('/profil/kontak', [ProfileController::class, 'contact']);
     Route::post('/profil/foto', [ProfileController::class, 'photo']);
     Route::post('/profil/foto/hapus', [ProfileController::class, 'removePhoto']);
     Route::get('/foto/{user}', [ProfileController::class, 'show']);
@@ -210,6 +211,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/mahasiswa/{student}/aktivasi', [StudentController::class, 'sendActivation']);
     Route::get('/kelola/penugasan', [AssignmentController::class, 'index']);
     Route::post('/kelola/penugasan', [AssignmentController::class, 'store']);
+    Route::post('/kelola/penugasan/akun-staf', [AssignmentController::class, 'storeStaff']);
     Route::post('/kelola/penugasan/impor-ketua', [AssignmentController::class, 'importOfficers']);
     Route::get('/kelola/penugasan/template-ketua.csv', [AssignmentController::class, 'officerTemplate']);
     Route::post('/kelola/penugasan/{assignment}/akhiri', [AssignmentController::class, 'end']);

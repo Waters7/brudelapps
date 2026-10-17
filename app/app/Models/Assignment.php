@@ -56,6 +56,16 @@ class Assignment extends Model
     }
 
     /**
+     * Role name as people see it; kemahasiswaan jurusan carries its jurusan ("Kemahasiswaan Jurusan Keperawatan").
+     */
+    public function roleLabel(): string
+    {
+        $label = config('brudel.roles')[$this->role]['label'] ?? $this->role;
+
+        return $this->role === 'jurusan' && $this->department ? $label.' '.$this->department->name : $label;
+    }
+
+    /**
      * Human readable scope of the assignment.
      */
     public function scopeLabel(): string

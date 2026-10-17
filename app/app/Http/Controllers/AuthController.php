@@ -35,7 +35,7 @@ class AuthController extends Controller
         }
         $request->session()->regenerate();
 
-        return $user->must_change_password ? redirect('/sandi-baru') : redirect()->intended('/');
+        return $user->needsAccountSetup() ? redirect('/sandi-baru') : redirect()->intended('/');
     }
 
     public function logout(Request $request): RedirectResponse

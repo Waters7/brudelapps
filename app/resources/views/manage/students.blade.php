@@ -42,7 +42,7 @@
 </form>
 <div class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Mahasiswa</th><th>Prodi</th><th>Aktivasi</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
 @forelse($students as $student)
-<tr><td><strong>{{ $student->name }}</strong><small>{{ $student->nim }} · {{ $student->email }}</small></td><td>{{ $student->program?->name ?? '—' }}</td>
+<tr><td><strong>{{ $student->name }}</strong><small>{{ $student->nim }} · {{ $student->email }}{{ $student->phone ? ' · '.$student->phone : '' }}</small></td><td>{{ $student->program?->name ?? '—' }}</td>
 <td>@if($student->email_verified_at)<span class="badge status-accepted">Aktif sejak {{ \App\Services\Wita::show($student->email_verified_at, 'd M Y') }}</span>@else<span class="badge status-submitted">Belum aktivasi</span><form method="post" action="/kelola/mahasiswa/{{ $student->id }}/aktivasi">@csrf<button class="text-link plain">Kirim ulang tautan</button></form>@endif</td>
 <td><x-status :value="$student->active ? 'active' : 'inactive'"/></td>
 <td><form class="inline-form" method="post" action="/kelola/mahasiswa/{{ $student->id }}/status">@csrf<input type="hidden" name="active" value="{{ $student->active ? 0 : 1 }}"><input name="reason" required minlength="5" maxlength="500" placeholder="Alasan {{ $student->active ? 'penonaktifan' : 'pengaktifan' }}"><button class="button {{ $student->active ? 'outline' : 'primary' }} small">{{ $student->active ? 'Nonaktifkan' : 'Aktifkan' }}</button></form></td></tr>

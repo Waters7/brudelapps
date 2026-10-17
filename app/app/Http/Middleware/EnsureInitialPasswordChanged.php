@@ -7,13 +7,14 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * A student who signed in with the birth-date password from the SIAKAD import must set a new password first.
+ * Until the account is complete (active email, active mobile number, initial password replaced),
+ * every page leads to the completion form.
  */
 class EnsureInitialPasswordChanged
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->must_change_password && ! $request->is('sandi-baru', 'logout', 'livewire/*')) {
+        if ($request->user()?->needsAccountSetup() && ! $request->is('sandi-baru', 'logout', 'livewire/*')) {
             return redirect('/sandi-baru');
         }
 

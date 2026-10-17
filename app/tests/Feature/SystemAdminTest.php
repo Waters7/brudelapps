@@ -15,7 +15,11 @@ class SystemAdminTest extends DemoTestCase
         $admin = User::where('username', 'admin')->firstOrFail();
         $this->assertTrue($admin->isStudentAffairs());
         $this->assertNull($admin->nim, 'Superadmin bukan akun mahasiswa.');
-        $this->post('/login', ['email' => 'ADMIN', 'password' => 'SandiUjiAdmin2026'])->assertRedirect('/');
+        // The console placeholder email and the missing mobile number are completed at first sign-in; the password stays.
+        $this->post('/login', ['email' => 'ADMIN', 'password' => 'SandiUjiAdmin2026'])->assertRedirect('/sandi-baru');
+        $this->get('/sandi-baru')->assertOk()->assertDontSee('Kata sandi baru');
+        $this->post('/sandi-baru', ['email' => 'admin.sistem@poltekkes.test', 'phone' => '+62 811-4300-1234'])->assertRedirect('/');
+        $this->assertSame(['admin.sistem@poltekkes.test', '081143001234'], [$admin->fresh()->email, $admin->fresh()->phone]);
         $this->get('/kelola/sistem')->assertOk();
         $this->get('/kelola/master')->assertOk();
         $this->post('/logout');

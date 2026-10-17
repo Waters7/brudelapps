@@ -69,7 +69,10 @@ class AccountTest extends DemoTestCase
         $this->assertNotNull($student->fresh()->email_verified_at);
         $this->post('/aktivasi/'.$token, ['email' => 'baru@demo.brudel.test', 'password' => 'LainLagi20260', 'password_confirmation' => 'LainLagi20260'])->assertSessionHasErrors('action');
 
-        $this->post('/login', ['email' => 'baru@demo.brudel.test', 'password' => 'RahasiaBaru2026'])->assertRedirect('/');
+        // Activated by email, but still without an active mobile number: the account is completed first.
+        $this->post('/login', ['email' => 'baru@demo.brudel.test', 'password' => 'RahasiaBaru2026'])->assertRedirect('/sandi-baru');
+        $this->post('/sandi-baru', ['email' => 'baru@demo.brudel.test', 'phone' => '081277778888'])->assertRedirect('/');
+        $this->get('/')->assertOk();
     }
 
     public function test_password_reset_replaces_password_and_ends_sessions(): void

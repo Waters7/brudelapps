@@ -4,12 +4,14 @@ namespace App\Services\Account;
 
 use App\Models\Assignment;
 use App\Models\Competition;
+use App\Models\Department;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
 use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use App\Services\Wita;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Role assignments with validity windows. Kemahasiswaan direktorat grants any role; Ketua, Wakil Ketua and Sekretaris
@@ -28,12 +30,13 @@ class AssignmentService extends DomainService
         $scope = $roles[$data['role']]['scope'];
         $scopeId = $data['scope_id'] ?? null;
         $this->ensure($scope === null || $scopeId !== null, 'Lingkup penugasan wajib dipilih untuk peran ini.');
+        $this->ensure($scope !== 'department_id' || Department::whereKey($scopeId)->exists(), 'Jurusan tidak dikenal.');
 
         abort_unless($this->mayManage($actor, $data['role'], $scopeId ? (int) $scopeId : null), 403);
 
         $identifier = trim($data['user']);
-        $user = User::where('email', mb_strtolower($identifier))->orWhere('nim', $identifier)->first();
-        $this->ensure($user !== null && $user->active, 'Pengguna aktif dengan email/NIM tersebut tidak ditemukan.');
+        $user = User::where('email', mb_strtolower($identifier))->orWhere('nim', $identifier)->orWhere('username', mb_strtolower($identifier))->first();
+        $this->ensure($user !== null && $user->active, 'Pengguna aktif dengan email, NIM, atau username tersebut tidak ditemukan.');
         abort_if($user->id === $actor->id, 403, 'Tidak dapat mengubah hak akses sendiri.');
         if ($data['role'] === 'pengurus') {
             $this->ensure($user->memberships()->where('club_id', $scopeId)->where('status', 'active')->exists(), 'Pengurus dipilih dari anggota aktif organisasi ini.');
@@ -75,9 +78,34 @@ class AssignmentService extends DomainService
                 'created_by' => $actor->id,
             ]);
             $this->audit($actor, 'role.granted', $assignment, ['user_id' => $user->id, 'role' => $data['role'], 'scope' => $scopeId]);
-            $user->notify(new BrudelNotice('Penugasan baru', 'Anda ditugaskan sebagai '.config('brudel.roles')[$data['role']]['label'].' · '.$assignment->scopeLabel().'.', '/'));
+            $user->notify(new BrudelNotice('Penugasan baru', 'Anda ditugaskan sebagai '.$assignment->roleLabel().($data['role'] === 'jurusan' ? '' : ' · '.$assignment->scopeLabel()).'.', '/'));
 
             return $assignment;
+        });
+    }
+
+    /**
+     * Kemahasiswaan direktorat creates a staff account (e.g. kemahasiswaan jurusan) that signs in with a username.
+     * The initial password must be replaced at first sign-in; the first role is granted in the same transaction.
+     *
+     * @param  array{name: string, username: string, email?: ?string, password: string, role: string, scope_id?: ?int, ends_at: string}  $data
+     */
+    public function createStaff(User $actor, array $data): User
+    {
+        abort_unless($actor->isStudentAffairs(), 403);
+        $username = mb_strtolower(trim($data['username']));
+        $email = mb_strtolower(trim((string) ($data['email'] ?? ''))) ?: $username.'@staf.brudel.invalid';
+        $this->ensure(! User::where('username', $username)->orWhere('email', $email)->exists(), 'Username atau email sudah dipakai akun lain.');
+
+        return DB::transaction(function () use ($actor, $data, $username, $email) {
+            $user = new User;
+            $user->forceFill(['name' => trim($data['name']), 'username' => $username, 'email' => $email, 'password' => Hash::make($data['password']),
+                'active' => true, 'must_change_password' => true])->save();
+            $this->audit($actor, 'account.staff_created', $user, ['username' => $username]);
+            $this->grant($actor, ['user' => $username, 'role' => $data['role'], 'scope_id' => $data['scope_id'] ?? null,
+                'starts_at' => now(config('brudel.timezone'))->format('Y-m-d H:i'), 'ends_at' => $data['ends_at']]);
+
+            return $user;
         });
     }
 

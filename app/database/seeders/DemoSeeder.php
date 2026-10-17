@@ -50,8 +50,9 @@ class DemoSeeder extends Seeder
                 ['Yosua Pangemanan', 'atlet3', 'DEMO006', 'KEP'], ['Natalia Rumengan', 'atlet4', 'DEMO007', 'KESLING'], ['Kevin Tumbel', 'atlet5', 'DEMO008', 'GIZ'],
             ];
             $users = [];
-            foreach ($people as [$name, $email, $nim, $program]) {
-                $users[$email] = User::firstOrCreate(['email' => $email.'@demo.brudel.test'], ['name' => $name, 'nim' => $nim, 'program_id' => $program ? $programs[$program] : null, 'password' => Hash::make('BrudelDemo!2026'), 'email_verified_at' => now(), 'active' => true]);
+            foreach ($people as $index => [$name, $email, $nim, $program]) {
+                $users[$email] = User::firstOrCreate(['email' => $email.'@demo.brudel.test'], ['name' => $name, 'nim' => $nim, 'program_id' => $program ? $programs[$program] : null, 'password' => Hash::make('BrudelDemo!2026'),
+                    'phone' => sprintf('08120000%04d', $index + 1), 'email_verified_at' => now(), 'active' => true]);
             }
             User::firstOrCreate(['email' => 'baru@demo.brudel.test'], ['name' => 'Mahasiswa Belum Aktivasi', 'nim' => 'DEMO009', 'program_id' => $programs['KEP'], 'password' => Hash::make(str()->random(40)), 'active' => true]);
             $users['mahasiswa']->update(['publication_consent' => true, 'public_slug' => 'bintang-mandagi-demo']);

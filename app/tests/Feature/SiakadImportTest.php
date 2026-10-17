@@ -87,14 +87,20 @@ class SiakadImportTest extends DemoTestCase
         $this->post('/login', ['email' => 'SIA0101', 'password' => 'salah123'])->assertSessionHasErrors('email');
         $this->post('/login', ['email' => 'SIA0101', 'password' => '05032006'])->assertRedirect('/sandi-baru');
         $this->get('/')->assertRedirect('/sandi-baru');
-        $this->get('/sandi-baru')->assertOk()->assertSee('MAHASISWA GIZI UJI');
-        $this->post('/sandi-baru', ['password' => 'pendek', 'password_confirmation' => 'pendek'])->assertSessionHasErrors('password');
-        $this->post('/sandi-baru', ['password' => 'SandiGizi2026', 'password_confirmation' => 'SandiGizi2026'])->assertRedirect('/');
+        $this->get('/sandi-baru')->assertOk()->assertSee('MAHASISWA GIZI UJI')->assertSee('gizi.uji@contoh.test')->assertSee('Kata sandi baru');
+        $contact = ['email' => 'gizi.uji@contoh.test', 'phone' => '0812 3456 7890'];
+        $this->post('/sandi-baru', $contact + ['password' => 'pendek', 'password_confirmation' => 'pendek'])->assertSessionHasErrors('password');
+        $this->post('/sandi-baru', $contact)->assertSessionHasErrors('password');
+        $this->post('/sandi-baru', ['phone' => '12345'] + $contact + ['password' => 'SandiGizi2026', 'password_confirmation' => 'SandiGizi2026'])->assertSessionHasErrors('phone');
+        $this->post('/sandi-baru', ['email' => 'sia0101@siakad.brudel.invalid'] + $contact + ['password' => 'SandiGizi2026', 'password_confirmation' => 'SandiGizi2026'])->assertSessionHasErrors('email');
+        $this->post('/sandi-baru', ['email' => 'admin@demo.brudel.test'] + $contact + ['password' => 'SandiGizi2026', 'password_confirmation' => 'SandiGizi2026'])->assertSessionHasErrors('email');
+        $this->post('/sandi-baru', $contact + ['password' => 'SandiGizi2026', 'password_confirmation' => 'SandiGizi2026'])->assertRedirect('/');
 
         $student = User::where('nim', 'SIA0101')->first();
         $this->assertFalse($student->must_change_password);
         $this->assertNotNull($student->email_verified_at);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'account.initial_password_set', 'subject_id' => $student->id]);
+        $this->assertSame('081234567890', $student->phone);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'account.setup_completed', 'subject_id' => $student->id]);
         $this->get('/')->assertOk();
         $this->post('/logout');
         $this->post('/login', ['email' => 'SIA0101', 'password' => '05032006'])->assertSessionHasErrors('email');

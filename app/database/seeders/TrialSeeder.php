@@ -124,6 +124,7 @@ class TrialSeeder extends Seeder
                 'nim' => sprintf('TRIAL%03d', $number),
                 'program_id' => $programs[($number - 1) % count($programs)],
                 'password' => $activated ? $password : Hash::make(Str::random(40)),
+                'phone' => $activated ? sprintf('08130000%04d', $number) : null,
                 'email_verified_at' => $activated ? now() : null,
                 'active' => true,
             ]);
@@ -314,7 +315,7 @@ class TrialSeeder extends Seeder
         $admin = $this->demo['admin'];
         $manager = $this->demo['event'];
         $window = ['starts_at' => now()->subMonths(3), 'ends_at' => now()->addYear()];
-        $guestJudge = User::create(['name' => 'Penilai Tamu (demo)', 'email' => 'penilai2@demo.brudel.test', 'password' => Hash::make('BrudelDemo!2026'), 'email_verified_at' => now(), 'active' => true]);
+        $guestJudge = User::create(['name' => 'Penilai Tamu (demo)', 'email' => 'penilai2@demo.brudel.test', 'password' => Hash::make('BrudelDemo!2026'), 'phone' => '081299990002', 'email_verified_at' => now(), 'active' => true]);
         $judges = [$this->demo['juri'], $guestJudge];
 
         $event = Event::create([

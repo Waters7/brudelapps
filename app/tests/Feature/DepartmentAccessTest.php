@@ -80,6 +80,39 @@ class DepartmentAccessTest extends DemoTestCase
         $this->post('/delegasi/'.$own->id.'/ajukan')->assertForbidden();
     }
 
+    public function test_kemahasiswaan_jurusan_is_chosen_per_jurusan_and_staff_accounts_are_created_on_the_page(): void
+    {
+        $midwifery = Department::where('code', 'KEB')->firstOrFail();
+        $nursing = Department::where('code', 'KEP')->firstOrFail();
+        $this->actingAs($this->user('admin'))->get('/kelola/penugasan')->assertOk()
+            ->assertSee('Kemahasiswaan Jurusan Kebidanan')->assertSee('value="jurusan:'.$nursing->id.'"', false)->assertSee('Akun staf baru');
+
+        $staff = ['name' => 'Petugas Kemahasiswaan Kebidanan', 'username' => 'Kemahasiswaan-KEB', 'password' => 'SandiAwal2026', 'password_confirmation' => 'SandiAwal2026',
+            'role' => 'jurusan:'.$midwifery->id, 'ends_at' => now()->addYear()->format('Y-m-d H:i')];
+        $this->actingAs($this->user('jurusan'))->post('/kelola/penugasan/akun-staf', $staff)->assertForbidden();
+        $this->actingAs($this->user('admin'))->post('/kelola/penugasan/akun-staf', ['role' => 'pengurus'] + $staff)->assertSessionHasErrors('role');
+        $this->post('/kelola/penugasan/akun-staf', $staff)->assertSessionHasNoErrors();
+        $this->post('/kelola/penugasan/akun-staf', $staff)->assertSessionHasErrors('username');
+
+        $account = User::where('username', 'kemahasiswaan-keb')->firstOrFail();
+        $this->assertTrue($account->must_change_password);
+        $this->assertFalse($account->isStudentAffairs());
+        $this->assertSame([$midwifery->id], $account->scopeIds('jurusan', 'department_id')->all());
+        $this->get('/kelola/penugasan?role=jurusan:'.$midwifery->id)->assertViewHas('assignments', fn ($page) => $page->pluck('user_id')->all() === [$account->id]);
+
+        $this->post('/kelola/penugasan', ['user' => 'kemahasiswaan-keb', 'role' => 'jurusan:'.$nursing->id, 'starts_at' => now()->format('Y-m-d H:i'), 'ends_at' => now()->addYear()->format('Y-m-d H:i')])
+            ->assertSessionHasNoErrors();
+        $this->assertEqualsCanonicalizing([$midwifery->id, $nursing->id], $account->fresh()->scopeIds('jurusan', 'department_id')->all());
+
+        $this->post('/logout');
+        $this->post('/login', ['email' => 'kemahasiswaan-keb', 'password' => 'SandiAwal2026'])->assertRedirect('/sandi-baru');
+        $this->post('/sandi-baru', ['email' => 'kemahasiswaan.keb@poltekkes.test', 'phone' => '081355550001', 'password' => 'SandiAwal2026', 'password_confirmation' => 'SandiAwal2026'])
+            ->assertSessionHasErrors('action');
+        $this->post('/sandi-baru', ['email' => 'kemahasiswaan.keb@poltekkes.test', 'phone' => '081355550001', 'password' => 'SandiBaru2026x', 'password_confirmation' => 'SandiBaru2026x'])->assertRedirect('/');
+        $this->get('/')->assertOk()->assertSee('Kemahasiswaan Jurusan Kebidanan');
+        $this->get('/kelola/mahasiswa')->assertOk()->assertSee($this->user('mahasiswa')->name)->assertDontSee($this->user('anggota')->name);
+    }
+
     private function pendingAward(string $student, string $title): AwardResult
     {
         $user = $this->user($student);
