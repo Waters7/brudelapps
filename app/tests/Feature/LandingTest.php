@@ -44,6 +44,15 @@ class LandingTest extends DemoTestCase
         Storage::disk('local')->assertMissing($photo->media_path);
     }
 
+    public function test_livewire_script_is_served_from_a_path_without_a_js_extension(): void
+    {
+        // The Docker nginx serves *.js URLs only from disk, so Livewire's script must not end in ".js".
+        preg_match('#src="[^"]*(/aset/livewire\?id=[^"]+)"#', (string) $this->get('/')->assertOk()->getContent(), $script);
+        $this->assertNotEmpty($script, 'Halaman memuat skrip Livewire dari /aset/livewire.');
+        $this->assertStringNotContainsString('livewire.min.js', $script[0]);
+        $this->assertStringContainsString('javascript', (string) $this->get($script[1])->assertOk()->headers->get('Content-Type'));
+    }
+
     public function test_sign_in_shows_the_brudel_loader(): void
     {
         $this->get('/login')->assertOk()->assertSee('id="brand-loader"', false)->assertSee('action="/login" data-loader', false)->assertSee('Menyiapkan ruangmu');

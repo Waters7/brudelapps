@@ -7,8 +7,10 @@ use App\Services\Campus\SystemSettings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The Docker nginx answers every *.js URL from disk (404 for Livewire's virtual script), which silently
+        // disabled Livewire and Alpine; an extension-less route keeps the script request inside Laravel.
+        Livewire::setScriptRoute(fn ($handle) => Route::get('/aset/livewire', $handle));
         View::share('master', $this->app->make(MasterData::class));
         // Pengaturan Sistem overrides the allowlisted .env values (mail, Google, Turnstile, Pangi, …).
         $this->app->make(SystemSettings::class)->apply();
