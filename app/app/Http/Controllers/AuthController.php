@@ -15,7 +15,7 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    private const NEUTRAL = 'Jika email terdaftar dan memenuhi syarat, tautan telah dikirim. Periksa kotak masuk email kampus Anda.';
+    private const NEUTRAL = 'Jika akun terdaftar dan memenuhi syarat, tautan telah dikirim ke email akun. Periksa kotak masuk dan folder spam.';
 
     public function __construct(private AccountService $accounts) {}
 
@@ -42,7 +42,7 @@ class AuthController extends Controller
         $user = $request->user();
         if (! $user->email_verified_at && ! $user->must_change_password) {
             Auth::logout();
-            throw ValidationException::withMessages(['email' => 'Akun belum diaktivasi. Gunakan menu Aktivasi akun.']);
+            throw ValidationException::withMessages(['email' => 'Akun belum aktif. Gunakan Lupa kata sandi untuk membuat kata sandi.']);
         }
         $request->session()->regenerate();
 
@@ -81,7 +81,7 @@ class AuthController extends Controller
 
     public function requestReset(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => 'required|email|max:190', 'cf-turnstile-response' => [new Turnstile]]);
+        $data = $request->validate(['email' => 'required|string|max:190', 'cf-turnstile-response' => [new Turnstile]]);
         $this->accounts->sendReset($data['email']);
 
         return back()->with('success', self::NEUTRAL);

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Campus;
 
 use App\Http\Controllers\Controller;
+use App\Models\AwardResult;
+use App\Models\Competition;
 use App\Models\LandingSlide;
 use App\Services\Campus\CampusService;
 use App\Services\PrivateFiles;
@@ -27,7 +29,21 @@ class LandingSlideController extends Controller
         return view('manage.landing-slides', [
             'slides' => LandingSlide::orderBy('position')->orderBy('id')->get(),
             'uploadLimit' => ini_get('upload_max_filesize'),
+            'competitions' => Competition::whereHas('event', fn ($q) => $q->where('status', 'approved'))->latest('id')->limit(50)->get(),
+            'awards' => AwardResult::where('status', 'verified')->latest('awarded_on')->limit(50)->get(),
         ]);
+    }
+
+    /**
+     * A banner taken from a competition or a verified award, without uploading anything.
+     */
+    public function storeFromSource(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['source' => 'required|in:lomba,penghargaan', 'lomba' => 'nullable|integer', 'penghargaan' => 'nullable|integer']);
+        $id = (int) ($data[$data['source']] ?? 0);
+        $this->campus->addSourceSlide($request->user(), $data['source'], $id);
+
+        return back()->with('success', 'Banner ditambahkan ke halaman depan.');
     }
 
     public function store(Request $request): RedirectResponse
@@ -70,7 +86,7 @@ class LandingSlideController extends Controller
      */
     public function media(LandingSlide $slide, PrivateFiles $files): Response
     {
-        abort_unless($slide->active, 404);
+        abort_unless($slide->active && $slide->hasMedia(), 404);
 
         return $files->media($slide->media_path, $slide->media_disk);
     }

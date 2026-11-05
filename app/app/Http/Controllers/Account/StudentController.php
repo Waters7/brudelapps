@@ -59,6 +59,13 @@ class StudentController extends Controller
         return back()->with('success', 'Status '.$student->name.' diperbarui.');
     }
 
+    public function temporaryPassword(Request $request, User $account, AccountService $accounts): RedirectResponse
+    {
+        $password = $accounts->issueTemporaryPassword($request->user(), $account);
+
+        return back()->with('success', 'Sandi sementara '.$account->name.': '.$password.' — sampaikan langsung kepada pemilik akun. Sandi ini tampil sekali dan wajib diganti saat masuk.');
+    }
+
     public function sendActivation(Request $request, User $student, AccountService $accounts): RedirectResponse
     {
         abort_unless($request->user()->administersStudent($student), 403);

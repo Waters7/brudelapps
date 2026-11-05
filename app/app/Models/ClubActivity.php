@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ClubActivity extends Model
 {
@@ -73,6 +74,11 @@ class ClubActivity extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(ActivityAttendance::class);
+    }
+
+    public function companions(): MorphMany
+    {
+        return $this->morphMany(Companion::class, 'subject')->orderBy('id');
     }
 
     public function typeLabel(): string

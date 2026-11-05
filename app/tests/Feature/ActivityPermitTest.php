@@ -67,6 +67,7 @@ class ActivityPermitTest extends DemoTestCase
     public function test_himaju_permits_belong_to_kemahasiswaan_jurusan(): void
     {
         $himaju = Club::where('category', 'himaju')->where('department_id', Department::where('code', 'KEP')->value('id'))->first();
+        $this->joinClub($himaju, $this->user('mahasiswa'));
         $this->actingAs($this->user('jurusan'))->post('/kelola/penugasan', ['user' => 'DEMO001', 'role' => 'pengurus', 'scope_id' => $himaju->id, 'position' => 'Ketua',
             'starts_at' => now()->format('Y-m-d\TH:i'), 'ends_at' => now()->addYear()->format('Y-m-d\TH:i')])->assertSessionHasNoErrors();
         $this->actingAs($this->user('mahasiswa'))->post('/kegiatan', $this->activity($himaju, $this->wita('Sunday', 8), 'Bakti sosial HIMAJU'))->assertRedirect();

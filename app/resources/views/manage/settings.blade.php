@@ -18,7 +18,7 @@
     </form>
     <hr>
     <h3>Kebijakan lain dari konfigurasi lingkungan</h3>
-    <dl><dt>Aturan keanggotaan</dt><dd>HIMAJU wajib dan otomatis sesuai jurusan; BEM/MPM ditetapkan dari hasil pemilihan; maksimal satu UKM {{ strtolower(implode(', ', $master->singleChoiceFields())) }}; UKM lain bebas.</dd><dt>Biaya pendaftaran UKM</dt><dd>Gratis — biaya lomba tidak berlaku untuk UKM</dd><dt>Penyimpanan dokumen</dt><dd>{{ config('brudel.document_disk') }} (privat)</dd></dl>
+    <dl><dt>Aturan keanggotaan</dt><dd>HIMAJU khusus mahasiswa jurusannya, lewat permintaan atau undangan; BEM/MPM ditetapkan dari hasil pemilihan; maksimal satu UKM {{ strtolower(implode(', ', $master->singleChoiceFields())) }}; UKM lain bebas.</dd><dt>Biaya pendaftaran UKM</dt><dd>Gratis — biaya lomba tidak berlaku untuk UKM</dd><dt>Penyimpanan dokumen</dt><dd>{{ config('brudel.document_disk') }} (privat)</dd></dl>
 </section>
 
 <section class="panel" id="rekening">

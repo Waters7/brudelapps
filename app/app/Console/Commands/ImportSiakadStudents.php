@@ -40,7 +40,8 @@ class ImportSiakadStudents extends Command
         $this->table(['Berkas', 'Jurusan', 'Baris'], array_map(fn ($file) => [$file['name'], $file['department'], $file['rows']], $report['files']));
         $this->line(($report['committed'] ? 'IMPOR' : 'PRATINJAU (belum disimpan)').": {$report['created']} akun baru, {$report['updated']} diperbarui, "
             ."{$report['passwords']} kata sandi tanggal lahir, {$report['kept_active']} akun aktif tidak diubah kata sandinya, "
-            ."{$report['placeholder_email']} tanpa email valid (email sementara).");
+            ."{$report['placeholder_email']} tanpa email valid (email sementara), "
+            ."{$report['officers']} ketua/pengurus tetap satu akun.");
         if ($report['new_programs']) {
             $this->line('Prodi baru: '.implode(', ', $report['new_programs']));
         }

@@ -59,6 +59,7 @@ class OrganizationAdminTest extends DemoTestCase
         $this->assertSame(['HIMAJU Keperawatan', 'himaju', 'Dosen pembina'], [$own->name, $own->category, $own->mentor], 'Nama dan kategori tetap milik direktorat.');
 
         $window = ['starts_at' => now()->format('Y-m-d\TH:i'), 'ends_at' => now()->addYear()->format('Y-m-d\TH:i')];
+        $this->joinClub($own, $this->user('mahasiswa'));
         $this->post('/kelola/penugasan', ['user' => 'DEMO001', 'role' => 'pengurus', 'scope_id' => $own->id, 'position' => 'Ketua'] + $window)->assertSessionHasNoErrors();
         $this->assertTrue($this->user('mahasiswa')->managesOfficers($own->id));
         $this->post('/kelola/penugasan', ['user' => 'DEMO004', 'role' => 'pengurus', 'scope_id' => Club::where('name', 'UKM Olahraga')->value('id')] + $window)->assertForbidden();

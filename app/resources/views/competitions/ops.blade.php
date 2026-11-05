@@ -22,6 +22,8 @@
 </form>
 </section>
 
+<x-companions :items="$competition->companions" :action="'/kelola/lomba/'.$competition->id.'/pendamping'"/>
+
 <section class="panel">
     <div class="section-heading"><h2>Tim lomba</h2>@if($canSeeAccounts)<a class="button outline small" href="/kelola/lomba/{{ $competition->id }}/akun">Lihat akun lomba otomatis</a>@endif</div>
     <div class="inline-actions">

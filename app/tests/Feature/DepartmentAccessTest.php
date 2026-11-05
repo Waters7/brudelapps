@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AwardRecipient;
 use App\Models\AwardResult;
+use App\Models\Club;
 use App\Models\Delegation;
 use App\Models\DelegationMember;
 use App\Models\Department;
@@ -64,9 +65,13 @@ class DepartmentAccessTest extends DemoTestCase
         $iku = $this->get('/laporan/ekspor/iku')->assertOk()->streamedContent();
         $this->assertStringContainsString('Keperawatan', $iku);
         $this->assertStringNotContainsString('Gizi dan Dietetika', $iku);
+        $student = $this->user('mahasiswa');
+        $elective = $student->memberships()->with('club')->get()->firstWhere('club.category', 'ukm')->club->name;
+        $this->joinClub(Club::where('category', 'himaju')->where('department_id', $nursing->id)->firstOrFail(), $student);
         $members = $this->get('/laporan/ekspor/keanggotaan')->assertOk()->streamedContent();
-        $this->assertStringContainsString($this->user('mahasiswa')->name, $members);
+        $this->assertStringContainsString($student->name, $members);
         $this->assertStringNotContainsString($this->user('anggota')->name, $members);
+        $this->assertStringNotContainsString($elective, $members, 'UKM di luar binaan tidak ikut terekspor.');
     }
 
     public function test_jurusan_follows_delegations_of_its_students_read_only(): void

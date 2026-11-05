@@ -143,20 +143,46 @@ class AccountService extends DomainService
         });
     }
 
-    public function sendReset(string $email): void
+    /**
+     * Any active account with a real email can recover its password, by the same NIM, email or username it signs in with.
+     */
+    public function sendReset(string $identifier): void
     {
-        $user = User::where('email', mb_strtolower(trim($email)))->where('active', true)->whereNotNull('email_verified_at')->first();
-        if ($user && $this->issueToken($user)) {
+        $identifier = trim($identifier);
+        $lowered = mb_strtolower($identifier);
+        $user = User::where('active', true)->where(fn ($q) => $q->where('email', $lowered)->orWhere('nim', $identifier)->orWhere('username', $lowered))->first();
+        if ($user && ! str_ends_with($user->email, '.invalid') && $this->issueToken($user)) {
             $user->notify(new AccountLink($this->lastToken, 'reset'));
         }
+    }
+
+    /**
+     * For someone whose email cannot be reached: a one-time password handed over in person, replaced at the next sign-in.
+     */
+    public function issueTemporaryPassword(User $actor, User $target): string
+    {
+        abort_unless($actor->administersStudent($target), 403);
+        abort_if($actor->id === $target->id, 403, 'Gunakan menu Ubah kata sandi untuk akun sendiri.');
+        $this->ensure(! $target->isCompetitionAccount(), 'Kata sandi akun lomba diatur di Kelola Event.');
+        $password = Str::password(12, symbols: false);
+        DB::transaction(function () use ($actor, $target, $password) {
+            $target->forceFill(['password' => $password, 'must_change_password' => true, 'remember_token' => Str::random(60)])->save();
+            DB::table('sessions')->where('user_id', $target->id)->delete();
+            $this->audit($actor, 'account.password_issued', $target);
+        });
+
+        return $password;
     }
 
     public function resetPassword(string $email, string $token, string $password): User
     {
         return DB::transaction(function () use ($email, $token, $password) {
             $user = $this->consumeToken($email, $token, (int) config('auth.passwords.users.expire'));
-            $this->ensure($user !== null && $user->email_verified_at !== null && $user->active, 'Tautan pemulihan tidak valid atau sudah kedaluwarsa.');
-            $user->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save();
+            $this->ensure($user !== null && $user->active, 'Tautan pemulihan tidak valid atau sudah kedaluwarsa.');
+            if ($user->email_verified_at === null) {
+                $this->history($user, 'imported', 'activated', $user, 'Aktivasi melalui pemulihan kata sandi');
+            }
+            $user->forceFill(['password' => $password, 'must_change_password' => false, 'email_verified_at' => $user->email_verified_at ?? now(), 'remember_token' => Str::random(60)])->save();
             DB::table('sessions')->where('user_id', $user->id)->delete();
             $this->audit($user, 'account.password_reset', $user);
 

@@ -36,9 +36,22 @@ class Club extends Model
             ->orWhere(fn ($himaju) => $himaju->where('category', 'himaju')->whereIn('department_id', $user->scopeIds('jurusan', 'department_id')))));
     }
 
+    /**
+     * What a viewer may browse: admin jurusan stay within the organizations they coach, everyone else sees all.
+     */
+    public function scopeListedFor(Builder $query, User $user): void
+    {
+        $query->when($user->assigned('jurusan') && ! $user->isStudentAffairs() && ! $user->isLeadership(), fn ($q) => $q->coachedBy($user));
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function membershipRequests(): HasMany
+    {
+        return $this->hasMany(MembershipRequest::class);
     }
 
     public function isUkm(): bool

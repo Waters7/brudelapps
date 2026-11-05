@@ -135,7 +135,7 @@ class DemoSeeder extends Seeder
             $recruitment = $all[2]->recruitments()->first();
             $application = ClubApplication::firstOrCreate(['recruitment_id' => $recruitment->id, 'user_id' => $users['mahasiswa']->id], ['motivation' => 'Saya ingin mengembangkan riset kesehatan dan kemampuan menulis ilmiah.', 'status' => 'accepted']);
             Membership::firstOrCreate(['club_id' => $all[2]->id, 'user_id' => $users['mahasiswa']->id], ['club_application_id' => $application->id, 'joined_at' => now()->subDays(2), 'division' => 'Riset']);
-            // HIMAJU memberships are created automatically with each student; BEM members are appointed.
+            // BEM members are appointed; HIMAJU members join by request or invitation.
             Membership::firstOrCreate(['club_id' => Club::where('name', 'Badan Eksekutif Mahasiswa (BEM)')->value('id'), 'user_id' => $users['anggota']->id], ['joined_at' => now()->subMonth(), 'division' => 'Kementerian Kesehatan', 'status_reason' => 'Hasil Pemilihan Raya Mahasiswa 2026 (demo)']);
             // Officers are chosen from active members, so the Ketua is a member too.
             Membership::firstOrCreate(['club_id' => $all[0]->id, 'user_id' => $users['pengurus']->id], ['joined_at' => now()->subYear(), 'division' => 'Badminton']);

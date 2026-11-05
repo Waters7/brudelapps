@@ -16,11 +16,26 @@
     </form>
 </section>
 
+<section class="panel">
+    <h2>Buat slide dari lomba atau penghargaan</h2>
+    <p class="muted">Judul, keterangan, dan tautan terisi otomatis tanpa unggah media. Nama pemenang hanya tampil bila mereka menyetujui publikasi; bila tidak, slide menulis "para pemenang".</p>
+    <div class="form-grid">
+        <form method="post" action="/kelola/banner-depan/dari-data">@csrf<input type="hidden" name="source" value="lomba">
+            <label>Kegiatan lomba<select name="lomba" required><option value="">Pilih lomba</option>@foreach($competitions as $competition)<option value="{{ $competition->id }}">{{ $competition->name }}</option>@endforeach</select></label>
+            <button class="button outline" @disabled($competitions->isEmpty())>Jadikan banner</button>
+        </form>
+        <form method="post" action="/kelola/banner-depan/dari-data">@csrf<input type="hidden" name="source" value="penghargaan">
+            <label>Penghargaan pemenang<select name="penghargaan" required><option value="">Pilih penghargaan</option>@foreach($awards as $award)<option value="{{ $award->id }}">{{ $award->award }} · {{ $award->title }}</option>@endforeach</select></label>
+            <button class="button outline" @disabled($awards->isEmpty())>Jadikan banner</button>
+        </form>
+    </div>
+</section>
+
 <div class="catalog-grid">
 @forelse($slides as $slide)
 <article class="panel slide-admin {{ $slide->active ? '' : 'is-off' }}">
-    @if($slide->isVideo())<video class="slide-preview" src="{{ $slide->mediaUrl() }}" muted loop playsinline controls preload="metadata"></video>@else<img class="slide-preview" src="{{ $slide->mediaUrl() }}" alt="">@endif
-    <div class="section-heading"><div><span class="badge {{ $slide->active ? 'status-accepted' : 'status-draft' }}">{{ $slide->active ? 'Tampil' : 'Disembunyikan' }}</span> <span class="chip">{{ $slide->isVideo() ? 'Video' : 'Gambar' }}</span><h2>{{ $slide->title }}</h2>@if($slide->caption)<p class="muted">{{ $slide->caption }}</p>@endif</div></div>
+    @if(! $slide->hasMedia())<div class="slide-preview bg-linear-to-br from-brand-teal to-brand-deep" aria-hidden="true"></div>@elseif($slide->isVideo())<video class="slide-preview" src="{{ $slide->mediaUrl() }}" muted loop playsinline controls preload="metadata"></video>@else<img class="slide-preview" src="{{ $slide->mediaUrl() }}" alt="">@endif
+    <div class="section-heading"><div><span class="badge {{ $slide->active ? 'status-accepted' : 'status-draft' }}">{{ $slide->active ? 'Tampil' : 'Disembunyikan' }}</span> <span class="chip">{{ ['lomba' => 'Lomba', 'penghargaan' => 'Penghargaan'][$slide->source] ?? ($slide->isVideo() ? 'Video' : 'Gambar') }}</span><h2>{{ $slide->title }}</h2>@if($slide->caption)<p class="muted">{{ $slide->caption }}</p>@endif</div></div>
     @if($slide->link_url)<p class="muted">Tombol: {{ $slide->link_label ?: 'Selengkapnya' }} → {{ $slide->link_url }}</p>@endif
     <form class="inline-form" method="post" action="/kelola/banner-depan/{{ $slide->id }}">@csrf
         <label>Urutan<input type="number" name="position" min="1" max="99" value="{{ $slide->position }}" required></label>

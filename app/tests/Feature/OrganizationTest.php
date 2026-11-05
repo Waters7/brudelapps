@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assignment;
 use App\Models\Club;
 use App\Models\ClubApplication;
 use App\Models\Department;
@@ -39,38 +40,61 @@ class OrganizationTest extends DemoTestCase
         ]);
     }
 
-    public function test_every_active_student_is_automatically_in_their_own_himaju(): void
+    public function test_being_in_a_jurusan_does_not_make_a_student_a_himaju_member(): void
     {
         $student = $this->user('mahasiswa');
-        $this->assertSame('active', $this->membershipStatus($this->himaju('KEP'), $student));
-        $this->assertSame('active', $this->membershipStatus($this->himaju('GIZ'), $this->user('anggota')));
-        $this->assertFalse(Membership::whereIn('user_id', User::whereNull('nim')->select('id'))->whereHas('club', fn ($q) => $q->where('category', 'himaju'))->exists(), 'Staf tidak menjadi anggota HIMAJU.');
-        $this->actingAs($student)->get('/ukm/'.$this->himaju('KEP')->id)->assertOk()->assertSee('Kamu anggota HIMAJU Keperawatan')->assertDontSee('Kirim pendaftaran');
+        $this->assertNull($this->membershipStatus($this->himaju('KEP'), $student));
+        $this->actingAs($student)->get('/ukm/'.$this->himaju('KEP')->id)->assertOk()->assertSee('Minta bergabung')->assertDontSee('Kamu anggota HIMAJU Keperawatan');
 
         $student->update(['program_id' => Program::where('code', 'GIZ')->value('id')]);
-        $this->assertSame('left', $this->membershipStatus($this->himaju('KEP'), $student), 'Pindah jurusan mengakhiri HIMAJU lama.');
-        $this->assertSame('active', $this->membershipStatus($this->himaju('GIZ'), $student));
         $student->forceFill(['active' => false])->save();
-        $this->assertSame('inactive', $this->membershipStatus($this->himaju('GIZ'), $student));
         $student->forceFill(['active' => true])->save();
-        $this->assertSame('active', $this->membershipStatus($this->himaju('GIZ'), $student));
-
+        $this->assertFalse($student->memberships()->whereHas('club', fn ($q) => $q->where('category', 'himaju'))->exists(), 'Perubahan data mahasiswa tidak menambah keanggotaan HIMAJU.');
         $this->actingAs($this->user('admin'))->post('/kelola/ukm/'.$this->himaju('GIZ')->id.'/rekrutmen', $this->recruitment)->assertSessionHasErrors('action');
-        $membership = Membership::where('club_id', $this->himaju('GIZ')->id)->where('user_id', $this->user('anggota')->id)->first();
-        $this->post('/kelola/anggota/'.$membership->id, ['status' => 'left', 'reason' => 'Ingin keluar dari himpunan'])->assertSessionHasErrors('action');
-        $this->post('/kelola/anggota/'.$membership->id, ['status' => 'inactive', 'division' => 'Humas', 'reason' => 'Jarang mengikuti kegiatan'])->assertSessionHasNoErrors();
-        $this->assertSame('inactive', $membership->fresh()->status);
     }
 
-    public function test_moving_a_program_to_another_jurusan_moves_its_students_himaju(): void
+    public function test_himaju_membership_ends_with_the_jurusan_and_the_student_may_leave(): void
+    {
+        $student = $this->user('mahasiswa');
+        $this->joinClub($this->himaju('KEP'), $student);
+        $student->update(['program_id' => Program::where('code', 'GIZ')->value('id')]);
+        $this->assertSame('left', $this->membershipStatus($this->himaju('KEP'), $student), 'Pindah jurusan mengakhiri HIMAJU lama.');
+        $this->assertNull($this->membershipStatus($this->himaju('GIZ'), $student), 'Tidak otomatis masuk HIMAJU baru.');
+
+        $member = $this->joinClub($this->himaju('GIZ'), $this->user('anggota'));
+        $this->user('anggota')->forceFill(['active' => false])->save();
+        $this->assertSame('inactive', $member->fresh()->status);
+        $this->user('anggota')->forceFill(['active' => true])->save();
+        $this->assertSame('inactive', $member->fresh()->status, 'Aktif kembali tidak otomatis mengaktifkan HIMAJU.');
+        $this->actingAs($this->user('admin'))->post('/kelola/anggota/'.$member->id, ['status' => 'left', 'reason' => 'Ingin keluar dari himpunan'])->assertSessionHasNoErrors();
+        $this->assertSame('left', $member->fresh()->status);
+    }
+
+    public function test_moving_a_program_to_another_jurusan_ends_the_old_himaju_membership(): void
     {
         $program = Program::where('code', 'KESLING')->firstOrFail();
         $student = $this->user('atlet1');
-        $this->assertSame('active', $this->membershipStatus($this->himaju('KL'), $student));
+        $this->joinClub($this->himaju('KL'), $student);
         $this->actingAs($this->user('admin'))->post('/kelola/prodi/'.$program->id, ['name' => $program->name, 'department_id' => Department::where('code', 'KEP')->value('id'), 'code' => $program->code])
             ->assertSessionHasNoErrors();
         $this->assertSame('left', $this->membershipStatus($this->himaju('KL'), $student));
-        $this->assertSame('active', $this->membershipStatus($this->himaju('KEP'), $student));
+        $this->assertNull($this->membershipStatus($this->himaju('KEP'), $student));
+    }
+
+    public function test_upgrade_removes_automatic_himaju_memberships_but_keeps_officers_and_real_members(): void
+    {
+        $club = $this->himaju('KEP');
+        $automatic = 'Anggota otomatis HIMAJU jurusan';
+        $plain = Membership::create(['club_id' => $club->id, 'user_id' => $this->user('mahasiswa')->id, 'status' => 'active', 'joined_at' => now(), 'status_reason' => $automatic]);
+        $officer = Membership::create(['club_id' => $club->id, 'user_id' => $this->user('pengurus')->id, 'status' => 'active', 'joined_at' => now(), 'status_reason' => $automatic]);
+        Assignment::create(['user_id' => $officer->user_id, 'role' => 'pengurus', 'club_id' => $club->id, 'position' => 'Ketua', 'starts_at' => now()->subDay(), 'ends_at' => now()->addYear()]);
+        $joined = $this->joinClub($club, $this->user('atlet1'));
+
+        (require database_path('migrations/2026_11_05_000001_make_himaju_membership_optional.php'))->up();
+
+        $this->assertDatabaseMissing('memberships', ['id' => $plain->id]);
+        $this->assertSame('Pengurus organisasi', $officer->fresh()->status_reason);
+        $this->assertNotNull($joined->fresh());
     }
 
     public function test_bem_and_mpm_members_are_appointed_from_the_election(): void

@@ -40,7 +40,7 @@ class ActivityController extends Controller
                 ->where('ends_at', '<=', now())->latest('starts_at')->limit(20)->get(),
             'attended' => $user->nim ? ActivityAttendance::where('user_id', $user->id)->pluck('club_activity_id') : collect(),
             'coached' => $coached,
-            'clubs' => Club::where('active', true)->orderBy('name')->get(),
+            'clubs' => Club::listedFor($user)->where('active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -96,7 +96,7 @@ class ActivityController extends Controller
         $canManage = $this->activities->canManage($request->user(), $activity);
 
         return view('activities.show', [
-            'activity' => $activity->load('club', 'creator', 'decider'),
+            'activity' => $activity->load('club', 'creator', 'decider', 'companions'),
             'canManage' => $canManage,
             'canDecide' => $this->activities->canDecidePermit($request->user(), $activity),
             'summary' => $canManage ? $this->activities->attendanceSummary($activity) : null,
@@ -164,7 +164,7 @@ class ActivityController extends Controller
     {
         abort_unless($this->activities->canManage($request->user(), $activity) || $request->user()->managesClub($activity->club_id), 403);
 
-        return view('activities.report', ['activity' => $activity->load('club', 'creator'), 'summary' => $this->activities->attendanceSummary($activity)]);
+        return view('activities.report', ['activity' => $activity->load('club', 'creator', 'companions'), 'summary' => $this->activities->attendanceSummary($activity)]);
     }
 
     public function csv(Request $request, ClubActivity $activity): StreamedResponse

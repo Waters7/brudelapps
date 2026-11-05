@@ -13,6 +13,7 @@
     <dt>Biaya</dt><dd>{{ $competition->feeLabel() }}@if($competition->fee_notes)<br><small class="muted">{{ $competition->fee_notes }}</small>@endif</dd>
     <dt>Format penilaian</dt><dd>{{ ['none' => 'Ditentukan penyelenggara', 'bracket' => 'Sistem gugur (bagan)', 'rubric' => 'Rubrik penilaian juri'][$competition->assessment_type] }}</dd>
     @if($competition->requires_program_approval)<dt>Persetujuan jurusan</dt><dd>Wajib. Setiap jurusan anggota tim meninjau sebelum admin event.</dd>@endif
+    @if($competition->companions->isNotEmpty())<dt>Pendamping</dt><dd>{{ $competition->companions->map(fn ($companion) => $companion->name.' ('.$companion->kindLabel().')')->join(', ') }}</dd>@endif
     @if($competition->external_info)<dt>Informasi penyelenggara eksternal</dt><dd class="prewrap">{{ $competition->external_info }}</dd>@endif
 </dl>
 @if($competition->live_score)<a class="button outline" href="/live/{{ $competition->id }}"><x-icon name="clock"/> Live score {{ $competition->live_visibility === 'public' ? '(publik)' : '(akun BRUDEL)' }}</a>@endif

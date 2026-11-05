@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
 class Competition extends Model
@@ -36,6 +37,11 @@ class Competition extends Model
     public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class);
+    }
+
+    public function companions(): MorphMany
+    {
+        return $this->morphMany(Companion::class, 'subject')->orderBy('id');
     }
 
     public function scores(): HasMany

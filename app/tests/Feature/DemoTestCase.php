@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Club;
 use App\Models\Competition;
+use App\Models\Membership;
 use App\Models\PaymentAccount;
 use App\Models\User;
 use Database\Seeders\DemoSeeder;
@@ -32,6 +34,11 @@ abstract class DemoTestCase extends TestCase
     protected function competition(string $name): Competition
     {
         return Competition::where('name', $name)->firstOrFail();
+    }
+
+    protected function joinClub(Club $club, User $student): Membership
+    {
+        return Membership::firstOrCreate(['club_id' => $club->id, 'user_id' => $student->id], ['status' => 'active', 'joined_at' => now()]);
     }
 
     protected function pdf(string $name = 'dokumen.pdf'): UploadedFile

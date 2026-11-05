@@ -1,7 +1,7 @@
 <x-layout :title="'Kelola '.$club->name">
 <a class="back-link" href="/kelola/ukm">← Kelola UKM</a>
 <div class="page-heading"><div><p class="eyebrow">DASHBOARD {{ strtoupper($club->categoryShort()) }}@if($club->field) · {{ strtoupper($club->field) }}@endif</p><h1>{{ $club->name }}</h1><p>Keanggotaan dipisahkan dari jabatan pengurus. Pergantian ketua tidak menghapus riwayat anggota.</p></div>
-<div class="inline-actions"><a class="button primary" href="/ruang/{{ $club->id }}">Ruang organisasi</a><a class="button outline" href="/ukm/{{ $club->id }}">Lihat profil publik</a><a class="button outline" href="/kelola/ukm/{{ $club->id }}/ekspor">CSV anggota ↓</a><a class="button outline" href="/tinjauan">Tinjau pendaftar</a></div></div>
+<div class="inline-actions"><a class="button primary" href="/ruang/{{ $club->id }}">Ruang organisasi</a><a class="button outline" href="/ukm/{{ $club->id }}">Lihat profil publik</a><a class="button outline" href="/kelola/ukm/{{ $club->id }}/ekspor">CSV anggota ↓</a><a class="button outline" href="/tinjauan">Tinjau pendaftar</a>@if($club->isUkm())<a class="button outline" href="/ruang/{{ $club->id }}?tab=anggota">Undangan & permintaan</a>@endif</div></div>
 
 <div class="kpi-grid">
     @foreach(config('brudel.membership_statuses') as $key => $label)<div class="kpi"><span>{{ $label }}</span><strong>{{ $counts[$key] ?? 0 }}</strong></div>@endforeach
@@ -74,7 +74,7 @@
 </div>
 
 @if($club->category === 'himaju')
-<div class="alert success">Anggota HIMAJU otomatis: seluruh mahasiswa aktif Jurusan {{ $club->department?->name }} menjadi anggota tanpa rekrutmen. Pengurus dapat mengatur divisi dan status Nonaktif/Alumni.</div>
+<div class="alert success">Mahasiswa Jurusan {{ $club->department?->name }} bergabung lewat permintaan atau undangan, tanpa rekrutmen. <a class="text-link" href="/ruang/{{ $club->id }}?tab=anggota">Kelola undangan dan permintaan →</a></div>
 @elseif(! $club->isUkm())
 <section class="panel">
     <h2>Tetapkan anggota terpilih</h2>
@@ -106,7 +106,7 @@
 @forelse($members as $m)
 <tr><td><strong>{{ $m->user->name }}</strong><small>{{ $m->user->nim }} · {{ $m->user->program?->name }}</small><x-history :items="$m->histories"/></td><td>{{ \App\Services\Wita::show($m->joined_at, 'd M Y') }}@if($m->left_at)<small>Berakhir {{ \App\Services\Wita::show($m->left_at, 'd M Y') }}</small>@endif</td>
 <td><form class="inline-form" method="post" action="/kelola/anggota/{{ $m->id }}">@csrf
-    <select name="status">@foreach(config('brudel.membership_statuses') as $key => $label)@continue($club->category === 'himaju' && $key === 'left' && $m->status !== 'left')<option value="{{ $key }}" @selected($m->status === $key)>{{ $label }}</option>@endforeach</select>
+    <select name="status">@foreach(config('brudel.membership_statuses') as $key => $label)<option value="{{ $key }}" @selected($m->status === $key)>{{ $label }}</option>@endforeach</select>
     <input name="division" value="{{ $m->division }}" maxlength="80" placeholder="Divisi">
     <input name="reason" maxlength="500" placeholder="Alasan bila status berubah">
     <button class="button outline small">Simpan</button></form></td></tr>

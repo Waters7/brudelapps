@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\MasterOption;
 use App\Models\PaymentAccount;
 use App\Models\Program;
+use App\Models\User;
 use App\Services\Campus\MasterData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class MasterDataController extends Controller
             'unmapped' => Program::whereNull('department_id')->count(),
             'departments' => Department::count(),
             'accounts' => PaymentAccount::where('active', true)->count(),
+            'students' => User::whereNotNull('nim')->count(),
         ]);
     }
 

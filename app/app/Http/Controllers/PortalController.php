@@ -14,6 +14,7 @@ use App\Models\DepartmentApproval;
 use App\Models\Event;
 use App\Models\LandingSlide;
 use App\Models\Membership;
+use App\Models\MembershipRequest;
 use App\Models\Participant;
 use App\Models\PaymentAccount;
 use App\Models\PaymentProof;
@@ -25,6 +26,7 @@ use App\Services\Achievement\AchievementService;
 use App\Services\Campus\CalendarService;
 use App\Services\Club\ActivityService;
 use App\Services\Club\BroadcastService;
+use App\Services\Club\MembershipRequestService;
 use App\Services\Club\SpaceService;
 use App\Services\Report\ReportService;
 use Illuminate\Http\RedirectResponse;
@@ -71,7 +73,7 @@ class PortalController extends Controller
         return view('dashboard', [
             'calendar' => $calendar->month($calendar->resolveMonth($request->query('kalender')), $user),
             'broadcasts' => app(BroadcastService::class)->forUser($user),
-            'clubs' => Club::where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
+            'clubs' => Club::listedFor($user)->where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
                 ->withExists(['recruitments as recruiting' => fn ($q) => $q->where('opens_at', '<=', now())->where('closes_at', '>', now())])
                 ->orderByDesc('recruiting')->ordered()->limit(3)->get(),
             'competitions' => Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))->where('closes_at', '>', now())->orderBy('closes_at')->limit(3)->get(),
@@ -120,6 +122,9 @@ class PortalController extends Controller
         if ($all || $clubs->isNotEmpty()) {
             $tasks[] = ['Pendaftar UKM menunggu', ClubApplication::whereIn('status', ['submitted', 'waitlisted'])->when(! $all, fn ($q) => $q->whereHas('recruitment', fn ($r) => $r->whereIn('club_id', $clubs)))->count(), '/tinjauan'];
         }
+        if ($all || $clubs->isNotEmpty() || $departments->isNotEmpty() || $user->assigned('pembina')) {
+            $tasks[] = ['Permintaan gabung menunggu', MembershipRequest::pending()->where('direction', MembershipRequest::REQUEST)->whereIn('club_id', Club::coachedBy($user)->select('id'))->count(), '/kelola/ukm'];
+        }
         if ($managed === null || $managed->isNotEmpty()) {
             $inScope = fn ($q) => $managed === null ? $q : $q->whereIn('competition_id', $managed);
             $tasks[] = ['Pendaftaran lomba menunggu', Registration::where('status', 'submitted')->where($inScope)->count(), '/tinjauan'];
@@ -150,7 +155,7 @@ class PortalController extends Controller
 
     public function club(int $id): View
     {
-        $club = Club::with([
+        $club = Club::listedFor(auth()->user())->with([
             'recruitments' => fn ($q) => $q->latest('opens_at'),
             'officers' => fn ($q) => $q->where('starts_at', '<=', now())->where('ends_at', '>', now())->with('user'),
             'events' => fn ($q) => $q->where('status', 'approved')->latest(),
@@ -163,12 +168,15 @@ class PortalController extends Controller
             'activeMembers' => $club->memberships()->where('status', 'active')->count(),
             'applications' => ClubApplication::where('user_id', auth()->id())->whereIn('recruitment_id', $club->recruitments->pluck('id'))->get()->keyBy('recruitment_id'),
             'canEnterSpace' => app(SpaceService::class)->canEnter(auth()->user(), $club),
+            'isMember' => app(SpaceService::class)->isMember(auth()->user(), $club),
+            'pendingJoin' => MembershipRequest::where('club_id', $club->id)->where('user_id', auth()->id())->pending()->first(),
+            'joinBlocked' => app(MembershipRequestService::class)->blockedReason(auth()->user(), $club),
         ]);
     }
 
     public function competition(int $id): View
     {
-        $competition = Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))->findOrFail($id);
+        $competition = Competition::with('event', 'companions')->whereHas('event', fn ($q) => $q->where('status', 'approved'))->findOrFail($id);
 
         return view('competition', [
             'competition' => $competition,
@@ -195,7 +203,10 @@ class PortalController extends Controller
 
     public function memberships(Request $request): View
     {
-        return view('memberships', ['memberships' => Membership::with('club', 'histories')->where('user_id', $request->user()->id)->orderByRaw("status = 'active' desc")->latest('joined_at')->get()]);
+        return view('memberships', [
+            'memberships' => Membership::with('club', 'histories')->where('user_id', $request->user()->id)->orderByRaw("status = 'active' desc")->latest('joined_at')->get(),
+            'pending' => MembershipRequest::with('club', 'creator')->where('user_id', $request->user()->id)->pending()->latest('id')->get(),
+        ]);
     }
 
     public function review(Request $request): View

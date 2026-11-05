@@ -53,6 +53,8 @@
 @endif
 </div>
 
+<x-companions :items="$activity->companions" :action="$canManage ? '/kegiatan/'.$activity->id.'/pendamping' : null"/>
+
 @if($canManage)
 <div class="detail-columns">
 <section class="panel"><h2>Hadir · {{ $summary['present']->count() }}</h2>

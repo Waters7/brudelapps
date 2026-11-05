@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * One slide of the front-page scrolling banner: a short muted video or an image with a caption.
+ * One slide of the front-page scrolling banner: a short muted video, an image with a caption, or a text slide
+ * made from a competition or a winner's award (source lomba/penghargaan, no media).
  */
 class LandingSlide extends Model
 {
@@ -25,6 +26,11 @@ class LandingSlide extends Model
     public function isVideo(): bool
     {
         return $this->media_type === 'video';
+    }
+
+    public function hasMedia(): bool
+    {
+        return $this->media_path !== null;
     }
 
     public function mediaUrl(): string

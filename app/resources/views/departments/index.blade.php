@@ -1,5 +1,5 @@
 <x-layout title="Jurusan">
-<div class="page-heading"><div><p class="eyebrow">RUANG JURUSAN</p><h1>{{ $selected ? 'Jurusan '.$selected->name : 'Jurusan' }}</h1><p>Persetujuan lomba, keaktifan UKM (selain HIMAJU yang otomatis), sertifikat juara, dan prestasi mahasiswa jurusan Anda saja.</p></div>
+<div class="page-heading"><div><p class="eyebrow">RUANG JURUSAN</p><h1>{{ $selected ? 'Jurusan '.$selected->name : 'Jurusan' }}</h1><p>Persetujuan lomba, keaktifan UKM (di luar HIMAJU), sertifikat juara, dan prestasi mahasiswa jurusan Anda saja.</p></div>
 @if($selected)<div class="inline-actions"><a class="button outline" href="/jurusan/{{ $selected->id }}/ekspor?data=ukm">CSV UKM mahasiswa ↓</a><a class="button outline" href="/jurusan/{{ $selected->id }}/ekspor?data=prestasi">CSV prestasi ↓</a></div>@endif</div>
 
 @if($departments->count() > 1)

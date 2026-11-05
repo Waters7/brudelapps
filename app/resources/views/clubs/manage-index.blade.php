@@ -1,14 +1,16 @@
 <x-layout title="Kelola UKM">
-<div class="page-heading"><div><p class="eyebrow">RUANG PENGURUS</p><h1>Organisasi yang Anda kelola.</h1><p>Pengurus hanya melihat BEM, MPM, HIMAJU, atau UKM sesuai penugasan aktif. Kemahasiswaan melihat seluruhnya.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">RUANG PENGURUS</p><h1>Organisasi yang Anda kelola.</h1><p>Pengurus, pembina, dan admin jurusan hanya melihat organisasi binaannya. Kemahasiswaan direktorat melihat seluruhnya.</p></div></div>
 <div class="catalog-grid">
 @forelse($clubs as $club)
-<a class="panel club-manage-card" href="/kelola/ukm/{{ $club->id }}">
+@php($full = auth()->user()->managesClub($club->id))
+<a class="panel club-manage-card" href="{{ $full ? '/kelola/ukm/'.$club->id : '/ruang/'.$club->id.'?tab=anggota' }}">
     <span class="large-icon {{ $club->tone() }}"><x-icon :name="$club->symbol"/></span>
     <span class="badge status-draft">{{ $club->categoryShort() }}</span>
     <h2>{{ $club->name }}</h2>
     <p>{{ $club->active_members }} anggota aktif · {{ $club->open_recruitments }} rekrutmen dibuka</p>
+    @if($club->pending_requests)<span class="badge status-submitted">{{ $club->pending_requests }} permintaan gabung</span>@endif
     @unless($club->active)<span class="badge status-rejected">Nonaktif</span>@endunless
-    <span class="text-link">Buka dashboard UKM →</span>
+    <span class="text-link">{{ $full ? 'Buka dashboard UKM' : 'Kelola anggota' }} →</span>
 </a>
 @empty<div class="panel empty">Belum ada UKM dalam lingkup Anda.</div>@endforelse
 </div>

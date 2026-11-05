@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Club;
 use App\Models\Department;
 use App\Models\Membership;
+use App\Models\MembershipRequest;
 use App\Models\Recruitment;
 use App\Services\Campus\MasterData;
 use App\Services\Club\ClubService;
@@ -25,13 +26,12 @@ class ClubManageController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->isStudentAffairs() || $user->assigned('pengurus') || $user->assigned('jurusan'), 403);
-        $clubs = Club::withCount([
+        abort_unless($user->isStudentAffairs() || $user->assigned('pengurus') || $user->assigned('jurusan') || $user->assigned('pembina'), 403);
+        $clubs = Club::coachedBy($user)->withCount([
             'memberships as active_members' => fn ($q) => $q->where('status', 'active'),
             'recruitments as open_recruitments' => fn ($q) => $q->where('opens_at', '<=', now())->where('closes_at', '>', now()),
-        ])->when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($scope) => $scope->whereIn('id', $user->scopeIds('pengurus', 'club_id'))
-            ->orWhere(fn ($himaju) => $himaju->where('category', 'himaju')->whereIn('department_id', $user->scopeIds('jurusan', 'department_id')))))
-            ->ordered()->get();
+            'membershipRequests as pending_requests' => fn ($q) => $q->pending()->where('direction', MembershipRequest::REQUEST),
+        ])->ordered()->get();
 
         return view('clubs.manage-index', ['clubs' => $clubs, 'departments' => Department::orderBy('id')->get()]);
     }

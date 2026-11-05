@@ -24,7 +24,7 @@ class AuditLogService
         'competition_accounts' => 'Akun lomba', 'registration' => 'Pendaftaran lomba', 'team' => 'Tim', 'payment' => 'Pembayaran', 'payment_account' => 'Rekening',
         'department' => 'Persetujuan jurusan', 'rubric' => 'Rubrik', 'score' => 'Penilaian', 'bracket' => 'Bagan', 'match' => 'Pertandingan', 'results' => 'Hasil lomba',
         'performance' => 'Penampilan', 'certificate' => 'Sertifikat', 'award' => 'Prestasi', 'delegation' => 'Delegasi', 'report' => 'Laporan', 'support' => 'Bantuan',
-        'profile' => 'Profil', 'broadcast' => 'Pengumuman kemahasiswaan',
+        'profile' => 'Profil', 'broadcast' => 'Pengumuman kemahasiswaan', 'companion' => 'Pendamping', 'guideline' => 'SOP & pedoman',
     ];
 
     private const VERBS = [
@@ -34,10 +34,10 @@ class AuditLogService
         'previewed' => 'dipratinjau', 'published' => 'dipublikasikan', 'reopened' => 'dibuka kembali', 'issued' => 'diterbitkan', 'revoked' => 'dicabut',
         'replaced' => 'diganti', 'granted' => 'diberikan', 'ended' => 'diakhiri', 'exported' => 'diekspor', 'uploaded' => 'diunggah', 'proposed' => 'diusulkan',
         'completed' => 'selesai', 'letter' => 'surat tugas diunggah', 'activated' => 'diaktifkan', 'deactivated' => 'dinonaktifkan',
-        'setup_completed' => 'dilengkapi', 'contact_updated' => 'email/HP diubah', 'password_changed' => 'kata sandi diganti', 'password_reset' => 'kata sandi diatur ulang',
+        'setup_completed' => 'dilengkapi', 'contact_updated' => 'email/HP diubah', 'password_changed' => 'kata sandi diganti', 'password_reset' => 'kata sandi diatur ulang', 'password_issued' => 'sandi sementara dibuat',
         'staff_created' => 'staf dibuat', 'system_admin_set' => 'superadmin diatur', 'google_login' => 'masuk dengan Google', 'photo_updated' => 'foto diperbarui',
         'photo_removed' => 'foto dihapus', 'consent' => 'persetujuan publikasi diubah', 'provisioned' => 'dibuat', 'rotated' => 'kata sandi diganti', 'viewed' => 'dilihat',
-        'appointed' => 'ditetapkan', 'opened' => 'dibuka', 'closed' => 'ditutup', 'announced' => 'diumumkan', 'announcement_deleted' => 'pengumuman dihapus',
+        'appointed' => 'ditetapkan', 'requested' => 'diminta', 'declined' => 'ditolak', 'opened' => 'dibuka', 'closed' => 'ditutup', 'announced' => 'diumumkan', 'announcement_deleted' => 'pengumuman dihapus',
         'message_removed' => 'pesan dihapus', 'quest_created' => 'quest dibuat', 'quest_closed' => 'quest ditutup', 'code_opened' => 'kode hadir dibuka',
         'code_closed' => 'kode hadir ditutup', 'marked_present' => 'kehadiran dicatat', 'reported' => 'dilaporkan', 'banner_updated' => 'banner diperbarui',
         'banner_removed' => 'banner dihapus', 'slide_added' => 'ditambahkan', 'slide_updated' => 'diperbarui', 'slide_deleted' => 'dihapus', 'settings_updated' => 'diperbarui',

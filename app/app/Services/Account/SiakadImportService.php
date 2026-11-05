@@ -16,7 +16,8 @@ use Illuminate\Support\Str;
  * Imports the SIAKAD student list export ("laporan_daftarmhs.xls", an HTML table). Only NIM, name, program,
  * jurusan, email and birth date are read; NIK, addresses and family data in the export are ignored and never
  * stored. New (or never activated) students get their birth date as an 8-digit password (DDMMYYYY) that must
- * be replaced on first login.
+ * be replaced on first login. NIM identifies the account, so a ketua imported earlier stays one account; once
+ * someone has signed in, the import only fills what is missing and leaves their name, email and password alone.
  */
 class SiakadImportService extends DomainService
 {
@@ -31,7 +32,7 @@ class SiakadImportService extends DomainService
 
     /**
      * @param  list<string>  $paths
-     * @return array{files: list<array<string, mixed>>, created: int, updated: int, passwords: int, kept_active: int, no_birth_date: list<string>, placeholder_email: int, errors: list<string>, new_programs: list<string>, committed: bool}
+     * @return array{files: list<array<string, mixed>>, created: int, updated: int, passwords: int, kept_active: int, officers: int, no_birth_date: list<string>, placeholder_email: int, errors: list<string>, new_programs: list<string>, committed: bool}
      */
     public function import(User $actor, array $paths, bool $commit): array
     {
@@ -61,6 +62,7 @@ class SiakadImportService extends DomainService
             $summary['files'][] = $file;
         }
         $summary['new_programs'] = array_values(array_unique($summary['new_programs']));
+        $summary['officers'] = User::whereIn('nim', array_keys($seenNim))->whereHas('currentAssignments', fn ($q) => $q->where('role', 'pengurus'))->count();
 
         return $summary;
     }
@@ -147,6 +149,11 @@ class SiakadImportService extends DomainService
         $program ??= Program::create(['name' => $programName, 'department_id' => $department->id]);
         if (! $program->department_id) {
             $program->update(['department_id' => $department->id]);
+        }
+        if ($existing?->email_verified_at) {
+            $existing->forceFill(['program_id' => $existing->program_id ?? $program->id])->save();
+
+            return;
         }
         $user = $existing ?? new User(['nim' => $nim]);
         $attributes = ['name' => Str::limit($name, 120, ''), 'email' => $email, 'program_id' => $program->id, 'active' => true];

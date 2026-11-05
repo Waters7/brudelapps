@@ -23,7 +23,7 @@
 
 @php($tabIcons = ['beranda' => 'grid', 'obrolan' => 'chat', 'quest' => 'star', 'peringkat' => 'trophy', 'anggota' => 'users'])
 <nav class="space-tabs" aria-label="Bagian ruang organisasi">
-    @foreach(\App\Http\Controllers\Club\SpaceController::TABS as $key => $label)
+    @foreach($tabs as $key => $label)
     <a href="/ruang/{{ $club->id }}?tab={{ $key }}" class="{{ $tab === $key ? 'selected' : '' }}" @if($tab === $key) aria-current="page" @endif><x-icon :name="$tabIcons[$key]"/><span>{{ $label }}</span>@if($key === 'quest' && $canLead && $reviews->isNotEmpty())<span class="count-pill">{{ $reviews->count() }}</span>@endif</a>
     @endforeach
 </nav>
@@ -141,9 +141,36 @@
 @empty<tr><td colspan="6" class="empty">Belum ada anggota aktif.</td></tr>@endforelse
 </tbody></table></div></section>
 @if($memberCount > $leaderboard->count())<p class="muted">Menampilkan {{ $leaderboard->count() }} teratas dari {{ $memberCount }} anggota.@if($me && $me['rank'] > $leaderboard->count()) Posisi Anda: <strong>#{{ $me['rank'] }}</strong> · {{ $me['points'] }} poin.@endif</p>@endif
+@unless($canLead)<p class="muted">Nama anggota lain disembunyikan; peringkat dan poin tetap tampil.</p>@endunless
 <p class="muted">Poin = quest yang disetujui + {{ \App\Services\Club\SpaceService::ATTENDANCE_POINTS }} poin setiap hadir kegiatan dengan kode kehadiran. Level: @foreach(\App\Services\Club\SpaceService::LEVELS as $minimum => $title){{ $title }} ({{ $minimum }}+)@if(! $loop->last), @endif @endforeach.</p>
 
 @else
+@if($canInvite)
+<section class="panel"><h2>Undang anggota</h2>
+    <p class="muted">Mahasiswa menjadi anggota setelah menerima undangan di menu UKM Saya.@if($club->category === 'himaju') Hanya mahasiswa Jurusan {{ $club->department?->name }}.@endif</p>
+    <form class="form-grid" method="post" action="/ruang/{{ $club->id }}/undang">@csrf
+        <label>NIM atau email mahasiswa<input name="user" required maxlength="190" value="{{ old('user') }}" placeholder="NIM atau email"></label>
+        <label>Pesan (opsional)<input name="message" maxlength="500" value="{{ old('message') }}" placeholder="Mis. Yuk bergabung di divisi publikasi"></label>
+        <div class="span-2"><button class="button primary">Kirim undangan</button></div>
+    </form>
+</section>
+@endif
+@if($joinRequests->isNotEmpty())
+<section class="panel"><h2>Permintaan bergabung <span class="count-pill">{{ $joinRequests->count() }}</span></h2>
+    @foreach($joinRequests as $item)
+    <div class="list-row"><div><strong>{{ $item->user->name }}</strong><small>{{ $item->user->nim }} · {{ $item->user->program?->name ?? '—' }}</small>@if($item->message)<small class="prewrap">{{ $item->message }}</small>@endif</div>
+    <form class="inline-form" method="post" action="/permintaan-gabung/{{ $item->id }}">@csrf<button class="button primary small" name="decision" value="accepted">Terima</button><button class="button outline small danger" name="decision" value="declined">Tolak</button></form></div>
+    @endforeach
+</section>
+@endif
+@if($invitations->isNotEmpty())
+<section class="panel"><h2>Undangan terkirim <span class="count-pill">{{ $invitations->count() }}</span></h2>
+    @foreach($invitations as $item)
+    <div class="list-row"><div><strong>{{ $item->user->name }}</strong><small>{{ $item->user->nim }} · menunggu jawaban</small></div>
+    <form method="post" action="/permintaan-gabung/{{ $item->id }}/batal">@csrf<button class="text-link plain">Batalkan undangan</button></form></div>
+    @endforeach
+</section>
+@endif
 <div class="detail-columns">
 <section class="panel"><h2>Pengurus</h2>
     <ul class="plain-list">@forelse($officers as $officer)<li><div class="person"><x-avatar :user="$officer->user"/><span>{{ $officer->user->name }}<small>{{ $officer->position }}{{ $officer->period ? ' · '.$officer->period : '' }}</small></span></div></li>@empty<li class="muted">Belum ditetapkan.</li>@endforelse</ul>

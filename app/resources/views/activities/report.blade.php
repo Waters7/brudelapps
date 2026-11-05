@@ -19,6 +19,7 @@ dl{display:grid;grid-template-columns:180px 1fr;gap:6px 14px;margin:0}dt{font-we
     <dt>Waktu</dt><dd>{{ \App\Services\Wita::show($activity->starts_at, 'l, d F Y · H:i') }}–{{ \App\Services\Wita::show($activity->ends_at, 'H:i') }} WITA</dd>
     <dt>Lokasi</dt><dd>{{ $activity->location }}</dd>
     <dt>Penanggung jawab</dt><dd>{{ $activity->creator->name }}</dd>
+    @if($activity->companions->isNotEmpty())<dt>Pendamping</dt><dd>{{ $activity->companions->map(fn ($companion) => $companion->name.' ('.$companion->kindLabel().')')->join(', ') }}</dd>@endif
     <dt>Status</dt><dd>{{ config('brudel.status_labels')[$activity->status] ?? $activity->status }}{{ $activity->reported_at ? ' · dilaporkan '.\App\Services\Wita::show($activity->reported_at, 'd M Y H:i') : '' }}</dd>
     <dt>Kehadiran</dt><dd>{{ $summary['present']->count() }} hadir · {{ $summary['absent']->count() }} tidak hadir · {{ $summary['members'] }} anggota aktif</dd>
     @if($activity->reportKind() === 'match')<dt>Lawan & skor</dt><dd>{{ $activity->club->name }} {{ $activity->score_home ?? '–' }} : {{ $activity->score_away ?? '–' }} {{ $activity->opponent ?? '(belum diisi)' }}</dd>@endif

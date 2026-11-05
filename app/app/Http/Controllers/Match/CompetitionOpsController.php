@@ -30,7 +30,7 @@ class CompetitionOpsController extends Controller
     public function show(Request $request, Competition $competition, ScoringService $scoring): View
     {
         abort_unless($request->user()->managesCompetition($competition), 403);
-        $competition->load('event', 'criteria');
+        $competition->load('event', 'criteria', 'companions');
         $staff = Assignment::with('user')->where('competition_id', $competition->id)->whereIn('role', ['pengelola_lomba', 'penilai', 'operator'])->where('ends_at', '>', now())->get()->groupBy('role');
         $judgeTotals = $competition->assessment_type === 'rubric'
             ? Score::where('competition_id', $competition->id)->with('judge')->get()->groupBy('registration_id')

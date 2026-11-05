@@ -14,6 +14,7 @@
             ['/', 'grid', 'Dashboard pimpinan'],
             ['/laporan', 'grid', 'Laporan & IKU'],
             ['/delegasi', 'globe', 'Delegasi'],
+            ['/pedoman', 'book', 'SOP & Pedoman'],
             ['/live', 'clock', 'Live Score'],
         ],
     ] : [
@@ -28,10 +29,11 @@
             $me->nim ? ['/prestasi', 'trophy', 'Prestasi Saya'] : null,
             ['/live', 'clock', 'Live Score'],
             ['/delegasi', 'globe', 'Delegasi'],
+            ['/pedoman', 'book', 'SOP & Pedoman'],
         ]),
         'PENGELOLAAN' => array_filter([
             $me->isReviewer() ? ['/tinjauan', 'check', 'Tinjau Pengajuan'] : null,
-            $has('kemahasiswaan', 'pengurus', 'jurusan') ? ['/kelola/ukm', 'users', 'Kelola UKM'] : null,
+            $has('kemahasiswaan', 'pengurus', 'jurusan', 'pembina') ? ['/kelola/ukm', 'users', 'Kelola UKM'] : null,
             $has('kemahasiswaan') ? ['/kelola/pengumuman', 'megaphone', 'Pengumuman UKM'] : null,
             $has('kemahasiswaan', 'admin_event', 'pengurus', 'pengelola_lomba') ? ['/kelola/event', 'calendar', 'Kelola Event & Lomba'] : null,
             $has('kemahasiswaan', 'jurusan') ? ['/jurusan', 'book', 'Jurusan'] : null,
@@ -58,6 +60,7 @@
         ] : [],
         'MASTER DATA' => $has('kemahasiswaan') ? [
             ['/kelola/master', 'grid', 'Ringkasan Master Data', null, true],
+            ['/kelola/master/pengguna', 'users', 'Pengguna per Jurusan'],
             ...collect(\App\Services\Campus\MasterData::TYPES)->map(fn ($spec, $type) => ['/kelola/master/'.$type, $spec['icon'], $spec['label']])->values()->all(),
             ['/kelola/pengaturan#prodi', 'book', 'Jurusan & Prodi'],
         ] : [],

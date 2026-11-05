@@ -23,14 +23,14 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * HIMAJU membership is mandatory, so it follows every change of a student's program or active status,
-     * whichever code path (import, status change, seeder) saved it.
+     * A HIMAJU membership cannot outlive the student's place in that jurusan, whichever code path (import, status
+     * change) moved or deactivated the student. Joining is never automatic.
      */
     protected static function booted(): void
     {
         static::saved(function (User $user) {
-            if ($user->nim && ($user->wasRecentlyCreated || $user->wasChanged(['program_id', 'active', 'nim']))) {
-                app(ClubService::class)->syncHimaju($user);
+            if ($user->nim && $user->wasChanged(['program_id', 'active'])) {
+                app(ClubService::class)->releaseHimaju($user);
             }
         });
     }

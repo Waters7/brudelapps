@@ -16,7 +16,8 @@
     <div class="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-slider-track>
     @forelse($slides as $slide)
         <article class="relative flex min-h-[520px] w-full shrink-0 snap-start items-end lg:min-h-[600px]" aria-roledescription="slide" aria-label="{{ $loop->iteration }} dari {{ $loop->count }}">
-            @if($slide->isVideo())<video class="absolute inset-0 size-full object-cover" src="{{ $slide->mediaUrl() }}" muted loop playsinline preload="metadata" aria-hidden="true"></video>
+            @if(! $slide->hasMedia())<div class="absolute inset-0 bg-linear-to-br from-brand-teal via-brand-deep to-brand-ink" aria-hidden="true"><div class="absolute -right-24 -top-24 size-96 animate-float-slow rounded-full bg-brand-lime/20 blur-3xl"></div></div>
+            @elseif($slide->isVideo())<video class="absolute inset-0 size-full object-cover" src="{{ $slide->mediaUrl() }}" muted loop playsinline preload="metadata" aria-hidden="true"></video>
             @else<img class="absolute inset-0 size-full object-cover" src="{{ $slide->mediaUrl() }}" alt="">@endif
             <div class="absolute inset-0 bg-gradient-to-t from-brand-deep/95 via-brand-deep/40 to-transparent" aria-hidden="true"></div>
             <div class="relative w-full max-w-3xl p-7 pb-32 sm:p-12 sm:pb-36">

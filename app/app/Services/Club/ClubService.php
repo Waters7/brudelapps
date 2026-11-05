@@ -60,7 +60,7 @@ class ClubService extends DomainService
         abort_unless($actor->managesClub($club->id), 403);
         abort_if($recruitment && $recruitment->club_id !== $club->id, 404);
         $this->ensure($club->isUkm(), $club->category === 'himaju'
-            ? 'Anggota HIMAJU otomatis dari data mahasiswa jurusan; rekrutmen tidak diperlukan.'
+            ? 'HIMAJU tidak memakai periode rekrutmen: mahasiswa jurusan meminta bergabung atau diundang admin jurusan.'
             : 'Anggota BEM dan MPM ditetapkan dari hasil pemilihan, bukan rekrutmen terbuka.');
         $opens = Wita::toUtc($data['opens_at']);
         $closes = Wita::toUtc($data['closes_at']);
@@ -103,7 +103,6 @@ class ClubService extends DomainService
             $changed = $from !== $data['status'];
             if ($changed) {
                 $this->ensure(mb_strlen(trim($data['reason'] ?? '')) >= 5, 'Alasan perubahan status minimal 5 karakter.');
-                $this->ensure($membership->club->category !== 'himaju' || $data['status'] !== 'left', 'Keanggotaan HIMAJU wajib bagi mahasiswa jurusannya; gunakan status Nonaktif atau Alumni.');
                 if ($data['status'] === 'active') {
                     $this->ensure(! $this->choiceConflict($membership->user_id, $membership->club), 'Mahasiswa sudah aktif di UKM '.$membership->club->field.' lain; hanya satu yang dapat dipilih.');
                 }
@@ -160,35 +159,21 @@ class ClubService extends DomainService
     }
 
     /**
-     * Every active student is a member of their own jurusan's HIMAJU. A move to another jurusan ends the old
-     * membership; a deactivated student account makes it inactive. Runs whenever a student's program or status changes.
+     * HIMAJU is for students of its jurusan who chose to join: a move to another jurusan ends the membership and a
+     * deactivated student account makes it inactive. Nobody joins here; a student joins by request or invitation.
      */
-    public function syncHimaju(User $student): void
+    public function releaseHimaju(User $student): void
     {
-        if (! $student->nim) {
-            return;
-        }
         $department = $student->program_id ? Program::whereKey($student->program_id)->value('department_id') : null;
-        $target = $student->active && $department ? Club::where('category', 'himaju')->where('department_id', $department)->value('id') : null;
 
-        DB::transaction(function () use ($student, $target) {
-            $others = Membership::where('user_id', $student->id)->where('status', 'active')
-                ->whereHas('club', fn ($q) => $q->where('category', 'himaju'))->when($target, fn ($q) => $q->where('club_id', '!=', $target))->get();
-            foreach ($others as $old) {
+        DB::transaction(function () use ($student, $department) {
+            $stale = Membership::where('user_id', $student->id)->where('status', 'active')->whereHas('club', fn ($q) => $q->where('category', 'himaju')
+                ->when($student->active && $department, fn ($own) => $own->where('department_id', '!=', $department)))->get();
+            foreach ($stale as $membership) {
                 [$status, $reason] = $student->active ? ['left', 'Pindah jurusan'] : ['inactive', 'Status mahasiswa nonaktif'];
-                $old->update(['status' => $status, 'left_at' => $status === 'left' ? now() : null, 'status_reason' => $reason]);
-                $this->history($old, 'active', $status, null, $reason);
+                $membership->update(['status' => $status, 'left_at' => $status === 'left' ? now() : null, 'status_reason' => $reason]);
+                $this->history($membership, 'active', $status, null, $reason);
             }
-            if (! $target) {
-                return;
-            }
-            $membership = Membership::firstOrNew(['club_id' => $target, 'user_id' => $student->id]);
-            if ($membership->exists && $membership->status === 'active') {
-                return;
-            }
-            $from = $membership->exists ? $membership->status : null;
-            $membership->fill(['status' => 'active', 'joined_at' => $membership->joined_at ?? now(), 'left_at' => null, 'status_reason' => 'Anggota otomatis HIMAJU jurusan'])->save();
-            $this->history($membership, $from, 'active', null, 'Anggota otomatis HIMAJU jurusan');
         });
     }
 

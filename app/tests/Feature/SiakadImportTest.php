@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assignment;
+use App\Models\Club;
 use App\Models\Program;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -75,7 +77,7 @@ class SiakadImportTest extends DemoTestCase
         $demo = User::where('nim', 'DEMO001')->first();
         $this->assertSame($before, $demo->password, 'Akun yang sudah aktif tidak diubah kata sandinya.');
         $this->assertSame('mahasiswa@demo.brudel.test', $demo->email);
-        $this->assertTrue(User::where('nim', 'SIA0001')->first()->memberships()->whereHas('club', fn ($q) => $q->where('category', 'himaju'))->exists());
+        $this->assertFalse(User::where('nim', 'SIA0001')->first()->memberships()->whereHas('club', fn ($q) => $q->where('category', 'himaju'))->exists(), 'Tercatat di jurusan bukan berarti anggota HIMAJU.');
         $this->assertDatabaseMissing('users', ['name' => 'IBU CONTOH']);
     }
 
@@ -105,5 +107,46 @@ class SiakadImportTest extends DemoTestCase
         $this->post('/logout');
         $this->post('/login', ['email' => 'SIA0101', 'password' => '05032006'])->assertSessionHasErrors('email');
         $this->post('/login', ['email' => 'gizi.uji@contoh.test', 'password' => 'SandiGizi2026'])->assertRedirect('/');
+    }
+
+    public function test_students_sign_in_with_nim_or_email_and_the_birth_date(): void
+    {
+        $file = $this->export('Gizi', [['SIA0102', 'MAHASISWA EMAIL UJI', 'D3 - Gizi', '1 Januari 2001', 'email.uji@kampus.test', '']]);
+        $this->artisan('brudel:impor-siakad', ['files' => [$file], '--commit' => true])->assertSuccessful();
+
+        $this->post('/login', ['email' => 'SIA0102', 'password' => '01012001'])->assertRedirect('/sandi-baru');
+        $this->post('/logout');
+        $this->post('/login', ['email' => 'email.uji@kampus.test', 'password' => '01012001'])->assertRedirect('/sandi-baru');
+    }
+
+    public function test_a_ketua_who_already_signed_in_is_completed_not_duplicated(): void
+    {
+        $ketua = $this->user('pengurus');
+        $ketua->forceFill(['program_id' => null])->save();
+        $file = $this->export('Keperawatan', [['DEMO003', 'NAMA RESMI SIAKAD', 'D3 - Keperawatan', '1 Januari 2004', 'alamat.lain@kampus.test', '']]);
+
+        $this->artisan('brudel:impor-siakad', ['files' => [$file], '--commit' => true])->expectsOutputToContain('1 ketua/pengurus tetap satu akun')->assertSuccessful();
+
+        $this->assertSame(1, User::where('nim', 'DEMO003')->count());
+        $imported = $ketua->fresh();
+        $this->assertSame([$ketua->name, $ketua->email, $ketua->password], [$imported->name, $imported->email, $imported->password]);
+        $this->assertSame('D-III Keperawatan', $imported->program->name, 'Prodi yang kosong dilengkapi.');
+        $this->assertTrue($imported->assigned('pengurus'));
+    }
+
+    public function test_a_ketua_who_never_signed_in_gets_the_official_data_and_birth_date_password(): void
+    {
+        $ketua = User::create(['name' => 'Ketua L. Singkat', 'nim' => 'SIA0103', 'email' => 'sia0103@siakad.brudel.invalid', 'password' => 'SandiAcak12345', 'active' => true]);
+        Assignment::create(['user_id' => $ketua->id, 'role' => 'pengurus', 'club_id' => Club::where('name', 'UKM Olahraga')->value('id'), 'position' => 'Ketua', 'starts_at' => now()->subDay(), 'ends_at' => now()->addYear()]);
+        $file = $this->export('Keperawatan', [['SIA0103', 'KETUA LENGKAP SEKALI', 'D3 - Keperawatan', '5 Maret 2005', 'ketua.uji@kampus.test', '']]);
+
+        $this->artisan('brudel:impor-siakad', ['files' => [$file], '--commit' => true])->assertSuccessful();
+
+        $this->assertSame(1, User::where('nim', 'SIA0103')->count());
+        $imported = $ketua->fresh();
+        $this->assertSame(['KETUA LENGKAP SEKALI', 'ketua.uji@kampus.test'], [$imported->name, $imported->email]);
+        $this->assertTrue(Hash::check('05032005', $imported->password));
+        $this->assertTrue($imported->must_change_password);
+        $this->assertTrue($imported->assigned('pengurus'));
     }
 }

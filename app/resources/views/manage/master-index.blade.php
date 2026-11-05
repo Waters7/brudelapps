@@ -10,6 +10,12 @@
     <span class="badge status-accepted">{{ $counts[$type]['active'] }} aktif</span>@if($counts[$type]['total'] > $counts[$type]['active']) <span class="badge status-draft">{{ $counts[$type]['total'] - $counts[$type]['active'] }} nonaktif</span>@endif
 </a>
 @endforeach
+<a class="feature-card master-card" href="/kelola/master/pengguna">
+    <span class="icon-tile teal"><x-icon name="users"/></span>
+    <h3>Pengguna per jurusan</h3>
+    <p>Akun mahasiswa menurut jurusan, status masuk, serta ketua dan pengurusnya.</p>
+    <span class="badge status-accepted">{{ number_format($students, 0, ',', '.') }} mahasiswa</span>
+</a>
 <a class="feature-card master-card" href="/kelola/pengaturan#prodi">
     <span class="icon-tile blue"><x-icon name="book"/></span>
     <h3>Jurusan &amp; program studi</h3>

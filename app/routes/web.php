@@ -7,14 +7,18 @@ use App\Http\Controllers\Account\SignedInUserController;
 use App\Http\Controllers\Account\StudentController;
 use App\Http\Controllers\Achievement\AchievementController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Campus\GuidelineController;
 use App\Http\Controllers\Campus\LandingSlideController;
 use App\Http\Controllers\Campus\MasterDataController;
 use App\Http\Controllers\Campus\SettingsController;
 use App\Http\Controllers\Campus\SystemSettingsController;
+use App\Http\Controllers\Campus\UserDirectoryController;
 use App\Http\Controllers\Certificate\CertificateController;
 use App\Http\Controllers\Club\ActivityController;
 use App\Http\Controllers\Club\BroadcastController;
 use App\Http\Controllers\Club\ClubManageController;
+use App\Http\Controllers\Club\CompanionController;
+use App\Http\Controllers\Club\MembershipRequestController;
 use App\Http\Controllers\Club\SpaceController;
 use App\Http\Controllers\Delegation\DelegationController;
 use App\Http\Controllers\Delegation\PerjadinController;
@@ -85,6 +89,16 @@ Route::middleware('auth')->group(function () {
     Route::view('/bantuan', 'support');
 
     /* Ruang organisasi: pengumuman, obrolan, quest, peringkat */
+    Route::post('/ukm/{club}/minta-gabung', [MembershipRequestController::class, 'store']);
+    Route::post('/ruang/{club}/undang', [MembershipRequestController::class, 'invite']);
+    Route::post('/undangan-organisasi/{invitation}', [MembershipRequestController::class, 'respond']);
+    Route::post('/permintaan-gabung/{joinRequest}', [MembershipRequestController::class, 'decide']);
+    Route::post('/permintaan-gabung/{item}/batal', [MembershipRequestController::class, 'cancel']);
+    Route::get('/pedoman', [GuidelineController::class, 'index']);
+    Route::post('/pedoman', [GuidelineController::class, 'store']);
+    Route::get('/pedoman/{guideline}/unduh', [GuidelineController::class, 'download']);
+    Route::post('/pedoman/{guideline}/hapus', [GuidelineController::class, 'destroy']);
+    Route::post('/pendamping/{companion}/hapus', [CompanionController::class, 'destroy']);
     Route::get('/ruang/{club}', [SpaceController::class, 'show']);
     Route::post('/ruang/{club}/pengumuman', [SpaceController::class, 'storePost']);
     Route::post('/ruang/pengumuman/{post}/sematkan', [SpaceController::class, 'pinPost']);
@@ -105,6 +119,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/kegiatan/{activity}/laporan.csv', [ActivityController::class, 'csv']);
     Route::get('/kegiatan/{activity}/notulen', [ActivityController::class, 'minutes']);
     Route::post('/kegiatan/{activity}/batal', [ActivityController::class, 'cancel']);
+    Route::post('/kegiatan/{activity}/pendamping', [CompanionController::class, 'storeForActivity']);
     Route::get('/notifikasi', [PortalController::class, 'notifications']);
     Route::post('/notifikasi/baca', [PortalController::class, 'readNotifications']);
 
@@ -172,6 +187,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/lomba/{competition}/sahkan', [CompetitionOpsController::class, 'publish']);
     Route::post('/kelola/lomba/{competition}/buka-koreksi', [CompetitionOpsController::class, 'reopen']);
     Route::post('/kelola/lomba/{competition}/penghargaan', [CompetitionOpsController::class, 'award']);
+    Route::post('/kelola/lomba/{competition}/pendamping', [CompanionController::class, 'storeForCompetition']);
     Route::get('/kelola/lomba/{competition}/log-nilai', [CompetitionOpsController::class, 'scoreLog']);
     Route::get('/kelola/lomba/{competition}/akun', [CompetitionAccountController::class, 'show']);
     Route::post('/kelola/lomba/{competition}/akun/{account}/reset', [CompetitionAccountController::class, 'reset']);
@@ -211,6 +227,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/mahasiswa/impor', [StudentController::class, 'import']);
     Route::post('/kelola/mahasiswa/{student}/status', [StudentController::class, 'status']);
     Route::post('/kelola/mahasiswa/{student}/aktivasi', [StudentController::class, 'sendActivation']);
+    Route::post('/kelola/akun/{account}/sandi-sementara', [StudentController::class, 'temporaryPassword']);
     Route::get('/kelola/penugasan', [AssignmentController::class, 'index']);
     Route::post('/kelola/penugasan', [AssignmentController::class, 'store']);
     Route::post('/kelola/penugasan/akun-staf', [AssignmentController::class, 'storeStaff']);
@@ -227,12 +244,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/sistem', [SystemSettingsController::class, 'update']);
     Route::post('/kelola/sistem/uji-email', [SystemSettingsController::class, 'testMail'])->middleware('throttle:account-link');
     Route::get('/kelola/master', [MasterDataController::class, 'index']);
+    Route::get('/kelola/master/pengguna', [UserDirectoryController::class, 'index']);
     Route::get('/kelola/master/{type}', [MasterDataController::class, 'show'])->whereIn('type', array_keys(MasterData::TYPES));
     Route::post('/kelola/master/{type}', [MasterDataController::class, 'store'])->whereIn('type', array_keys(MasterData::TYPES));
     Route::post('/kelola/master/{type}/{option}', [MasterDataController::class, 'update'])->whereIn('type', array_keys(MasterData::TYPES));
     Route::post('/kelola/master/{type}/{option}/hapus', [MasterDataController::class, 'destroy'])->whereIn('type', array_keys(MasterData::TYPES));
     Route::get('/kelola/banner-depan', [LandingSlideController::class, 'index']);
     Route::post('/kelola/banner-depan', [LandingSlideController::class, 'store']);
+    Route::post('/kelola/banner-depan/dari-data', [LandingSlideController::class, 'storeFromSource']);
     Route::post('/kelola/banner-depan/{slide}', [LandingSlideController::class, 'update']);
     Route::post('/kelola/banner-depan/{slide}/hapus', [LandingSlideController::class, 'destroy']);
     Route::get('/kelola/perjadin', [PerjadinController::class, 'index']);

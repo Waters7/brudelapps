@@ -43,6 +43,7 @@ class BroadcastTest extends DemoTestCase
     public function test_announcements_to_chosen_organizations_reach_only_their_members(): void
     {
         $nursing = Club::where('name', 'HIMAJU Keperawatan')->firstOrFail();
+        $this->joinClub($nursing, $this->user('mahasiswa'));
         $this->actingAs($this->user('admin'))->post('/kelola/pengumuman', ['title' => 'Rapat HIMAJU', 'body' => 'Rapat koordinasi pengurus HIMAJU.', 'audience' => 'pilihan'])
             ->assertSessionHasErrors('action');
         $this->post('/kelola/pengumuman', ['title' => 'Rapat HIMAJU', 'body' => 'Rapat koordinasi pengurus HIMAJU.', 'audience' => 'pilihan', 'clubs' => [$nursing->id]])

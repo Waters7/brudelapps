@@ -21,7 +21,7 @@ class Discovery extends Component
     public function render()
     {
         $q = $this->kind === 'ukm'
-            ? Club::with('recruitments')->where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
+            ? Club::listedFor(auth()->user())->with('recruitments')->where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
                 ->when($this->category, fn ($q) => $q->where('category', $this->category))->ordered()
             : Competition::with('event')->whereHas('event', fn ($q) => $q->where('status', 'approved'))
                 ->when($this->field, fn ($q) => $q->where('field', $this->field));

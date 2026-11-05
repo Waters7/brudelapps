@@ -79,16 +79,12 @@ class OfficerImportService extends DomainService
                     $summary['created_users']++;
                 }
                 $club = Club::findOrFail($row['club_id']);
-                if ($club->category !== 'himaju') {
-                    $membership = Membership::firstOrNew(['club_id' => $club->id, 'user_id' => $user->id]);
-                    if (! $membership->exists || $membership->status !== 'active') {
-                        $from = $membership->exists ? $membership->status : null;
-                        $membership->fill(['status' => 'active', 'joined_at' => $membership->joined_at ?? now(), 'left_at' => null, 'status_reason' => 'Pengurus organisasi (impor ketua)'])->save();
-                        $this->history($membership, $from, 'active', $actor, 'Pengurus organisasi (impor ketua)');
-                    }
+                $membership = Membership::firstOrNew(['club_id' => $club->id, 'user_id' => $user->id]);
+                if (! $membership->exists || $membership->status !== 'active') {
+                    $from = $membership->exists ? $membership->status : null;
+                    $membership->fill(['status' => 'active', 'joined_at' => $membership->joined_at ?? now(), 'left_at' => null, 'status_reason' => 'Pengurus organisasi (impor ketua)'])->save();
+                    $this->history($membership, $from, 'active', $actor, 'Pengurus organisasi (impor ketua)');
                 }
-                $this->ensure(Membership::where('club_id', $club->id)->where('user_id', $user->id)->where('status', 'active')->exists(),
-                    'Baris '.$row['line'].': '.$row['name'].' bukan anggota aktif '.$club->name.'.');
                 $assignment = Assignment::create([
                     'user_id' => $user->id, 'role' => 'pengurus', 'club_id' => $club->id, 'position' => $row['position'], 'period' => $row['period'],
                     'starts_at' => now(), 'ends_at' => now()->addYear(), 'created_by' => $actor->id,

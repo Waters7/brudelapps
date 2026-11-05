@@ -18,7 +18,7 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 | baru@demo.brudel.test | DEMO009 | Akun hasil impor yang **belum diaktivasi** |
 | `lomba{id}-pengelola`, `-operator`, `-juri{n}@lomba.brudel.invalid` | — | Akun lomba otomatis; kata sandinya acak dan dilihat di Kelola Event → Akun lomba (pengaju/kemahasiswaan) |
 
-Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; setiap mahasiswa demo otomatis anggota HIMAJU jurusannya; Michelle Sumual anggota BEM terpilih; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
+Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; mahasiswa demo belum menjadi anggota HIMAJU (bergabung lewat permintaan atau undangan); Michelle Sumual anggota BEM terpilih; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
 ### Skenario tahap ketiga (browser)
 
@@ -70,13 +70,13 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 18 Oktober 2026 (131 tes):
+Hasil 5 November 2026 (166 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **131 lulus, 2.844 assertions**, termasuk 4 tes konkurensi dua proses |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **166 lulus, 3.223 assertions**, termasuk 4 tes konkurensi dua proses |
 | MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions** pada suite 112 tes (sebelum `DepartmentAccessTest` dan tes perintah impor ketua); seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **127 lulus, 4 dilewati, 2.799 assertions** |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **162 lulus, 4 dilewati, 3.178 assertions** |
 
 Tes konkurensi mengandalkan dua proses yang tertahan bersamaan pada row lock. Pada mesin yang sedang sibuk, salah satu worker kadang tiba terlambat sehingga tes gagal dengan pesan "Setiap worker harus tertahan bersamaan". Jalankan ulang `--group=pgsql` sebelum menyimpulkan ada regresi.
 

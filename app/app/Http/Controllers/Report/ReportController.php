@@ -33,7 +33,7 @@ class ReportController extends Controller
             'iku' => $dashboard ? $this->reports->ikuByDepartment($filters, $scope) : null,
             'departments' => Department::when($scope !== null, fn ($q) => $q->whereIn('id', $scope))->orderBy('name')->get(),
             'scoped' => $scope !== null,
-            'clubs' => Club::orderBy('name')->get(),
+            'clubs' => Club::when($scope !== null, fn ($q) => $q->coachedBy($user))->orderBy('name')->get(),
             'exports' => $this->reports->exportsFor($user),
         ]);
     }

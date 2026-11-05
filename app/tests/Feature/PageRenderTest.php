@@ -15,7 +15,7 @@ class PageRenderTest extends DemoTestCase
         $event = Event::where('name', 'Pekan Prestasi Mahasiswa 2026 · Demo')->first();
         $tennis = $this->competition('Tenis Meja Tunggal');
         $poster = $this->competition('Lomba Poster Kesehatan');
-        $common = ['/', '/ukm', '/lomba', '/live', '/live/'.$tennis->id, '/delegasi', '/notifikasi', '/rekomendasi', '/profil', '/ukm/'.$club->id, '/lomba/'.$tennis->id];
+        $common = ['/', '/ukm', '/lomba', '/live', '/live/'.$tennis->id, '/delegasi', '/notifikasi', '/rekomendasi', '/profil', '/pedoman', '/ukm/'.$club->id, '/lomba/'.$tennis->id];
         $pages = [
             'mahasiswa' => ['/pendaftaran', '/ukm-saya', '/sertifikat', '/prestasi'],
             'pengurus' => ['/tinjauan', '/kelola/ukm', '/kelola/ukm/'.$club->id, '/kelola/event', '/kelola/event/'.Event::where('club_id', $club->id)->first()->id, '/laporan'],
@@ -23,13 +23,14 @@ class PageRenderTest extends DemoTestCase
                 '/jurusan', '/pembayaran', '/operator', '/kelola/sertifikat', '/kelola/sertifikat?lomba='.$tennis->id, '/kelola/prestasi', '/laporan', '/kelola/mahasiswa',
                 '/kelola/penugasan', '/kelola/pengaturan', '/delegasi/baru', '/delegasi/baru?lomba='.$this->competition('Seleksi Baca Puisi')->id],
             'event' => ['/tinjauan', '/kelola/event', '/kelola/event/'.$event->id, '/kelola/lomba/'.$tennis->id, '/pembayaran', '/operator', '/kelola/sertifikat', '/laporan'],
-            'jurusan' => ['/jurusan'],
+            'jurusan' => ['/jurusan', '/kelola/ukm', '/ukm/'.Club::where('name', 'HIMAJU Keperawatan')->value('id')],
+            'pembina' => ['/kelola/ukm', '/ruang/'.$club->id.'?tab=anggota'],
             'juri' => ['/penilaian', '/penilaian/'.$poster->id],
             'operator' => ['/operator'],
             'pimpinan' => ['/laporan'],
         ];
         foreach ($pages as $role => $urls) {
-            foreach (array_merge($common, $urls) as $url) {
+            foreach (array_merge($role === 'jurusan' ? array_diff($common, ['/ukm/'.$club->id]) : $common, $urls) as $url) {
                 $response = $this->actingAs($this->user($role))->get($url);
                 $this->assertSame(200, $response->status(), $role.' '.$url);
                 $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));

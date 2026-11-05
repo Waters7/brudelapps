@@ -5,6 +5,7 @@ namespace App\Services\Report;
 use App\Models\AwardRecipient;
 use App\Models\AwardResult;
 use App\Models\Certificate;
+use App\Models\Club;
 use App\Models\Competition;
 use App\Models\Delegation;
 use App\Models\Department;
@@ -246,8 +247,7 @@ class ReportService
             'iku' => $this->ikuRows($filters, $this->departmentScope($user)),
             'keanggotaan' => [
                 ['UKM', 'Nama', 'Jurusan', 'Prodi', 'Divisi', 'Status', 'Bergabung', 'Keluar'],
-                Membership::with('club', 'user.program.department')->when(! $all, fn ($q) => $q->where(fn ($w) => $w->whereIn('club_id', $clubs)
-                    ->when($jurusan->isNotEmpty(), fn ($own) => $own->orWhereHas('user', $ofJurusan))))
+                Membership::with('club', 'user.program.department')->when(! $all, fn ($q) => $q->whereIn('club_id', Club::coachedBy($user)->select('id')))
                     ->cursor()->map(fn ($m) => [$m->club->name, $m->user->name, $m->user->program?->department?->name, $m->user->program?->name, $m->division, $m->status, Wita::show($m->joined_at, 'd/m/Y'), Wita::show($m->left_at, 'd/m/Y')]),
             ],
             default => abort(404),
