@@ -51,7 +51,7 @@ class MemberVisibilityTest extends DemoTestCase
         Assignment::create(['user_id' => $admin->id, 'role' => 'pembina', 'club_id' => $club->id, 'starts_at' => now()->subDay(), 'ends_at' => now()->addYear()]);
         $coach = $this->user('jurusan');
         $this->actingAs($coach)->get('/ukm/'.$club->id)->assertOk();
-        $this->get('/kelola/ukm')->assertOk()->assertSee('UKM Olahraga')->assertSee('/ruang/'.$club->id.'?tab=anggota', false);
+        $this->get('/kelola/ukm')->assertOk()->assertSee('UKM Olahraga')->assertSee('/kelola/ukm/'.$club->id, false);
     }
 
     public function test_the_administrator_and_students_still_see_every_organization(): void

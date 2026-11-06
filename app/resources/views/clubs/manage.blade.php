@@ -42,11 +42,25 @@
 
 <section class="panel">
     <h2>Kepengurusan per periode</h2>
-    <p class="muted">{{ $canLead ? 'Anda dapat menambah atau mengakhiri pengurus. Pengurus dipilih dari anggota aktif.' : 'Perubahan pengurus dilakukan Ketua, Wakil Ketua, Sekretaris, atau kemahasiswaan.' }}</p>
+    <p class="muted">{{ $canLead ? 'Anda dapat menambah, mengganti, atau mengakhiri pengurus. Pengurus dipilih dari anggota aktif.' : 'Perubahan pengurus dilakukan Ketua, Wakil Ketua, Sekretaris, atau kemahasiswaan.' }}</p>
     @forelse($officers as $officer)
         <div class="list-row"><div><strong>{{ $officer->user->name }} · {{ $officer->position }}</strong><small>{{ $officer->period ?? 'Periode tidak dicatat' }} · {{ \App\Services\Wita::show($officer->starts_at, 'd M Y') }} – {{ \App\Services\Wita::show($officer->ends_at, 'd M Y') }} · {{ $officer->isCurrent() ? 'Berlaku' : 'Tidak berlaku' }}</small></div>
         @if($canLead && $officer->ends_at->isFuture() && $officer->user_id !== auth()->id())<form class="inline-form" method="post" action="/kelola/penugasan/{{ $officer->id }}/akhiri">@csrf<input name="reason" required minlength="5" placeholder="Alasan"><button class="button outline small">Akhiri</button></form>@endif</div>
     @empty<p class="muted">Belum ada pengurus tercatat.</p>@endforelse
+    @if($canReplace)
+    <details class="collapsible"><summary><strong>Ganti ketua atau pengurus</strong></summary>
+    <p class="muted">Pemegang jabatan yang dipilih berakhir hari ini, dan pengganti langsung aktif. Pengganti harus anggota aktif organisasi ini.</p>
+    <form class="form-grid" method="post" action="/kelola/ukm/{{ $club->id }}/ganti-pengurus">@csrf
+        <label>Jabatan<select name="position" required>@foreach($master->officerPositions() as $position)<option>{{ $position }}</option>@endforeach</select></label>
+        @if($candidates === null)<label>NIM pengganti<input name="user" required maxlength="30" placeholder="Ketik NIM anggota aktif"></label>@else
+        <label>Pengganti<select name="user" required><option value="">Pilih anggota…</option>@foreach($candidates as $candidate)<option value="{{ $candidate->user->nim ?? $candidate->user->email }}">{{ $candidate->user->name }} · {{ $candidate->user->nim }}</option>@endforeach</select></label>@endif
+        <label>Periode<input name="period" maxlength="30" placeholder="2026/2027"></label>
+        <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ now()->timezone('Asia/Makassar')->addYear()->format('Y-m-d\TH:i') }}"></label>
+        <label class="span-2">Alasan pergantian<input name="reason" required minlength="5" maxlength="500" placeholder="Mis. Hasil musyawarah anggota"></label>
+        <div class="span-2"><button class="button primary">Ganti pengurus</button></div>
+    </form>
+    </details>
+    @endif
     @if($canLead)
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
         <input type="hidden" name="scope_id" value="{{ $club->id }}"><input type="hidden" name="role" value="pengurus">

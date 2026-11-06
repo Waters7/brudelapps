@@ -1,6 +1,6 @@
-@props(['items'])
+@props(['items', 'open' => false])
 @if($items->isNotEmpty())
-<details class="history">
+<details class="history" @if($open) open @endif>
     <summary>Riwayat status ({{ $items->count() }})</summary>
     <ol>
         @foreach($items as $item)

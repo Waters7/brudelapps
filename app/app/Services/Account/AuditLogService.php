@@ -24,7 +24,7 @@ class AuditLogService
         'competition_accounts' => 'Akun lomba', 'registration' => 'Pendaftaran lomba', 'team' => 'Tim', 'payment' => 'Pembayaran', 'payment_account' => 'Rekening',
         'department' => 'Persetujuan jurusan', 'rubric' => 'Rubrik', 'score' => 'Penilaian', 'bracket' => 'Bagan', 'match' => 'Pertandingan', 'results' => 'Hasil lomba',
         'performance' => 'Penampilan', 'certificate' => 'Sertifikat', 'award' => 'Prestasi', 'delegation' => 'Delegasi', 'report' => 'Laporan', 'support' => 'Bantuan',
-        'profile' => 'Profil', 'broadcast' => 'Pengumuman kemahasiswaan', 'companion' => 'Pendamping', 'guideline' => 'SOP & pedoman',
+        'profile' => 'Profil', 'broadcast' => 'Pengumuman kemahasiswaan', 'companion' => 'Pendamping', 'guideline' => 'SOP & pedoman', 'submission' => 'Proposal & LPJ', 'employees' => 'Data dosen dan tendik',
     ];
 
     private const VERBS = [
@@ -34,7 +34,7 @@ class AuditLogService
         'previewed' => 'dipratinjau', 'published' => 'dipublikasikan', 'reopened' => 'dibuka kembali', 'issued' => 'diterbitkan', 'revoked' => 'dicabut',
         'replaced' => 'diganti', 'granted' => 'diberikan', 'ended' => 'diakhiri', 'exported' => 'diekspor', 'uploaded' => 'diunggah', 'proposed' => 'diusulkan',
         'completed' => 'selesai', 'letter' => 'surat tugas diunggah', 'activated' => 'diaktifkan', 'deactivated' => 'dinonaktifkan',
-        'setup_completed' => 'dilengkapi', 'contact_updated' => 'email/HP diubah', 'password_changed' => 'kata sandi diganti', 'password_reset' => 'kata sandi diatur ulang', 'password_issued' => 'sandi sementara dibuat',
+        'setup_completed' => 'dilengkapi', 'contact_updated' => 'email/HP diubah', 'password_changed' => 'kata sandi diganti', 'password_reset' => 'kata sandi diatur ulang', 'password_issued' => 'sandi sementara dibuat', 'resubmitted' => 'dikirim ulang',
         'staff_created' => 'staf dibuat', 'system_admin_set' => 'superadmin diatur', 'google_login' => 'masuk dengan Google', 'photo_updated' => 'foto diperbarui',
         'photo_removed' => 'foto dihapus', 'consent' => 'persetujuan publikasi diubah', 'provisioned' => 'dibuat', 'rotated' => 'kata sandi diganti', 'viewed' => 'dilihat',
         'appointed' => 'ditetapkan', 'requested' => 'diminta', 'declined' => 'ditolak', 'opened' => 'dibuka', 'closed' => 'ditutup', 'announced' => 'diumumkan', 'announcement_deleted' => 'pengumuman dihapus',

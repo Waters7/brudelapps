@@ -3,6 +3,7 @@
 namespace App\Services\Account;
 
 use App\Models\Assignment;
+use App\Models\Club;
 use App\Models\Competition;
 use App\Models\Department;
 use App\Models\User;
@@ -10,6 +11,7 @@ use App\Notifications\BrudelNotice;
 use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use App\Services\Wita;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -122,7 +124,7 @@ class AssignmentService extends DomainService
             return $scopeId !== null && $actor->managesOfficers($scopeId);
         }
         if ($role === 'pembina') {
-            return $scopeId !== null && ($actor->leadsClub($scopeId) || $actor->administersHimaju($scopeId));
+            return $scopeId !== null && ($actor->leadsClub($scopeId) || $actor->administersClub($scopeId));
         }
         if (in_array($role, ['penilai', 'operator'], true)) {
             $competition = $scopeId ? Competition::find($scopeId) : null;
@@ -133,21 +135,48 @@ class AssignmentService extends DomainService
         return false;
     }
 
-    public function end(User $actor, Assignment $assignment, string $reason): void
+    /**
+     * Hands a position to another active member in one step: whoever holds it ends, and a successor who already serves
+     * in another position moves over. Everything ends on the same minute the new assignment starts.
+     *
+     * @param  array{user: string, position: string, period?: ?string, ends_at: string, reason: string}  $data
+     */
+    public function replaceOfficer(User $actor, Club $club, array $data): Assignment
+    {
+        abort_unless($actor->replacesOfficers($club->id), 403);
+        $identifier = trim($data['user']);
+        $successor = User::where('email', mb_strtolower($identifier))->orWhere('nim', $identifier)->orWhere('username', mb_strtolower($identifier))->first();
+        $this->ensure($successor !== null, 'Anggota pengganti tidak ditemukan.');
+
+        return DB::transaction(function () use ($actor, $club, $data, $successor) {
+            $serving = Assignment::where('role', 'pengurus')->where('club_id', $club->id)->where('ends_at', '>', now());
+            $holders = (clone $serving)->where('position', $data['position'])->get();
+            $this->ensure(! $holders->contains('user_id', $successor->id), $successor->name.' sudah memegang jabatan '.$data['position'].'.');
+            $start = now()->startOfMinute();
+            foreach ($holders->merge((clone $serving)->where('user_id', $successor->id)->get()) as $assignment) {
+                $this->end($actor, $assignment, $data['reason'], $start);
+            }
+
+            return $this->grant($actor, ['user' => $successor->nim ?? $successor->email, 'role' => 'pengurus', 'scope_id' => $club->id, 'position' => $data['position'],
+                'period' => $data['period'] ?? null, 'starts_at' => Wita::input($start), 'ends_at' => $data['ends_at']]);
+        });
+    }
+
+    public function end(User $actor, Assignment $assignment, string $reason, ?CarbonInterface $at = null): void
     {
         abort_unless($this->mayManage($actor, $assignment->role, $assignment->club_id ?? $assignment->competition_id), 403);
         abort_if($assignment->user_id === $actor->id, 403, 'Tidak dapat mengakhiri hak akses sendiri.');
         $this->ensure(mb_strlen(trim($reason)) >= 5, 'Alasan minimal 5 karakter.');
         $this->ensure($assignment->ends_at->isFuture(), 'Penugasan sudah berakhir.');
 
-        DB::transaction(function () use ($actor, $assignment, $reason) {
+        DB::transaction(function () use ($actor, $assignment, $reason, $at) {
             $assignment = Assignment::lockForUpdate()->findOrFail($assignment->id);
             if ($assignment->role === 'kemahasiswaan') {
                 $others = Assignment::where('role', 'kemahasiswaan')->where('id', '!=', $assignment->id)
                     ->where('starts_at', '<=', now())->where('ends_at', '>', now())->exists();
                 $this->ensure($others, 'Minimal satu pengelola kemahasiswaan harus tetap aktif.');
             }
-            $assignment->update(['ends_at' => $assignment->starts_at->isFuture() ? $assignment->starts_at : now(), 'ended_reason' => $reason]);
+            $assignment->update(['ends_at' => $assignment->starts_at->isFuture() ? $assignment->starts_at : ($at ?? now())->max($assignment->starts_at), 'ended_reason' => $reason]);
             $this->audit($actor, 'role.ended', $assignment, ['reason' => $reason]);
         });
     }

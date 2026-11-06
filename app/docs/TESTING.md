@@ -20,6 +20,8 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 
 Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; mahasiswa demo belum menjadi anggota HIMAJU (bergabung lewat permintaan atau undangan); Michelle Sumual anggota BEM terpilih; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
+Simulasi lomba: `php artisan db:seed --class=SimulationSeeder` membuat event fiktif berisi satu bagan gugur individu (8 peserta) dan satu bagan gugur grup (4 tim, 3 anggota) memakai mahasiswa yang sudah ada, tanpa akun baru. Hanya berjalan di `local`/`testing`, dan menjalankannya lagi tidak mengubah apa pun. Babak pertama sudah terisi sebagian supaya operator dapat melanjutkan pertandingan.
+
 ### Skenario tahap ketiga (browser)
 
 1. **Halaman depan**: buka `/` tanpa masuk — info lomba, kegiatan terbuka (meeting internal tidak tampil), UKM yang membuka pendaftaran, tombol Masuk.
@@ -70,13 +72,13 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 6 November 2026 (180 tes):
+Hasil 6 November 2026 (198 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **180 lulus, 3.363 assertions**, termasuk 4 tes konkurensi dua proses |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **198 lulus, 3.509 assertions**, termasuk 4 tes konkurensi dua proses |
 | MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions** pada suite 112 tes (sebelum `DepartmentAccessTest` dan tes perintah impor ketua); seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **176 lulus, 4 dilewati, 3.318 assertions** |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **194 lulus, 4 dilewati, 3.464 assertions** |
 
 Tes konkurensi mengandalkan dua proses yang tertahan bersamaan pada row lock. Pada mesin yang sedang sibuk, salah satu worker kadang tiba terlambat sehingga tes gagal dengan pesan "Setiap worker harus tertahan bersamaan". Jalankan ulang `--group=pgsql` sebelum menyimpulkan ada regresi.
 

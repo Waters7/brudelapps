@@ -166,7 +166,23 @@ class User extends Authenticatable
 
     public function managesClub(int $club): bool
     {
-        return $this->isStudentAffairs() || $this->assigned('pengurus', $club) || $this->administersHimaju($club);
+        return $this->isStudentAffairs() || $this->assigned('pengurus', $club) || $this->administersClub($club);
+    }
+
+    /**
+     * Kemahasiswaan jurusan runs the HIMAJU of its jurusan and any organization it coaches.
+     */
+    public function administersClub(int $club): bool
+    {
+        return $this->administersHimaju($club) || ($this->assigned('jurusan') && $this->assigned('pembina', $club));
+    }
+
+    /**
+     * Kemahasiswaan direktorat and the admin jurusan of an organization may replace its ketua and officers.
+     */
+    public function replacesOfficers(int $club): bool
+    {
+        return $this->isStudentAffairs() || $this->administersClub($club);
     }
 
     /**
@@ -195,7 +211,7 @@ class User extends Authenticatable
      */
     public function managesOfficers(int $club): bool
     {
-        return $this->isStudentAffairs() || $this->administersHimaju($club) || $this->holdsPosition($club, app(MasterData::class)->officerManagers());
+        return $this->isStudentAffairs() || $this->administersClub($club) || $this->holdsPosition($club, app(MasterData::class)->officerManagers());
     }
 
     /**

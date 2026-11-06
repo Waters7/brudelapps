@@ -35,6 +35,7 @@
         'PENGELOLAAN' => array_filter([
             $me->isReviewer() ? ['/tinjauan', 'check', 'Tinjau Pengajuan'] : null,
             $has('kemahasiswaan', 'pengurus', 'jurusan', 'pembina') ? ['/kelola/ukm', 'users', 'Kelola UKM'] : null,
+            $has('kemahasiswaan', 'pengurus', 'jurusan', 'pembina') ? ['/proposal', 'file', 'Proposal & LPJ'] : null,
             $has('kemahasiswaan') ? ['/kelola/pengumuman', 'megaphone', 'Pengumuman UKM'] : null,
             $has('kemahasiswaan', 'admin_event', 'pengurus', 'pengelola_lomba') ? ['/kelola/event', 'calendar', 'Kelola Event & Lomba'] : null,
             $has('kemahasiswaan', 'jurusan') ? ['/jurusan', 'book', 'Jurusan'] : null,

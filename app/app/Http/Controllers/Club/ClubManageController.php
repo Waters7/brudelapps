@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Membership;
 use App\Models\MembershipRequest;
 use App\Models\Recruitment;
+use App\Services\Account\AssignmentService;
 use App\Services\Campus\MasterData;
 use App\Services\Club\ClubService;
 use App\Services\PrivateFiles;
@@ -36,6 +37,20 @@ class ClubManageController extends Controller
         return view('clubs.manage-index', ['clubs' => $clubs, 'departments' => Department::orderBy('id')->get()]);
     }
 
+    public function replaceOfficer(Request $request, Club $club, AssignmentService $assignments): RedirectResponse
+    {
+        $data = $request->validate([
+            'user' => 'required|string|max:190',
+            'position' => 'required|string|max:60',
+            'period' => 'nullable|string|max:30',
+            'ends_at' => 'required|date|after:now',
+            'reason' => 'required|string|min:5|max:500',
+        ]);
+        $assignments->replaceOfficer($request->user(), $club, $data);
+
+        return back()->with('success', 'Pengurus diganti. Pengganti langsung aktif dan penugasan lama berakhir.');
+    }
+
     public function show(Request $request, Club $club): View
     {
         abort_unless($request->user()->managesClub($club->id), 403);
@@ -59,6 +74,7 @@ class ClubManageController extends Controller
             'officers' => $club->officers()->with('user')->latest('starts_at')->get(),
             'counts' => Membership::where('club_id', $club->id)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
             'canLead' => $request->user()->managesOfficers($club->id),
+            'canReplace' => $request->user()->replacesOfficers($club->id),
             'canAssignCoach' => $request->user()->leadsClub($club->id) || $request->user()->administersHimaju($club->id),
             // Large organizations pick officers by NIM (still checked as an active member) instead of a huge list.
             'candidates' => $activeCount <= 300 ? Membership::with('user')->where('club_id', $club->id)->where('status', 'active')->get()->sortBy('user.name') : null,

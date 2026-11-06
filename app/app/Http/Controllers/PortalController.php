@@ -8,6 +8,7 @@ use App\Models\Certificate;
 use App\Models\Club;
 use App\Models\ClubActivity;
 use App\Models\ClubApplication;
+use App\Models\ClubSubmission;
 use App\Models\Competition;
 use App\Models\Delegation;
 use App\Models\DepartmentApproval;
@@ -124,6 +125,12 @@ class PortalController extends Controller
         }
         if ($all || $clubs->isNotEmpty() || $departments->isNotEmpty() || $user->assigned('pembina')) {
             $tasks[] = ['Permintaan gabung menunggu', MembershipRequest::pending()->where('direction', MembershipRequest::REQUEST)->whereIn('club_id', Club::coachedBy($user)->select('id'))->count(), '/kelola/ukm'];
+        }
+        if ($all || $departments->isNotEmpty()) {
+            $tasks[] = ['Proposal & LPJ menunggu', ClubSubmission::where('status', 'submitted')->when(! $all, fn ($q) => $q->where('target', 'jurusan')->whereIn('department_id', $departments))->count(), '/proposal'];
+        }
+        if ($clubs->isNotEmpty()) {
+            $tasks[] = ['Proposal & LPJ perlu perbaikan', ClubSubmission::where('status', 'revision')->whereIn('club_id', $clubs)->count(), '/proposal'];
         }
         if ($managed === null || $managed->isNotEmpty()) {
             $inScope = fn ($q) => $managed === null ? $q : $q->whereIn('competition_id', $managed);
