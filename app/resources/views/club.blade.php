@@ -6,7 +6,7 @@
 <div>
 <section class="panel"><h2>Tumbuh bersama {{ $club->name }}</h2><p>{{ $club->description }}</p><hr>
     <dl>
-        <dt>Pembina</dt><dd>{{ $club->mentor }}</dd>
+        <dt>Pembina</dt><dd>{{ $club->coaches->map(fn ($coach) => $coach->user->name)->join(', ') ?: $club->mentor }}</dd>
         <dt>Kontak resmi</dt><dd>{{ $club->contact }}</dd>
         <dt>Pengurus aktif</dt><dd>@forelse($club->officers as $officer){{ $officer->user->name }} <span class="muted">({{ $officer->position }}{{ $officer->period ? ' · '.$officer->period : '' }})</span>@if(!$loop->last), @endif @empty <span class="muted">Belum ditetapkan</span>@endforelse</dd>
         @if($club->activities)<dt>Kegiatan</dt><dd class="prewrap">{{ $club->activities }}</dd>@endif

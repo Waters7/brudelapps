@@ -159,6 +159,7 @@ class PortalController extends Controller
         $club = Club::listedFor(auth()->user())->with([
             'recruitments' => fn ($q) => $q->latest('opens_at'),
             'officers' => fn ($q) => $q->where('starts_at', '<=', now())->where('ends_at', '>', now())->with('user'),
+            'coaches' => fn ($q) => $q->where('starts_at', '<=', now())->where('ends_at', '>', now())->with('user'),
             'events' => fn ($q) => $q->where('status', 'approved')->latest(),
             'awards' => fn ($q) => $q->latest('awarded_on')->limit(6),
             'clubActivities' => fn ($q) => $q->confirmed()->where('is_public', true)->where('status', '!=', 'cancelled')->where('ends_at', '>', now())->orderBy('starts_at')->limit(5),

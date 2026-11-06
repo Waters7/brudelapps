@@ -91,6 +91,11 @@ class Club extends Model
         return $this->hasMany(Membership::class);
     }
 
+    public function coaches(): HasMany
+    {
+        return $this->hasMany(Assignment::class)->where('role', 'pembina');
+    }
+
     public function officers(): HasMany
     {
         return $this->hasMany(Assignment::class)->where('role', 'pengurus');
