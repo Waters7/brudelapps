@@ -13,6 +13,7 @@ use App\Models\ScoreLog;
 use App\Services\Achievement\AchievementService;
 use App\Services\Event\CompetitionAccountService;
 use App\Services\Match\BracketService;
+use App\Services\Match\LiveScoreService;
 use App\Services\Report\ReportService;
 use App\Services\Scoring\ResultService;
 use App\Services\Scoring\ScoringService;
@@ -45,6 +46,7 @@ class CompetitionOpsController extends Controller
             'judgeTotals' => $judgeTotals,
             'scoreLogs' => $competition->scoreLogs()->with('judge', 'registration.user', 'criterion')->limit(30)->get(),
             'canSeeAccounts' => app(CompetitionAccountService::class)->canView($request->user(), $competition),
+            'canSetAccess' => $competition->live_score && app(LiveScoreService::class)->canSetAccess($request->user(), $competition),
             'competition' => $competition,
             'registrations' => $competition->registrations()->whereNotIn('status', ['draft', 'cancelled'])->with('user', 'participants.user.program')->orderByRaw('seed IS NULL')->orderBy('seed')->orderBy('submitted_at')->get(),
             'matches' => $competition->matchups()->with('sideA', 'sideB', 'winner')->get()->groupBy('round'),

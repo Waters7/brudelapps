@@ -30,9 +30,12 @@ class Event extends Model
         return $this->belongsTo(User::class, 'proposed_by');
     }
 
-    public function admins(): HasMany
+    /**
+     * The person who answers for the event: Ketua of its organization, an admin jurusan or admin kemahasiswaan.
+     */
+    public function responsible(): BelongsTo
     {
-        return $this->hasMany(Assignment::class)->where('role', 'admin_event');
+        return $this->belongsTo(User::class, 'responsible_id');
     }
 
     public function isEditableProposal(): bool

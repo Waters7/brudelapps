@@ -16,8 +16,9 @@
     @if($competition->companions->isNotEmpty())<dt>Pendamping</dt><dd>{{ $competition->companions->map(fn ($companion) => $companion->name.' ('.$companion->kindLabel().')')->join(', ') }}</dd>@endif
     @if($competition->external_info)<dt>Informasi penyelenggara eksternal</dt><dd class="prewrap">{{ $competition->external_info }}</dd>@endif
 </dl>
-@if($competition->live_score)<a class="button outline" href="/live/{{ $competition->id }}"><x-icon name="clock"/> Live score {{ $competition->live_visibility === 'public' ? '(publik)' : '(akun BRUDEL)' }}</a>@endif
+@if($canSeeResults)<a class="button outline" href="/live/{{ $competition->id }}"><x-icon name="clock"/> Live score {{ $competition->resultsLocked() ? '(terkunci)' : ($competition->live_visibility === 'public' ? '(publik)' : '(akun BRUDEL)') }}</a>@elseif($competition->live_score)<p class="muted">Hasil lomba ini dikunci untuk admin jurusan ke atas.</p>@endif
 </section>
+@if($canSetAccess)<x-results-access :competition="$competition"/>@endif
 <section class="panel form-panel"><span class="eyebrow">LANGKAH PERTAMAMU</span><h2>Siapkan pendaftaran</h2>
 <p>Simpan draf terlebih dahulu. Lengkapi {{ $competition->format==='team'?'anggota tim dan ':'' }}persyaratan sebelum mengirim.</p>
 @if($competition->isPaid())

@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\Club;
 use App\Models\Competition;
 use App\Models\Department;
+use App\Models\Event;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
 use App\Services\Campus\MasterData;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Hash;
 /**
  * Role assignments with validity windows. Kemahasiswaan direktorat grants any role; Ketua, Wakil Ketua and Sekretaris
  * pick officers from the active members of their own club, kemahasiswaan jurusan does the same for its HIMAJU.
+ * The person responsible for an approved event appoints its admin event, pengelola lomba, operator and juri.
  * Nobody changes their own rights.
  */
 class AssignmentService extends DomainService
@@ -126,10 +128,18 @@ class AssignmentService extends DomainService
         if ($role === 'pembina') {
             return $scopeId !== null && ($actor->leadsClub($scopeId) || $actor->administersClub($scopeId));
         }
-        if (in_array($role, ['penilai', 'operator'], true)) {
-            $competition = $scopeId ? Competition::find($scopeId) : null;
+        if (in_array($role, ['penilai', 'operator', 'pengelola_lomba'], true)) {
+            $competition = $scopeId ? Competition::with('event')->find($scopeId) : null;
+            if ($competition === null) {
+                return false;
+            }
 
-            return $competition !== null && $actor->managesCompetition($competition);
+            return $actor->appointsEventTeam($competition->event) || ($role !== 'pengelola_lomba' && $actor->managesCompetition($competition));
+        }
+        if ($role === 'admin_event') {
+            $event = $scopeId ? Event::find($scopeId) : null;
+
+            return $event !== null && $actor->appointsEventTeam($event);
         }
 
         return false;
@@ -164,7 +174,7 @@ class AssignmentService extends DomainService
 
     public function end(User $actor, Assignment $assignment, string $reason, ?CarbonInterface $at = null): void
     {
-        abort_unless($this->mayManage($actor, $assignment->role, $assignment->club_id ?? $assignment->competition_id), 403);
+        abort_unless($this->mayManage($actor, $assignment->role, $assignment->club_id ?? $assignment->competition_id ?? $assignment->event_id), 403);
         abort_if($assignment->user_id === $actor->id, 403, 'Tidak dapat mengakhiri hak akses sendiri.');
         $this->ensure(mb_strlen(trim($reason)) >= 5, 'Alasan minimal 5 karakter.');
         $this->ensure($assignment->ends_at->isFuture(), 'Penugasan sudah berakhir.');

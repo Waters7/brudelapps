@@ -23,6 +23,7 @@
 </section>
 
 <x-companions :items="$competition->companions" :action="'/kelola/lomba/'.$competition->id.'/pendamping'"/>
+@if($canSetAccess)<x-results-access :competition="$competition"/>@endif
 
 <section class="panel">
     <div class="section-heading"><h2>Tim lomba</h2>@if($canSeeAccounts)<a class="button outline small" href="/kelola/lomba/{{ $competition->id }}/akun">Lihat akun lomba otomatis</a>@endif</div>
@@ -31,7 +32,7 @@
             <span><strong>{{ $label }}:</strong> {{ ($staff[$role] ?? collect())->map(fn ($a) => $a->user->name)->join(', ') ?: 'belum ada' }}</span>
         @endforeach
     </div>
-    <p class="form-note">Akun pengelola, operator, dan juri dibuat otomatis untuk setiap lomba; pengaju lomba atau kemahasiswaan membagikannya. Penugasan tambahan di bawah opsional (total juri tetap maksimal {{ config('brudel.max_judges') }}).</p>
+    <p class="form-note">Akun pengelola, operator, dan juri dibuat otomatis untuk setiap lomba; penanggung jawab event atau kemahasiswaan membagikannya. Penugasan tambahan di bawah opsional (total juri tetap maksimal {{ config('brudel.max_judges') }}).</p>
     <details><summary class="text-link">Tugaskan pengguna terdaftar</summary>
     <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
         <input type="hidden" name="scope_id" value="{{ $competition->id }}">

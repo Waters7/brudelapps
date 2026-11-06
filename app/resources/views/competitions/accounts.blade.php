@@ -1,6 +1,6 @@
 <x-layout :title="'Akun lomba '.$competition->name">
 <a class="back-link" href="/kelola/event/{{ $competition->event_id }}">← {{ $competition->event->name }}</a>
-<div class="page-heading"><div><p class="eyebrow">AKUN LOMBA OTOMATIS</p><h1>{{ $competition->name }}</h1><p>Akun dibuat otomatis untuk lomba ini. Bagikan secara pribadi kepada pengelola, operator skor/live score, dan juri. Hanya pengaju lomba dan kemahasiswaan yang dapat melihat halaman ini; setiap kunjungan tercatat di audit.</p></div>
+<div class="page-heading"><div><p class="eyebrow">AKUN LOMBA OTOMATIS</p><h1>{{ $competition->name }}</h1><p>Akun dibuat otomatis untuk lomba ini. Bagikan secara pribadi kepada pengelola, operator skor/live score, dan juri. Hanya penanggung jawab event dan kemahasiswaan yang dapat melihat halaman ini; setiap kunjungan tercatat di audit.</p></div>
 <button class="button outline" type="button" onclick="window.print()">Cetak kartu akun</button></div>
 
 @if($competition->event->status !== 'approved')<div class="alert warning">Akun dibuat setelah event disetujui kemahasiswaan.</div>@endif

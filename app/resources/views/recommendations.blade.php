@@ -13,7 +13,7 @@
 ['file','Sertifikat Saya','PDF per penerima, unduhan privat, verifikasi publik minimum, penggantian & pencabutan dengan riwayat versi.'],
 ['spark','Prestasi & laporan','Enam tingkat IKU, prestasi per jurusan, prestasi eksternal terverifikasi, halaman publik atas persetujuan, dashboard pimpinan, penghargaan tim dihitung sekali, ekspor CSV sesuai hak.'],
 ['book','Jurusan','7 jurusan resmi; persetujuan lomba per jurusan; mahasiswa & UKM yang diikuti, yang tidak aktif di UKM, sertifikat juara dan prestasi jurusan sendiri.'],
-['users','Akun lomba otomatis','Pengelola, operator skor/live score, dan 1–5 juri per lomba; hanya pengaju lomba dan superadmin yang melihat kata sandinya; log setiap nilai juri.'],
+['users','Akun lomba otomatis','Pengelola, operator skor/live score, dan 1–5 juri per lomba; hanya penanggung jawab event dan superadmin yang melihat kata sandinya; log setiap nilai juri.'],
 ['calendar','Jelajah Kegiatan','Latihan, persahabatan, meeting internal; kode kehadiran dari pelatih/Ketua UKM; laporan hadir/tidak hadir, skor & catatan, notulen; cetak/PDF dan CSV.'],
 ['user','Impor SIAKAD & masuk dengan NIM','Ekspor laporan_daftarmhs.xls diimpor lewat perintah server; kata sandi awal tanggal lahir yang wajib diganti saat masuk pertama.'],
 ['grid','Master data & pengaturan sistem','Sub menu master data (bidang, jenis kegiatan, lokasi, jenis lomba, jabatan, penghargaan, dokumen) dan pengaturan sistem pengganti .env yang aman.'],

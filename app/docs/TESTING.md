@@ -16,18 +16,18 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 | pembina@demo.brudel.test | — | Pelatih/pembina UKM Olahraga (dapat membuat kegiatan dan kode kehadiran) |
 | atlet1…atlet5@demo.brudel.test | DEMO004–008 | Peserta diterima Tenis Meja (bagan 5 peserta); atlet1–3 juga anggota UKM Olahraga divisi Badminton |
 | baru@demo.brudel.test | DEMO009 | Akun hasil impor yang **belum diaktivasi** |
-| `lomba{id}-pengelola`, `-operator`, `-juri{n}@lomba.brudel.invalid` | — | Akun lomba otomatis; kata sandinya acak dan dilihat di Kelola Event → Akun lomba (pengaju/kemahasiswaan) |
+| `lomba{id}-pengelola`, `-operator`, `-juri{n}@lomba.brudel.invalid` | — | Akun lomba otomatis; kata sandinya acak dan dilihat di Kelola Event → Akun lomba (penanggung jawab event/kemahasiswaan) |
 
 Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; mahasiswa demo belum menjadi anggota HIMAJU (bergabung lewat permintaan atau undangan); Michelle Sumual anggota BEM terpilih; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
-Simulasi lomba: `php artisan db:seed --class=SimulationSeeder` membuat event fiktif berisi satu bagan gugur individu (8 peserta) dan satu bagan gugur grup (4 tim, 3 anggota) memakai mahasiswa yang sudah ada, tanpa akun baru. Hanya berjalan di `local`/`testing`, dan menjalankannya lagi tidak mengubah apa pun. Babak pertama sudah terisi sebagian supaya operator dapat melanjutkan pertandingan.
+Simulasi lomba: `php artisan db:seed --class=SimulationSeeder` mengisi contoh setiap proses lomba memakai mahasiswa yang sudah ada, tanpa akun mahasiswa baru: pengajuan event (menunggu, revisi, ditolak), pendaftaran tim di setiap status termasuk persetujuan jurusan dan bukti bayar, penilaian juri yang belum selesai, penilaian lomba menyanyi yang sudah lengkap dan siap disahkan, bagan gugur tunggal (8 peserta, satu semifinal sedang berlangsung) dan grup (4 tim), serta lomba selesai dengan hasil resmi, prestasi, dan sertifikat. Daftar halamannya tercetak saat seeder selesai. Hanya berjalan di `local`/`testing`, membuat satu rekening fiktif, dan menjalankannya lagi tidak mengubah apa pun.
 
 ### Skenario tahap ketiga (browser)
 
 1. **Halaman depan**: buka `/` tanpa masuk — info lomba, kegiatan terbuka (meeting internal tidak tampil), UKM yang membuka pendaftaran, tombol Masuk.
 2. **Akun**: menu akun di kanan atas → Profil & foto (unggah foto), Ubah kata sandi, Keluar. Tombol Keluar juga ada di bawah sidebar.
 3. **Jurusan** (`jurusan@`): menu Jurusan → mahasiswa Keperawatan beserta UKM-nya, filter "Tidak aktif di UKM", sertifikat juara dan prestasi jurusan, CSV.
-4. **Akun lomba otomatis** (`admin@` atau Ketua UKM pengaju setelah event disetujui): Kelola Event → event → "Akun lomba" pada nomor lomba → tampilkan/salin/ganti kata sandi. Masuk dengan akun pengelola/operator/juri untuk melihat hak masing-masing.
+4. **Akun lomba otomatis** (`admin@` atau penanggung jawab event setelah event disetujui): Kelola Event → event → "Akun lomba" pada nomor lomba → tampilkan/salin/ganti kata sandi. Masuk dengan akun pengelola/operator/juri untuk melihat hak masing-masing.
 5. **Juri & log**: masuk sebagai juri, isi lalu ubah nilai; di Operasional lomba lihat "Nilai per juri & log penilaian" dan unduh CSV log.
 6. **Jelajah Kegiatan** (`pengurus@` atau `pembina@`): buka "Latihan rutin tunggal" → Buat kode kehadiran; masuk sebagai `atlet1@`, isi kode di Jelajah Kegiatan; kembali sebagai pelatih → Buat laporan → Laporan (cetak/PDF) dan CSV. Meeting internal wajib notulen; persahabatan wajib lawan, skor, dan catatan.
 7. **Pimpinan** (`pimpinan@`): dashboard hanya berisi ringkasan laporan, tabel IKU per jurusan, dan usulan/notifikasi delegasi.
@@ -72,13 +72,13 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 6 November 2026 (198 tes):
+Hasil 6 November 2026 (228 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **198 lulus, 3.509 assertions**, termasuk 4 tes konkurensi dua proses |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **228 lulus, 3.735 assertions**, termasuk 4 tes konkurensi dua proses |
 | MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions** pada suite 112 tes (sebelum `DepartmentAccessTest` dan tes perintah impor ketua); seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **194 lulus, 4 dilewati, 3.464 assertions** |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **224 lulus, 4 dilewati, 3.690 assertions** |
 
 Tes konkurensi mengandalkan dua proses yang tertahan bersamaan pada row lock. Pada mesin yang sedang sibuk, salah satu worker kadang tiba terlambat sehingga tes gagal dengan pesan "Setiap worker harus tertahan bersamaan". Jalankan ulang `--group=pgsql` sebelum menyimpulkan ada regresi.
 

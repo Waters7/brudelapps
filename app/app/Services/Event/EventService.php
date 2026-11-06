@@ -7,14 +7,16 @@ use App\Models\Competition;
 use App\Models\Event;
 use App\Models\User;
 use App\Notifications\BrudelNotice;
+use App\Services\Campus\MasterData;
 use App\Services\DomainService;
 use App\Services\Wita;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Event module. A Ketua UKM proposes an event with its competitions; kemahasiswaan approves, requests revision
- * or rejects with a reason. Each competition of an approved event gets generated pengelola, operator and juri
- * logins that the proposer hands out; the proposer never becomes an event admin automatically.
+ * Event module. A Ketua UKM or admin jurusan proposes an event with its competitions; kemahasiswaan approves,
+ * requests revision or rejects with a reason. Every event has a responsible person who appoints its team and hands
+ * out the generated pengelola, operator and juri logins, without becoming an event admin automatically.
  */
 class EventService extends DomainService
 {
@@ -26,7 +28,65 @@ class EventService extends DomainService
             return true;
         }
 
-        return $event->isEditableProposal() && $event->club_id !== null && $actor->leadsClub($event->club_id);
+        return $event->isEditableProposal() && $this->mayPropose($actor, $event);
+    }
+
+    /**
+     * The Ketua of the organizing club, or whoever answers for an event an admin jurusan proposed without a club.
+     */
+    public function mayPropose(User $actor, Event $event): bool
+    {
+        return ($event->club_id !== null && $actor->leadsClub($event->club_id)) || $actor->answersForEvent($event);
+    }
+
+    /**
+     * The responsible person hands the event over; when that post has fallen vacant, whoever runs the club takes it on.
+     */
+    public function canSetResponsible(User $actor, Event $event): bool
+    {
+        if ($actor->isStudentAffairs() || $actor->answersForEvent($event)) {
+            return true;
+        }
+
+        return $this->responsibleVacant($event) && $event->club_id !== null && ($actor->leadsClub($event->club_id) || $actor->administersClub($event->club_id));
+    }
+
+    public function responsibleVacant(Event $event): bool
+    {
+        return ! $event->responsible?->mayAnswerForEvent($event);
+    }
+
+    /**
+     * Everyone who may answer for the event, labelled with the post that qualifies them.
+     *
+     * @return Collection<int, string>
+     */
+    public function responsibleCandidates(Event $event): Collection
+    {
+        $chairs = app(MasterData::class)->chairPositions();
+
+        return Assignment::with('user', 'department', 'club')->whereHas('user', fn ($q) => $q->where('active', true))
+            ->where('starts_at', '<=', now())->where('ends_at', '>', now())
+            ->where(fn ($q) => $q->whereIn('role', ['kemahasiswaan', 'jurusan'])
+                ->orWhere(fn ($chair) => $chair->where('role', 'pengurus')->where('club_id', $event->club_id)->whereIn('position', $chairs)))
+            ->get()->sortBy(fn (Assignment $assignment) => $assignment->user->name)->unique('user_id')
+            ->mapWithKeys(fn (Assignment $assignment) => [$assignment->user_id => $assignment->user->name.' · '.($assignment->role === 'pengurus' ? $assignment->position.' '.$assignment->club->name : $assignment->roleLabel())]);
+    }
+
+    public function setResponsible(User $actor, Event $event, int $userId): void
+    {
+        abort_unless($this->canSetResponsible($actor, $event), 403);
+        $user = User::find($userId);
+        $this->ensure($user !== null && $user->mayAnswerForEvent($event), 'Penanggung jawab harus Ketua organisasi penyelenggara, admin jurusan, atau admin kemahasiswaan.');
+
+        DB::transaction(function () use ($actor, $event, $user) {
+            $event = Event::lockForUpdate()->findOrFail($event->id);
+            $event->update(['responsible_id' => $user->id]);
+            $this->audit($actor, 'event.responsible_changed', $event, ['user_id' => $user->id]);
+            if ($user->id !== $actor->id) {
+                $user->notify(new BrudelNotice('Penanggung jawab event', 'Anda ditetapkan sebagai penanggung jawab '.$event->name.'.', '/kelola/event/'.$event->id));
+            }
+        });
     }
 
     /**
@@ -38,7 +98,7 @@ class EventService extends DomainService
         if ($event) {
             abort_unless($this->canEdit($actor, $event), 403);
         } else {
-            abort_unless($actor->isStudentAffairs() || ($clubId && $actor->leadsClub((int) $clubId)), 403);
+            abort_unless($this->mayCreate($actor, $clubId ? (int) $clubId : null), 403);
         }
         $this->ensure(in_array($data['pathway'], ['internal', 'delegation'], true), 'Jalur kegiatan tidak valid.');
 
@@ -56,6 +116,7 @@ class EventService extends DomainService
                 $event = Event::create($fields + [
                     'club_id' => $clubId,
                     'proposed_by' => $actor->id,
+                    'responsible_id' => $actor->id,
                     'status' => $direct ? 'approved' : 'draft',
                     'decided_by' => $direct ? $actor->id : null,
                     'decided_at' => $direct ? now() : null,
@@ -70,13 +131,26 @@ class EventService extends DomainService
         });
     }
 
+    /**
+     * An admin jurusan proposes for the jurusan itself or for an organization it runs; a Ketua only for their own club.
+     */
+    private function mayCreate(User $actor, ?int $clubId): bool
+    {
+        if ($actor->isStudentAffairs()) {
+            return true;
+        }
+
+        return $clubId === null ? $actor->assigned('jurusan') : $actor->leadsClub($clubId) || $actor->administersClub($clubId);
+    }
+
     public function submit(User $actor, Event $event): void
     {
         DB::transaction(function () use ($actor, $event) {
             $event = Event::lockForUpdate()->findOrFail($event->id);
-            abort_unless($event->club_id && $actor->leadsClub($event->club_id), 403);
+            abort_unless($this->mayPropose($actor, $event), 403);
             $this->ensure($event->isEditableProposal(), 'Pengajuan sudah dikirim.');
             $this->ensure($event->competitions()->exists(), 'Tambahkan minimal satu nomor lomba sebelum mengajukan.');
+            $this->ensure(! $this->responsibleVacant($event), 'Tetapkan penanggung jawab event sebelum mengajukan.');
             $from = $event->status;
             $event->update(['status' => 'submitted', 'submitted_at' => now(), 'reason' => null]);
             $this->history($event, $from, 'submitted', $actor);
@@ -94,10 +168,11 @@ class EventService extends DomainService
         DB::transaction(function () use ($actor, $event, $decision, $reason) {
             $event = Event::lockForUpdate()->findOrFail($event->id);
             $this->ensure($event->status === 'submitted', 'Pengajuan tidak sedang menunggu keputusan.');
+            $this->ensure($decision !== 'approved' || ! $this->responsibleVacant($event), 'Tetapkan penanggung jawab event sebelum menyetujui.');
             $event->update(['status' => $decision, 'reason' => $reason, 'decided_by' => $actor->id, 'decided_at' => now()]);
             $this->history($event, 'submitted', $decision, $actor, $reason);
             $this->audit($actor, 'event.'.$decision, $event, ['reason' => $reason]);
-            $event->proposer?->notify(new BrudelNotice('Pengajuan event '.$event->name, 'Keputusan kemahasiswaan: '.$this->label($decision).($reason ? '. '.$reason : '.'), '/kelola/event/'.$event->id));
+            collect([$event->proposer, $event->responsible])->filter()->unique('id')->each->notify(new BrudelNotice('Pengajuan event '.$event->name, 'Keputusan kemahasiswaan: '.$this->label($decision).($reason ? '. '.$reason : '.'), '/kelola/event/'.$event->id));
             if ($decision === 'approved') {
                 foreach ($event->competitions as $competition) {
                     $this->accounts->provision($competition, $actor);

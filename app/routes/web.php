@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/lomba', fn () => view('catalog', ['kind' => 'lomba']))->name('lomba');
     Route::get('/ukm/{id}', [PortalController::class, 'club']);
     Route::get('/lomba/{id}', [PortalController::class, 'competition']);
+    Route::post('/lomba/{competition}/akses-hasil', [LiveController::class, 'setAccess']);
     Route::get('/pendaftaran', [PortalController::class, 'applications'])->name('applications');
     Route::get('/ukm-saya', [PortalController::class, 'memberships'])->name('memberships');
     Route::get('/rekomendasi', fn () => view('recommendations'))->name('recommendations');
@@ -94,6 +95,7 @@ Route::middleware('auth')->group(function () {
     /* Ruang organisasi: pengumuman, obrolan, quest, peringkat */
     Route::post('/ukm/{club}/minta-gabung', [MembershipRequestController::class, 'store']);
     Route::post('/ruang/{club}/undang', [MembershipRequestController::class, 'invite']);
+    Route::post('/ruang/{club}/anggota', [MembershipRequestController::class, 'add']);
     Route::post('/undangan-organisasi/{invitation}', [MembershipRequestController::class, 'respond']);
     Route::post('/permintaan-gabung/{joinRequest}', [MembershipRequestController::class, 'decide']);
     Route::post('/permintaan-gabung/{item}/batal', [MembershipRequestController::class, 'cancel']);
@@ -187,6 +189,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/event/{event}', [EventManageController::class, 'update']);
     Route::post('/kelola/event/{event}/ajukan', [EventManageController::class, 'submit']);
     Route::post('/kelola/event/{event}/keputusan', [EventManageController::class, 'decide']);
+    Route::post('/kelola/event/{event}/penanggung-jawab', [EventManageController::class, 'setResponsible']);
+    Route::post('/kelola/event/{event}/tim', [EventManageController::class, 'appoint']);
     Route::post('/kelola/event/{event}/lomba/{competition?}', [EventManageController::class, 'saveCompetition']);
 
     /* Operasional lomba: bagan, rubrik, hasil, penghargaan */

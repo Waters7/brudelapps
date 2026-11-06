@@ -235,6 +235,30 @@ class User extends Authenticatable
         return $this->isStudentAffairs() || $this->assigned('admin_event', null, $event);
     }
 
+    /**
+     * Only the Ketua of the organizing club, an admin jurusan or admin kemahasiswaan may answer for an event.
+     */
+    public function mayAnswerForEvent(Event $event): bool
+    {
+        return $this->active && ($this->isStudentAffairs() || $this->assigned('jurusan') || ($event->club_id !== null && $this->leadsClub($event->club_id)));
+    }
+
+    /**
+     * Holding the post alone is not enough: a Ketua who has stepped down no longer answers for the event.
+     */
+    public function answersForEvent(Event $event): bool
+    {
+        return $event->responsible_id === $this->id && $this->mayAnswerForEvent($event);
+    }
+
+    /**
+     * Appointing the team of an approved event. This does not make the responsible person a manager themselves.
+     */
+    public function appointsEventTeam(Event $event): bool
+    {
+        return $event->status === 'approved' && ($this->isStudentAffairs() || $this->answersForEvent($event));
+    }
+
     public function managesCompetition(Competition $competition): bool
     {
         return $this->managesEvent($competition->event_id) || $this->assigned('pengelola_lomba', competition: $competition->id);

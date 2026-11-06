@@ -146,15 +146,23 @@
 
 @else
 @if($canInvite)
-<section class="panel"><h2>Undang anggota</h2>
-    <p class="muted">Mahasiswa menjadi anggota setelah menerima undangan di menu UKM Saya.@if($club->category === 'himaju') Hanya mahasiswa Jurusan {{ $club->department?->name }}.@endif</p>
-    <form class="form-grid" method="post" action="/ruang/{{ $club->id }}/undang">@csrf
+<section class="panel"><h2>Tambah anggota</h2>
+    <p class="muted">Mahasiswa langsung menjadi anggota aktif dan menerima notifikasi.@if($club->category === 'himaju') Hanya mahasiswa Jurusan {{ $club->department?->name }}.@endif</p>
+    <form class="form-grid" method="post" action="/ruang/{{ $club->id }}/anggota">@csrf
         <label>NIM atau email mahasiswa<input name="user" required maxlength="190" value="{{ old('user') }}" placeholder="NIM atau email"></label>
-        <label>Pesan (opsional)<input name="message" maxlength="500" value="{{ old('message') }}" placeholder="Mis. Yuk bergabung di divisi publikasi"></label>
-        <div class="span-2"><button class="button primary">Kirim undangan</button></div>
+        <label>Divisi (opsional)<input name="division" maxlength="80" value="{{ old('division') }}" placeholder="Mis. Publikasi"></label>
+        <div class="span-2"><button class="button primary">Tambah anggota</button></div>
     </form>
 </section>
+<details class="panel collapsible"><summary><strong>Undang anggota</strong> <span class="muted">Mahasiswa memutuskan sendiri lewat menu UKM Saya</span></summary>
+    <form class="form-grid" method="post" action="/ruang/{{ $club->id }}/undang">@csrf
+        <label>NIM atau email mahasiswa<input name="user" required maxlength="190" placeholder="NIM atau email"></label>
+        <label>Pesan (opsional)<input name="message" maxlength="500" value="{{ old('message') }}" placeholder="Mis. Yuk bergabung di divisi publikasi"></label>
+        <div class="span-2"><button class="button outline">Kirim undangan</button></div>
+    </form>
+</details>
 @endif
+@if($canAppoint)@include('clubs._appoint-member')@endif
 @if($joinRequests->isNotEmpty())
 <section class="panel"><h2>Permintaan bergabung <span class="count-pill">{{ $joinRequests->count() }}</span></h2>
     @foreach($joinRequests as $item)

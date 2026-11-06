@@ -73,7 +73,7 @@
     </div>
     @endif
 
-    <div class="inline-actions">@if($r->document_path)<a href="/pendaftaran/{{ $r->id }}/document" class="text-link">Unduh dokumen ↓</a>@endif @if($competition->live_score)<a class="text-link" href="/live/{{ $competition->id }}">Live score →</a>@endif</div>
+    <div class="inline-actions">@if($r->document_path)<a href="/pendaftaran/{{ $r->id }}/document" class="text-link">Unduh dokumen ↓</a>@endif @if($competition->live_score && ! $competition->resultsLocked())<a class="text-link" href="/live/{{ $competition->id }}">Live score →</a>@endif</div>
     <x-history :items="$r->histories"/>
 </article>
 @empty<div class="panel empty"><x-icon name="trophy"/><h3>Masih banyak kesempatan menanti.</h3><p>Mulai dengan memilih lomba yang sesuai minatmu.</p><a class="button outline" href="/lomba">Jelajahi lomba →</a></div>@endforelse

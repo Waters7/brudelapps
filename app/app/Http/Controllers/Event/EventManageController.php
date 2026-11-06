@@ -3,36 +3,43 @@
 namespace App\Http\Controllers\Event;
 
 use App\Http\Controllers\Controller;
+use App\Models\Assignment;
 use App\Models\Club;
 use App\Models\Competition;
+use App\Models\CompetitionAccount;
 use App\Models\Event;
 use App\Models\StatusHistory;
+use App\Services\Account\AssignmentService;
 use App\Services\Campus\MasterData;
 use App\Services\Event\EventService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class EventManageController extends Controller
 {
+    public const TEAM_ROLES = ['operator' => 'Operator skor & live score', 'pengelola_lomba' => 'Pengelola lomba', 'penilai' => 'Juri/penilai', 'admin_event' => 'Admin event (semua nomor lomba)'];
+
     public function __construct(private EventService $events) {}
 
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_unless($user->managesAnyCompetition() || $user->assigned('pengurus') || Event::where('proposed_by', $user->id)->exists(), 403);
+        abort_unless($user->managesAnyCompetition() || $user->assigned('pengurus') || $user->assigned('jurusan') || Event::where('proposed_by', $user->id)->orWhere('responsible_id', $user->id)->exists(), 403);
         $leadClubs = $user->scopeIds('pengurus', 'club_id')->filter(fn ($club) => $user->leadsClub($club))->values();
+        $clubs = Club::orderBy('name')->get()->when(! $user->isStudentAffairs(), fn ($all) => $all->filter(fn (Club $club) => $leadClubs->contains($club->id) || $user->administersClub($club->id))->values());
         $events = Event::with('club')->withCount('competitions')
             ->when(! $user->isStudentAffairs(), fn ($q) => $q->where(fn ($w) => $w->whereIn('id', $user->scopeIds('admin_event', 'event_id'))
-                ->orWhereIn('club_id', $user->scopeIds('pengurus', 'club_id'))->orWhere('proposed_by', $user->id)))
+                ->orWhereIn('club_id', $user->scopeIds('pengurus', 'club_id')->merge($clubs->pluck('id')))->orWhere('proposed_by', $user->id)->orWhere('responsible_id', $user->id)))
             ->latest()->get();
 
         return view('events.index', [
             'managed' => $user->assigned('pengelola_lomba') ? Competition::with('event')->whereIn('id', $user->scopeIds('pengelola_lomba', 'competition_id'))->get() : collect(),
             'events' => $events,
             'pending' => $user->isStudentAffairs() ? $events->where('status', 'submitted') : collect(),
-            'clubs' => $user->isStudentAffairs() ? Club::orderBy('name')->get() : Club::whereIn('id', $leadClubs)->orderBy('name')->get(),
+            'clubs' => $clubs,
         ]);
     }
 
@@ -40,17 +47,51 @@ class EventManageController extends Controller
     {
         $user = $request->user();
         $canEdit = $this->events->canEdit($user, $event);
-        abort_unless($canEdit || $user->managesEvent($event->id) || $event->proposed_by === $user->id || ($event->club_id && $user->managesClub($event->club_id)), 403);
-        $event->load(['club', 'proposer', 'competitions' => fn ($q) => $q->withCount(['registrations as holding_count' => fn ($r) => $r->whereIn('status', ['program_review', 'submitted', 'accepted'])]), 'admins' => fn ($q) => $q->with('user')->where('ends_at', '>', now())]);
+        abort_unless($canEdit || $user->managesEvent($event->id) || $event->proposed_by === $user->id || $event->responsible_id === $user->id || ($event->club_id && $user->managesClub($event->club_id)), 403);
+        $event->load(['club', 'proposer', 'responsible', 'competitions' => fn ($q) => $q->withCount(['registrations as holding_count' => fn ($r) => $r->whereIn('status', ['program_review', 'submitted', 'accepted'])])]);
 
         return view('events.show', [
             'event' => $event,
             'canEdit' => $canEdit,
-            'canSubmit' => $event->isEditableProposal() && $event->club_id && $user->leadsClub($event->club_id),
+            'canSubmit' => $event->isEditableProposal() && $this->events->mayPropose($user, $event),
             'canDecide' => $user->isStudentAffairs() && $event->status === 'submitted' && $event->proposed_by !== $user->id,
-            'canSeeAccounts' => $event->status === 'approved' && ($user->isStudentAffairs() || $event->proposed_by === $user->id),
+            'canSeeAccounts' => $event->status === 'approved' && ($user->isStudentAffairs() || $user->answersForEvent($event)),
+            'canAppoint' => $user->appointsEventTeam($event),
+            'canSetResponsible' => $this->events->canSetResponsible($user, $event),
+            'responsibleVacant' => $this->events->responsibleVacant($event),
+            'candidates' => $this->events->canSetResponsible($user, $event) ? $this->events->responsibleCandidates($event) : collect(),
+            'team' => $this->team($event),
+            'teamRoles' => self::TEAM_ROLES,
+            'teamUntil' => $event->competitions->map->staffUntil()->push(now()->addMonth())->max(),
             'histories' => StatusHistory::where('subject_type', 'events')->where('subject_id', $event->id)->oldest('id')->get(),
         ]);
+    }
+
+    public function setResponsible(Request $request, Event $event): RedirectResponse
+    {
+        $data = $request->validate(['user_id' => 'required|integer']);
+        $this->events->setResponsible($request->user(), $event, $data['user_id']);
+
+        return back()->with('success', 'Penanggung jawab event diperbarui.');
+    }
+
+    /**
+     * Admin event covers every competition of the event; the other roles belong to one competition of it.
+     */
+    public function appoint(Request $request, Event $event, AssignmentService $assignments): RedirectResponse
+    {
+        abort_unless($request->user()->appointsEventTeam($event), 403);
+        $data = $request->validate([
+            'user' => 'required|string|max:190',
+            'role' => ['required', Rule::in(array_keys(self::TEAM_ROLES))],
+            'competition_id' => ['nullable', 'required_unless:role,admin_event', 'integer', Rule::exists('competitions', 'id')->where('event_id', $event->id)],
+            'starts_at' => 'required|date',
+            'ends_at' => 'required|date',
+        ], ['competition_id.required_unless' => 'Pilih nomor lomba untuk peran ini.']);
+        $scope = $data['role'] === 'admin_event' ? $event->id : (int) $data['competition_id'];
+        $assignments->grant($request->user(), ['user' => $data['user'], 'role' => $data['role'], 'scope_id' => $scope, 'starts_at' => $data['starts_at'], 'ends_at' => $data['ends_at']]);
+
+        return back()->with('success', 'Tim penyelenggara diperbarui dan tercatat pada audit.');
     }
 
     public function store(Request $request): RedirectResponse
@@ -117,6 +158,21 @@ class EventManageController extends Controller
         $competition = $this->events->saveCompetition($request->user(), $event, $competition, $data);
 
         return redirect('/kelola/event/'.$event->id.'#competition-'.$competition->id)->with('success', 'Nomor lomba disimpan.');
+    }
+
+    /**
+     * People appointed to the event. Generated competition logins stay on their own page.
+     *
+     * @return Collection<int, Assignment>
+     */
+    private function team(Event $event): Collection
+    {
+        $competitions = $event->competitions->pluck('id');
+
+        return Assignment::with('user', 'competition')->whereIn('role', array_keys(self::TEAM_ROLES))->where('ends_at', '>', now())
+            ->where(fn ($q) => $q->where('event_id', $event->id)->orWhereIn('competition_id', $competitions))
+            ->whereNotIn('user_id', CompetitionAccount::whereIn('competition_id', $competitions)->select('user_id'))
+            ->orderBy('role')->get();
     }
 
     /**

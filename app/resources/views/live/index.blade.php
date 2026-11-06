@@ -5,7 +5,7 @@
 <a class="panel" href="/live/{{ $c->id }}">
     <span class="eyebrow">{{ $c->event->name }} · {{ $c->field }}</span><h2>{{ $c->name }}</h2>
     <p>{{ \App\Services\Wita::show($c->starts_at) }} WITA · {{ $c->location }}</p>
-    <div class="inline-actions"><span class="badge {{ $c->resultsPublished() ? 'status-accepted' : 'status-submitted' }}">{{ $c->resultsPublished() ? 'Hasil resmi' : 'Sementara' }}</span><span class="chip">{{ $c->live_visibility === 'public' ? 'Publik' : 'Khusus pengguna masuk' }}</span></div>
+    <div class="inline-actions"><span class="badge {{ $c->resultsPublished() ? 'status-accepted' : 'status-submitted' }}">{{ $c->resultsPublished() ? 'Hasil resmi' : 'Sementara' }}</span><span class="chip">{{ $c->resultsLocked() ? 'Terkunci' : ($c->live_visibility === 'public' ? 'Publik' : 'Khusus pengguna masuk') }}</span></div>
 </a>
 @empty<div class="panel empty">Belum ada live score yang tersedia{{ auth()->check() ? '' : ' untuk publik' }}.</div>@endforelse
 </div>

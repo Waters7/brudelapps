@@ -29,6 +29,7 @@ use App\Services\Club\ActivityService;
 use App\Services\Club\BroadcastService;
 use App\Services\Club\MembershipRequestService;
 use App\Services\Club\SpaceService;
+use App\Services\Match\LiveScoreService;
 use App\Services\Report\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -189,6 +190,8 @@ class PortalController extends Controller
 
         return view('competition', [
             'competition' => $competition,
+            'canSeeResults' => app(LiveScoreService::class)->canView(auth()->user(), $competition),
+            'canSetAccess' => $competition->live_score && app(LiveScoreService::class)->canSetAccess(auth()->user(), $competition),
             'draft' => Registration::where('competition_id', $id)->where('user_id', auth()->id())->first(),
             'holding' => $competition->registrations()->whereIn('status', Registration::HOLDING)->count(),
             'accounts' => $competition->isPaid() ? PaymentAccount::where('active', true)->get() : collect(),

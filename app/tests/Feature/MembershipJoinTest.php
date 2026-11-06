@@ -9,7 +9,7 @@ use App\Models\MembershipRequest;
 use App\Models\User;
 
 /**
- * The two ways into a UKM or HIMAJU: a student's own request, or an invitation from the ketua, pembina, or admin jurusan.
+ * The ways into a UKM or HIMAJU: a student's own request, or an invitation or direct addition by the ketua, pembina, or admin jurusan.
  */
 class MembershipJoinTest extends DemoTestCase
 {
@@ -105,6 +105,72 @@ class MembershipJoinTest extends DemoTestCase
         $declined = $this->invite($club, $this->user('pembina'), $student);
         $this->actingAs($student)->post('/undangan-organisasi/'.$declined->id, ['decision' => 'declined'])->assertSessionHasNoErrors();
         $this->assertFalse($this->isActiveMember($club, $student));
+    }
+
+    public function test_the_ketua_adds_a_student_who_becomes_a_member_at_once(): void
+    {
+        $club = $this->ukm();
+        $student = $this->user('anggota');
+        $this->actingAs($this->user('pengurus'))->get('/ruang/'.$club->id.'?tab=anggota')->assertOk()->assertSee('Tambah anggota')->assertSee('Undang anggota');
+        $this->post('/ruang/'.$club->id.'/anggota', ['user' => $student->nim, 'division' => 'Publikasi'])->assertSessionHasNoErrors();
+
+        $this->assertTrue($this->isActiveMember($club, $student));
+        $this->assertSame('Publikasi', Membership::where('club_id', $club->id)->where('user_id', $student->id)->value('division'));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'membership.added']);
+        $this->assertTrue($student->notifications()->get()->contains(fn ($n) => str_contains($n->data['title'], 'Anda ditambahkan')));
+
+        $this->post('/ruang/'.$club->id.'/anggota', ['user' => $student->nim])->assertSessionHasErrors('action');
+    }
+
+    public function test_adding_a_student_settles_what_was_still_waiting(): void
+    {
+        $club = $this->ukm();
+        $student = $this->user('anggota');
+        $invitation = $this->invite($club, $this->user('pembina'), $student);
+
+        $this->post('/ruang/'.$club->id.'/anggota', ['user' => $student->email])->assertSessionHasNoErrors();
+
+        $this->assertSame('accepted', $invitation->fresh()->status);
+        $this->assertTrue($this->isActiveMember($club, $student));
+    }
+
+    public function test_only_those_who_may_invite_add_members_and_never_themselves(): void
+    {
+        $club = $this->ukm();
+        $student = $this->user('anggota');
+        $this->actingAs($this->user('atlet1'))->post('/ruang/'.$club->id.'/anggota', ['user' => $student->nim])->assertForbidden();
+        $this->actingAs($this->user('jurusan'))->post('/ruang/'.$club->id.'/anggota', ['user' => $student->nim])->assertForbidden();
+        $this->assertFalse($this->isActiveMember($club, $student));
+
+        $chair = $this->user('pengurus');
+        $this->actingAs($chair)->post('/ruang/'.$club->id.'/anggota', ['user' => $chair->email])->assertForbidden();
+        $this->post('/ruang/'.$club->id.'/anggota', ['user' => '0000000000'])->assertSessionHasErrors('action');
+    }
+
+    public function test_adding_keeps_the_rules_of_each_organization(): void
+    {
+        $admin = $this->user('jurusan');
+        $student = $this->user('mahasiswa');
+        $own = $this->himaju('KEP');
+        Membership::where('club_id', $own->id)->where('user_id', $student->id)->delete();
+        $this->actingAs($admin)->post('/ruang/'.$own->id.'/anggota', ['user' => $student->nim])->assertSessionHasNoErrors();
+        $this->assertTrue($this->isActiveMember($own, $student));
+
+        $other = $this->himaju('GIZ');
+        $this->actingAs($this->user('admin'))->post('/ruang/'.$other->id.'/anggota', ['user' => $student->nim])->assertSessionHasErrors('action');
+        $this->assertFalse($this->isActiveMember($other, $student));
+
+        $faith = Club::where('category', 'ukm')->where('active', true)->orderBy('id')->take(2)->get();
+        $faith->each->update(['field' => 'Kerohanian']);
+        $this->joinClub($faith[0], $this->user('anggota'));
+        $this->post('/ruang/'.$faith[1]->id.'/anggota', ['user' => $this->user('anggota')->nim])->assertSessionHasErrors('action');
+    }
+
+    public function test_bem_and_mpm_appoint_elected_members_from_their_room_instead(): void
+    {
+        $club = Club::where('category', 'lembaga')->firstOrFail();
+        $this->actingAs($this->user('admin'))->get('/ruang/'.$club->id.'?tab=anggota')->assertOk()->assertSee('Tetapkan anggota terpilih')->assertDontSee('Kirim undangan');
+        $this->post('/ruang/'.$club->id.'/anggota', ['user' => $this->user('anggota')->nim])->assertForbidden();
     }
 
     public function test_the_club_can_withdraw_an_invitation_and_members_cannot_invite(): void

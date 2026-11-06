@@ -28,7 +28,7 @@
     @endunless
     <h2 id="ubah-sandi">Ubah kata sandi</h2>
     @if($managedAccount)
-        <div class="alert warning">Ini akun lomba yang dibuat otomatis. Kata sandi diatur oleh pengaju lomba atau kemahasiswaan.</div>
+        <div class="alert warning">Ini akun lomba yang dibuat otomatis. Kata sandi diatur oleh penanggung jawab event atau kemahasiswaan.</div>
     @else
     <form method="post" action="/profil/sandi">@csrf
         <label>Kata sandi saat ini<input type="password" name="current_password" required autocomplete="current-password"></label>

@@ -10,6 +10,12 @@ use Illuminate\Support\Carbon;
 
 class Competition extends Model
 {
+    public const RESULT_ACCESS = [
+        'public' => 'Umum, termasuk pengunjung tanpa akun',
+        'auth' => 'Semua pengguna yang masuk',
+        'locked' => 'Terkunci, hanya admin jurusan ke atas',
+    ];
+
     protected $guarded = [];
 
     protected function casts(): array
@@ -20,6 +26,7 @@ class Competition extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'results_published_at' => 'datetime',
+            'results_locked_at' => 'datetime',
             'fee' => 'integer',
             'judge_count' => 'integer',
             'requires_document' => 'boolean',
@@ -99,6 +106,11 @@ class Competition extends Model
         }
 
         return 'Rp '.number_format($this->fee, 0, ',', '.').' / '.($this->fee_basis === 'participant' ? 'peserta' : 'tim');
+    }
+
+    public function resultsLocked(): bool
+    {
+        return $this->results_locked_at !== null;
     }
 
     public function resultsPublished(): bool

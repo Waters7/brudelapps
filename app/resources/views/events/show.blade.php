@@ -32,16 +32,36 @@
     @if($histories->isNotEmpty())<x-history :items="$histories"/>@endif
 </section>
 <section class="panel">
-    <h2>Admin event</h2>
-    @forelse($event->admins as $admin)<div class="list-row"><div><strong>{{ $admin->user->name }}</strong><small>s.d. {{ \App\Services\Wita::show($admin->ends_at, 'd M Y') }}</small></div></div>@empty<p class="muted">Belum ada admin event. Ketua UKM tidak otomatis menjadi admin event.</p>@endforelse
-    @if(auth()->user()->isStudentAffairs() && $event->status === 'approved')
-    <form class="form-grid" method="post" action="/kelola/penugasan">@csrf
-        <input type="hidden" name="role" value="admin_event"><input type="hidden" name="scope_id" value="{{ $event->id }}">
-        <label class="span-2">Email/NIM admin event<input name="user" required maxlength="190"></label>
+    <h2>Penanggung jawab</h2>
+    @if($responsibleVacant)
+        <div class="alert warning">{{ $event->responsible ? $event->responsible->name.' tidak lagi memegang jabatan yang memenuhi syarat.' : 'Event ini belum memiliki penanggung jawab.' }} Tetapkan Ketua organisasi penyelenggara, admin jurusan, atau admin kemahasiswaan.</div>
+    @else
+        <div class="list-row"><div><strong>{{ $event->responsible->name }}</strong><small>Menunjuk tim penyelenggara dan membagikan akun lomba.</small></div></div>
+    @endif
+    @if($canSetResponsible)
+    <details @if($responsibleVacant) open @endif><summary class="text-link">Ganti penanggung jawab</summary>
+    <form class="form-grid" method="post" action="/kelola/event/{{ $event->id }}/penanggung-jawab">@csrf
+        <label class="span-2">Penanggung jawab<select name="user_id" required><option value="">Pilih</option>@foreach($candidates as $id => $label)<option value="{{ $id }}" @selected($id === $event->responsible_id)>{{ $label }}</option>@endforeach</select></label>
+        <div class="span-2"><button class="button outline">Simpan penanggung jawab</button><p class="form-note">Hanya Ketua organisasi penyelenggara, admin jurusan, atau admin kemahasiswaan.</p></div>
+    </form></details>
+    @endif
+    <hr>
+    <h2>Tim penyelenggara</h2>
+    @forelse($team as $member)
+    <div class="list-row"><div><strong>{{ $member->user->name }}</strong><small>{{ $member->roleLabel() }} · {{ $member->competition?->name ?? 'Semua nomor lomba' }} · s.d. {{ \App\Services\Wita::show($member->ends_at, 'd M Y') }}</small></div>
+        @if($canAppoint && $member->user_id !== auth()->id())<details><summary class="text-link">Akhiri</summary><form class="inline-form" method="post" action="/kelola/penugasan/{{ $member->id }}/akhiri">@csrf<input name="reason" required minlength="5" maxlength="500" placeholder="Alasan diakhiri"><button class="button outline small">Akhiri</button></form></details>@endif
+    </div>
+    @empty<p class="muted">Belum ada yang ditunjuk. Penanggung jawab tidak otomatis mengelola lomba.</p>@endforelse
+    @if($canAppoint)
+    <form class="form-grid" method="post" action="/kelola/event/{{ $event->id }}/tim">@csrf
+        <label class="span-2">Email, NIM, atau NIP<input name="user" required maxlength="190"></label>
+        <label>Peran<select name="role" required>@foreach($teamRoles as $role => $label)<option value="{{ $role }}">{{ $label }}</option>@endforeach</select></label>
+        <label>Nomor lomba<select name="competition_id"><option value="">Semua (khusus admin event)</option>@foreach($event->competitions as $competition)<option value="{{ $competition->id }}">{{ $competition->name }}</option>@endforeach</select></label>
         <label>Mulai (WITA)<input type="datetime-local" name="starts_at" required value="{{ now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i') }}"></label>
-        <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ now()->timezone('Asia/Makassar')->addMonths(6)->format('Y-m-d\TH:i') }}"></label>
-        <div class="span-2"><button class="button outline">Tugaskan admin event</button></div>
+        <label>Berakhir (WITA)<input type="datetime-local" name="ends_at" required value="{{ \App\Services\Wita::input($teamUntil) }}"></label>
+        <div class="span-2"><button class="button outline">Tunjuk anggota tim</button><p class="form-note">Operator mencatat skor dan live score. Pengelola mengatur satu nomor lomba, admin event mengatur semua nomor lomba. Anda tidak dapat menunjuk diri sendiri.</p></div>
     </form>
+    @elseif($event->status !== 'approved')<p class="form-note">Tim dapat ditunjuk setelah event disetujui.</p>
     @endif
 </section>
 </div>

@@ -9,6 +9,7 @@ use App\Models\Registration;
 use App\Services\Match\LiveScoreService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class LiveController extends Controller
@@ -19,8 +20,7 @@ class LiveController extends Controller
     {
         $competitions = Competition::with('event')->where('live_score', true)
             ->whereHas('event', fn ($q) => $q->where('status', 'approved'))
-            ->when(! $request->user(), fn ($q) => $q->where('live_visibility', 'public'))
-            ->orderBy('starts_at')->get();
+            ->orderBy('starts_at')->get()->filter(fn (Competition $competition) => $this->live->canView($request->user(), $competition));
 
         return view('live.index', ['competitions' => $competitions]);
     }
@@ -28,12 +28,21 @@ class LiveController extends Controller
     public function show(Request $request, Competition $competition): View|RedirectResponse
     {
         if (! $this->live->canView($request->user(), $competition)) {
-            abort_unless($competition->live_score && ! $request->user(), 404);
+            abort_unless($competition->live_score && (! $request->user() || $competition->resultsLocked()), 404);
+            abort_if($request->user() !== null, 403, 'Hasil lomba ini dikunci untuk admin jurusan ke atas.');
 
             return redirect()->guest('/login');
         }
 
         return view('live.show', ['competition' => $competition->load('event')]);
+    }
+
+    public function setAccess(Request $request, Competition $competition): RedirectResponse
+    {
+        $data = $request->validate(['access' => ['required', Rule::in(array_keys(Competition::RESULT_ACCESS))]]);
+        $this->live->setAccess($request->user(), $competition, $data['access']);
+
+        return back()->with('success', 'Akses hasil lomba diperbarui.');
     }
 
     public function operator(Request $request): View

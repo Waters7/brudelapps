@@ -46,6 +46,7 @@ class SpaceController extends Controller
             'tabs' => $tabs,
             'canLead' => $canLead,
             'canInvite' => $this->requests->canInvite($user, $club),
+            'canAppoint' => $club->category === 'lembaga' && $user->managesClub($club->id),
             'joinRequests' => $joinQueue->reject->isInvitation()->values(),
             'invitations' => $joinQueue->filter->isInvitation()->values(),
             'isMember' => $this->space->isMember($user, $club),

@@ -44,7 +44,7 @@ class ResultService extends DomainService
             $competition->update(['results_published_at' => now(), 'results_published_by' => $actor->id]);
             $this->audit($actor, 'results.published', $competition, ['rows' => $rows]);
 
-            $users = User::whereIn('id', Participant::whereIn('registration_id', array_column($rows, 'registration_id'))->pluck('user_id'))->get();
+            $users = $competition->resultsLocked() ? collect() : User::whereIn('id', Participant::whereIn('registration_id', array_column($rows, 'registration_id'))->pluck('user_id'))->get();
             Notification::send($users, new BrudelNotice('Hasil resmi '.$competition->name, 'Hasil telah disahkan. Lihat peringkat di halaman live/hasil.', '/live/'.$competition->id));
         });
     }

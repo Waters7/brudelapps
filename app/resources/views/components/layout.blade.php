@@ -37,7 +37,7 @@
             $has('kemahasiswaan', 'pengurus', 'jurusan', 'pembina') ? ['/kelola/ukm', 'users', 'Kelola UKM'] : null,
             $has('kemahasiswaan', 'pengurus', 'jurusan', 'pembina') ? ['/proposal', 'file', 'Proposal & LPJ'] : null,
             $has('kemahasiswaan') ? ['/kelola/pengumuman', 'megaphone', 'Pengumuman UKM'] : null,
-            $has('kemahasiswaan', 'admin_event', 'pengurus', 'pengelola_lomba') ? ['/kelola/event', 'calendar', 'Kelola Event & Lomba'] : null,
+            $has('kemahasiswaan', 'admin_event', 'pengurus', 'pengelola_lomba', 'jurusan') ? ['/kelola/event', 'calendar', 'Kelola Event & Lomba'] : null,
             $has('kemahasiswaan', 'jurusan') ? ['/jurusan', 'book', 'Jurusan'] : null,
             $has('kemahasiswaan', 'jurusan') ? ['/kegiatan/izin', 'calendar', 'Izin Kegiatan'] : null,
             $has('jurusan') && ! $has('kemahasiswaan') ? ['/kelola/mahasiswa', 'user', 'Mahasiswa Jurusan'] : null,

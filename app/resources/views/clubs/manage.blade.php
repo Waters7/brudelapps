@@ -88,18 +88,9 @@
 </div>
 
 @if($club->category === 'himaju')
-<div class="alert success">Mahasiswa Jurusan {{ $club->department?->name }} bergabung lewat permintaan atau undangan, tanpa rekrutmen. <a class="text-link" href="/ruang/{{ $club->id }}?tab=anggota">Kelola undangan dan permintaan →</a></div>
+<div class="alert success">Mahasiswa Jurusan {{ $club->department?->name }} bergabung lewat permintaan, undangan, atau ditambahkan pengurus, tanpa rekrutmen. <a class="text-link" href="/ruang/{{ $club->id }}?tab=anggota">Tambah anggota, undangan, dan permintaan →</a></div>
 @elseif(! $club->isUkm())
-<section class="panel">
-    <h2>Tetapkan anggota terpilih</h2>
-    <p class="muted">Anggota {{ $club->name }} berasal dari hasil pemilihan, bukan rekrutmen terbuka. Setiap penetapan dicatat beserta dasarnya.</p>
-    <form class="form-grid" method="post" action="/kelola/ukm/{{ $club->id }}/anggota">@csrf
-        <label>NIM/email mahasiswa<input name="user" required maxlength="190"></label>
-        <label>Jabatan/komisi<input name="division" maxlength="80" placeholder="Mis. Menteri Kesehatan, Komisi A"></label>
-        <label class="span-2">Dasar penetapan<input name="basis" required minlength="5" maxlength="500" placeholder="Mis. Hasil Pemilihan Raya Mahasiswa 2026"></label>
-        <div class="span-2"><button class="button primary">Tetapkan sebagai anggota</button></div>
-    </form>
-</section>
+@include('clubs._appoint-member')
 @else
 <section class="section-block">
 <div class="section-heading"><h2>Periode rekrutmen</h2></div>

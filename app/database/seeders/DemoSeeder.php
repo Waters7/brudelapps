@@ -81,7 +81,7 @@ class DemoSeeder extends Seeder
             Assignment::firstOrCreate(['user_id' => $users['pimpinan']->id, 'role' => 'pimpinan'], $window + ['position' => 'Wakil Direktur III']);
             Assignment::firstOrCreate(['user_id' => $users['jurusan']->id, 'role' => 'jurusan', 'department_id' => $departments['KEP']], $window);
 
-            $event = Event::firstOrCreate(['name' => 'Pekan Prestasi Mahasiswa 2026 · Demo'], ['organizer' => 'Kemahasiswaan Poltekkes Kemenkes Manado (demo)', 'status' => 'approved', 'proposed_by' => $users['admin']->id, 'decided_by' => $users['admin']->id, 'decided_at' => now()]);
+            $event = Event::firstOrCreate(['name' => 'Pekan Prestasi Mahasiswa 2026 · Demo'], ['organizer' => 'Kemahasiswaan Poltekkes Kemenkes Manado (demo)', 'status' => 'approved', 'proposed_by' => $users['admin']->id, 'responsible_id' => $users['admin']->id, 'decided_by' => $users['admin']->id, 'decided_at' => now()]);
             Assignment::firstOrCreate(['user_id' => $users['event']->id, 'role' => 'admin_event', 'event_id' => $event->id], $window);
 
             $competitions = [
@@ -125,10 +125,10 @@ class DemoSeeder extends Seeder
                 Participant::firstOrCreate(['registration_id' => $registration->id, 'competition_id' => $registration->competition_id, 'user_id' => $users[$key]->id], ['status' => 'confirmed']);
             }
 
-            $proposal = Event::firstOrCreate(['name' => 'Badminton Open Internal 2026 · Demo'], ['organizer' => 'UKM Olahraga', 'club_id' => $all[0]->id, 'pathway' => 'internal', 'field' => 'Olahraga', 'description' => 'Contoh pengajuan lomba oleh Ketua UKM yang menunggu keputusan kemahasiswaan.', 'status' => 'submitted', 'proposed_by' => $users['pengurus']->id, 'submitted_at' => now()->subDay()]);
+            $proposal = Event::firstOrCreate(['name' => 'Badminton Open Internal 2026 · Demo'], ['organizer' => 'UKM Olahraga', 'club_id' => $all[0]->id, 'pathway' => 'internal', 'field' => 'Olahraga', 'description' => 'Contoh pengajuan lomba oleh Ketua UKM yang menunggu keputusan kemahasiswaan.', 'status' => 'submitted', 'proposed_by' => $users['pengurus']->id, 'responsible_id' => $users['pengurus']->id, 'submitted_at' => now()->subDay()]);
             Competition::firstOrCreate(['event_id' => $proposal->id, 'name' => 'Ganda Campuran'], ['field' => 'Olahraga', 'format' => 'team', 'min_members' => 2, 'max_members' => 2, 'quota' => 16, 'location' => 'Lapangan kampus', 'description' => 'Nomor lomba usulan UKM (demo).', 'requirements' => 'Mahasiswa aktif.', 'opens_at' => now()->addDays(7), 'closes_at' => now()->addDays(20), 'starts_at' => now()->addDays(30), 'assessment_type' => 'bracket']);
 
-            $selection = Event::firstOrCreate(['name' => 'Seleksi Delegasi Lomba Nasional 2026 · Demo'], ['organizer' => 'Kemahasiswaan Poltekkes Kemenkes Manado (demo)', 'pathway' => 'delegation', 'external_organizer' => 'Penyelenggara nasional (contoh)', 'status' => 'approved', 'proposed_by' => $users['admin']->id, 'decided_by' => $users['admin']->id, 'decided_at' => now()]);
+            $selection = Event::firstOrCreate(['name' => 'Seleksi Delegasi Lomba Nasional 2026 · Demo'], ['organizer' => 'Kemahasiswaan Poltekkes Kemenkes Manado (demo)', 'pathway' => 'delegation', 'external_organizer' => 'Penyelenggara nasional (contoh)', 'status' => 'approved', 'proposed_by' => $users['admin']->id, 'responsible_id' => $users['admin']->id, 'decided_by' => $users['admin']->id, 'decided_at' => now()]);
             Competition::firstOrCreate(['event_id' => $selection->id, 'name' => 'Seleksi Baca Puisi'], ['field' => 'Seni', 'format' => 'individual', 'quota' => 20, 'location' => 'Aula kampus', 'level' => 'Nasional', 'description' => 'Seleksi internal untuk memilih delegasi kampus (demo).', 'requirements' => 'Mahasiswa aktif.', 'opens_at' => now()->subDay(), 'closes_at' => now()->addDays(10), 'starts_at' => now()->addDays(15), 'assessment_type' => 'rubric']);
             Assignment::firstOrCreate(['user_id' => $users['event']->id, 'role' => 'admin_event', 'event_id' => $selection->id], $window);
 

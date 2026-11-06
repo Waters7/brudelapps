@@ -82,8 +82,54 @@ class LiveScoreService extends DomainService
 
     public function canView(?User $user, Competition $competition): bool
     {
-        return $competition->live_score && $competition->event?->status === 'approved'
-            && ($competition->live_visibility === 'public' || $user !== null);
+        if (! $competition->live_score || $competition->event?->status !== 'approved') {
+            return false;
+        }
+        if ($competition->resultsLocked()) {
+            return $user !== null && $this->seesLockedResults($user, $competition);
+        }
+
+        return $competition->live_visibility === 'public' || $user !== null;
+    }
+
+    /**
+     * Locked results stay with admin jurusan and above, plus those running the competition, who see them anyway.
+     */
+    private function seesLockedResults(User $user, Competition $competition): bool
+    {
+        return $user->isStudentAffairs() || $user->isLeadership() || $user->assigned('jurusan') || $user->operates($competition);
+    }
+
+    /**
+     * Direktorat decides for every competition; an admin jurusan for one that involves its jurusan or an organization it coaches.
+     */
+    public function canSetAccess(User $user, Competition $competition): bool
+    {
+        if ($user->isStudentAffairs()) {
+            return true;
+        }
+        $departments = $user->scopeIds('jurusan', 'department_id');
+        if ($departments->isEmpty()) {
+            return false;
+        }
+        $club = $competition->event?->club_id;
+
+        return $competition->event?->responsible_id === $user->id
+            || ($club !== null && $user->coachesClub($club))
+            || Participant::where('competition_id', $competition->id)->whereHas('user.program', fn ($q) => $q->whereIn('department_id', $departments))->exists();
+    }
+
+    public function setAccess(User $actor, Competition $competition, string $access): void
+    {
+        abort_unless($this->canSetAccess($actor, $competition), 403);
+        $this->ensure(array_key_exists($access, Competition::RESULT_ACCESS), 'Pilihan akses tidak dikenal.');
+        $locked = $access === 'locked';
+        $competition->update([
+            'results_locked_at' => $locked ? ($competition->results_locked_at ?? now()) : null,
+            'results_locked_by' => $locked ? ($competition->results_locked_by ?? $actor->id) : null,
+            'live_visibility' => $locked ? $competition->live_visibility : $access,
+        ]);
+        $this->audit($actor, 'results.access_changed', $competition, ['access' => $access]);
     }
 
     /**

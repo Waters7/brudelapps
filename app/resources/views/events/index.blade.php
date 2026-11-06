@@ -1,5 +1,5 @@
 <x-layout title="Kelola Event & Lomba">
-<div class="page-heading"><div><p class="eyebrow">EVENT INDUK & NOMOR LOMBA</p><h1>Event dan pengajuan lomba.</h1><p>Ketua UKM mengajukan lomba; kemahasiswaan menyetujui, meminta revisi, atau menolak dengan alasan. Event disetujui dikelola admin event yang ditugaskan.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">EVENT INDUK & NOMOR LOMBA</p><h1>Event dan pengajuan lomba.</h1><p>Ketua UKM atau admin jurusan mengajukan lomba; kemahasiswaan menyetujui, meminta revisi, atau menolak dengan alasan. Penanggung jawab event menunjuk admin event, pengelola lomba, operator, dan juri.</p></div></div>
 
 @if($managed->isNotEmpty())
 <section class="section-block"><h2>Lomba yang Anda kelola</h2>
@@ -21,18 +21,18 @@
 </tbody></table></div></div>
 </section>
 
-@if($clubs->isNotEmpty() || auth()->user()->isStudentAffairs())
+@if($clubs->isNotEmpty() || auth()->user()->isStudentAffairs() || auth()->user()->assigned('jurusan'))
 <section class="panel">
-    <h2>{{ auth()->user()->isStudentAffairs() ? 'Buat event baru' : 'Ajukan event/lomba UKM' }}</h2>
+    <h2>{{ auth()->user()->isStudentAffairs() ? 'Buat event baru' : 'Ajukan event/lomba' }}</h2>
     <form class="form-grid" method="post" action="/kelola/event">@csrf
         <label class="span-2">Nama event induk<input name="name" required maxlength="150" placeholder="Pekan Seni Mahasiswa 2026"></label>
         <label>Penyelenggara<input name="organizer" required maxlength="190" placeholder="UKM / Kemahasiswaan"></label>
         <label>Jalur<select name="pathway"><option value="internal">Lomba internal</option><option value="delegation">Seleksi delegasi nasional</option></select></label>
         <label>Bidang utama<select name="field"><option value="">Campuran</option>@foreach($master->fields() as $field)<option>{{ $field }}</option>@endforeach</select></label>
-        <label>UKM pengusul<select name="club_id" {{ auth()->user()->isStudentAffairs() ? '' : 'required' }}>@if(auth()->user()->isStudentAffairs())<option value="">Kemahasiswaan (langsung disetujui)</option>@endif @foreach($clubs as $club)<option value="{{ $club->id }}">{{ $club->name }}</option>@endforeach</select></label>
+        <label>Organisasi pengusul<select name="club_id" {{ auth()->user()->isStudentAffairs() || auth()->user()->assigned('jurusan') ? '' : 'required' }}>@if(auth()->user()->isStudentAffairs())<option value="">Kemahasiswaan (langsung disetujui)</option>@elseif(auth()->user()->assigned('jurusan'))<option value="">Jurusan (tanpa organisasi)</option>@endif @foreach($clubs as $club)<option value="{{ $club->id }}">{{ $club->name }}</option>@endforeach</select></label>
         <label class="span-2">Penyelenggara eksternal (opsional)<input name="external_organizer" maxlength="190" placeholder="Untuk seleksi delegasi: nama penyelenggara tingkat nasional"></label>
         <label class="span-2">Deskripsi<textarea name="description" maxlength="3000" rows="3"></textarea></label>
-        <div class="span-2"><button class="button primary">Buat draf event</button><p class="form-note">Pengajuan UKM tersimpan sebagai draf. Tambahkan nomor lomba, lalu ajukan ke kemahasiswaan.</p></div>
+        <div class="span-2"><button class="button primary">Buat draf event</button><p class="form-note">Pengajuan tersimpan sebagai draf. Tambahkan nomor lomba, lalu ajukan ke kemahasiswaan. Pembuat event menjadi penanggung jawabnya dan dapat diganti dari halaman event.</p></div>
     </form>
 </section>
 @endif

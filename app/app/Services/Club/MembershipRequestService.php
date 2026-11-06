@@ -11,9 +11,9 @@ use App\Services\DomainService;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The two ways into a UKM or HIMAJU besides a recruitment period: a student asks to join and an officer, coach or
- * admin jurusan decides; or the ketua, pembina, or (for a HIMAJU) admin jurusan invites a student, who accepts.
- * BEM and MPM stay elected. A HIMAJU only takes students of its own jurusan.
+ * The ways into a UKM or HIMAJU besides a recruitment period: a student asks to join and an officer, coach or admin
+ * jurusan decides; or the ketua, pembina, or (for a HIMAJU) admin jurusan invites a student, who accepts, or adds the
+ * student directly. BEM and MPM stay elected. A HIMAJU only takes students of its own jurusan.
  */
 class MembershipRequestService extends DomainService
 {
@@ -64,9 +64,7 @@ class MembershipRequestService extends DomainService
     public function invite(User $actor, Club $club, string $identifier, ?string $message): MembershipRequest
     {
         abort_unless($this->canInvite($actor, $club), 403);
-        $identifier = trim($identifier);
-        $student = User::whereNotNull('nim')->where(fn ($q) => $q->where('nim', $identifier)->orWhere('email', mb_strtolower($identifier)))->first();
-        $this->ensure($student !== null && $student->active, 'Mahasiswa aktif dengan NIM/email tersebut tidak ditemukan.');
+        $student = $this->findStudent($identifier);
         abort_if($student->id === $actor->id, 403, 'Tidak dapat mengundang diri sendiri.');
         $this->ensure($this->inJurusan($student, $club), 'Anggota '.$club->name.' harus mahasiswa Jurusan '.$club->department?->name.'.');
 
@@ -79,6 +77,29 @@ class MembershipRequestService extends DomainService
             $student->notify(new BrudelNotice('Undangan bergabung '.$club->name, 'Terima atau tolak undangan di menu UKM Saya.', '/ukm-saya'));
 
             return $invitation;
+        });
+    }
+
+    /**
+     * The student becomes an active member at once, without answering an invitation, and is told about it.
+     * A request or invitation still waiting for this student is settled by the same step.
+     */
+    public function add(User $actor, Club $club, string $identifier, ?string $division): Membership
+    {
+        abort_unless($this->canInvite($actor, $club), 403);
+        $student = $this->findStudent($identifier);
+        abort_if($student->id === $actor->id, 403, 'Tidak dapat menambahkan diri sendiri.');
+        $this->ensure($this->inJurusan($student, $club), 'Anggota '.$club->name.' harus mahasiswa Jurusan '.$club->department?->name.'.');
+
+        return DB::transaction(function () use ($actor, $club, $student, $division) {
+            User::whereKey($student->id)->lockForUpdate()->first();
+            $this->ensure(! $this->clubs->choiceConflict($student->id, $club), 'Mahasiswa sudah aktif di UKM '.$club->field.' lain; hanya satu yang dapat dipilih.');
+            $membership = $this->activate($actor, $club, $student->id, 'Ditambahkan oleh '.$actor->name, $division);
+            MembershipRequest::where('club_id', $club->id)->where('user_id', $student->id)->pending()->update(['status' => 'accepted', 'decided_by' => $actor->id, 'decided_at' => now()]);
+            $this->audit($actor, 'membership.added', $membership, ['division' => $division]);
+            $student->notify(new BrudelNotice('Anda ditambahkan ke '.$club->name, ($division ? 'Divisi '.$division.'. ' : '').'Lihat di menu UKM Saya.', '/ukm-saya'));
+
+            return $membership;
         });
     }
 
@@ -132,11 +153,27 @@ class MembershipRequestService extends DomainService
     private function join(User $actor, MembershipRequest $item, string $reason): void
     {
         $this->ensure(! $this->clubs->choiceConflict($item->user_id, $item->club), 'Mahasiswa sudah aktif di UKM '.$item->club->field.' lain; hanya satu yang dapat dipilih.');
-        $membership = Membership::lockForUpdate()->firstOrNew(['club_id' => $item->club_id, 'user_id' => $item->user_id]);
-        $this->ensure(! ($membership->exists && $membership->status === 'active'), 'Sudah menjadi anggota aktif '.$item->club->name.'.');
+        $this->activate($actor, $item->club, $item->user_id, $reason);
+    }
+
+    private function activate(User $actor, Club $club, int $userId, string $reason, ?string $division = null): Membership
+    {
+        $membership = Membership::lockForUpdate()->firstOrNew(['club_id' => $club->id, 'user_id' => $userId]);
+        $this->ensure(! ($membership->exists && $membership->status === 'active'), 'Sudah menjadi anggota aktif '.$club->name.'.');
         $from = $membership->exists ? $membership->status : null;
-        $membership->fill(['status' => 'active', 'joined_at' => now(), 'left_at' => null, 'status_reason' => $reason])->save();
+        $membership->fill(['status' => 'active', 'joined_at' => now(), 'left_at' => null, 'status_reason' => $reason] + ($division ? ['division' => $division] : []))->save();
         $this->history($membership, $from, 'active', $actor, $reason);
+
+        return $membership;
+    }
+
+    private function findStudent(string $identifier): User
+    {
+        $identifier = trim($identifier);
+        $student = User::whereNotNull('nim')->where(fn ($q) => $q->where('nim', $identifier)->orWhere('email', mb_strtolower($identifier)))->first();
+        $this->ensure($student !== null && $student->active, 'Mahasiswa aktif dengan NIM/email tersebut tidak ditemukan.');
+
+        return $student;
     }
 
     private function ensureOpen(User $student, Club $club): void

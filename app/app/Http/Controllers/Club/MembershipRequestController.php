@@ -29,6 +29,14 @@ class MembershipRequestController extends Controller
         return back()->with('success', 'Undangan terkirim ke '.$invitation->user->name.'. Mahasiswa menjadi anggota setelah menerimanya.');
     }
 
+    public function add(Request $request, Club $club): RedirectResponse
+    {
+        $data = $request->validate(['user' => 'required|string|max:190', 'division' => 'nullable|string|max:80']);
+        $membership = $this->requests->add($request->user(), $club, $data['user'], $data['division'] ?? null);
+
+        return back()->with('success', $membership->user->name.' menjadi anggota '.$club->name.'.');
+    }
+
     public function respond(Request $request, MembershipRequest $invitation): RedirectResponse
     {
         $accept = $request->validate(['decision' => 'required|in:accepted,declined'])['decision'] === 'accepted';

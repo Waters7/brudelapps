@@ -64,7 +64,7 @@ class CompetitionAccountService extends DomainService
                 DB::table('sessions')->where('user_id', $retired->user_id)->delete();
             }
 
-            $owner = $competition->event->proposer;
+            $owner = $competition->event->responsible ?? $competition->event->proposer;
             if ($created > 0 && ($actor ?? $owner)) {
                 $this->audit($actor ?? $owner, 'competition_accounts.provisioned', $competition, ['created' => $created]);
                 $owner?->notify(new BrudelNotice('Akun lomba dibuat', $created.' akun untuk '.$competition->name.' siap dibagikan. Lihat di halaman event.', '/kelola/lomba/'.$competition->id.'/akun'));
@@ -76,7 +76,7 @@ class CompetitionAccountService extends DomainService
     {
         $competition->loadMissing('event');
 
-        return $user->isStudentAffairs() || ($competition->event && $competition->event->proposed_by === $user->id);
+        return $user->isStudentAffairs() || ($competition->event && $user->answersForEvent($competition->event));
     }
 
     /**

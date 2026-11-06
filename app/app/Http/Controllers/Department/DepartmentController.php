@@ -28,7 +28,7 @@ class DepartmentController extends Controller
         $departments = $this->departments($request);
         $selected = $departments->firstWhere('id', (int) $request->query('jurusan')) ?? $departments->first();
         $filter = $request->query('ukm');
-        // Every student is in their HIMAJU automatically, so participation means an active UKM, BEM, or MPM membership.
+        // Participation here means an active UKM, BEM, or MPM membership; HIMAJU is counted apart.
         $elective = fn ($q) => $q->whereHas('club', fn ($c) => $c->where('category', '!=', 'himaju'));
         $activeElective = fn ($m) => $m->where('status', 'active')->where($elective);
         $students = User::with(['program', 'memberships' => fn ($q) => $q->where($elective)->with('club')->orderByRaw("status = 'active' desc")])

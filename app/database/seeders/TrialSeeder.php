@@ -324,6 +324,7 @@ class TrialSeeder extends Seeder
             'description' => 'Event yang sudah selesai: hasil resmi, penghargaan, dan sertifikat (data uji coba).',
             'status' => 'approved',
             'proposed_by' => $admin->id,
+            'responsible_id' => $admin->id,
             'decided_by' => $admin->id,
             'decided_at' => now()->subMonths(3),
         ]);
