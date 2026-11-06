@@ -3,7 +3,7 @@
 namespace App\Services\Account;
 
 use App\Models\Department;
-use App\Models\Lecturer;
+use App\Models\Employee;
 use App\Models\User;
 use App\Services\DomainService;
 use Illuminate\Support\Collection;
@@ -13,25 +13,23 @@ use SimpleXMLElement;
 use ZipArchive;
 
 /**
- * Imports dosen from the "Laporan DUK" workbook. Accounts stay inactive until kemahasiswaan direktorat activates them;
- * the NIP is both the username and the first password, replaced at first sign-in. Only name, NIP, email, rank, position
- * and placement are read: NIK, birth dates and phone numbers in the workbook are ignored and never stored.
+ * Imports dosen and tendik from the "Laporan DUK" workbook. Accounts stay inactive until kemahasiswaan direktorat
+ * activates them; the NIP is both the username and the first password, replaced at first sign-in. Only name, NIP,
+ * email, rank, position and placement are read: NIK, birth dates and phone numbers in the workbook are never stored.
  */
-class LecturerImportService extends DomainService
+class EmployeeImportService extends DomainService
 {
-    public const PLACEHOLDER_DOMAIN = 'dosen.brudel.invalid';
-
     /** @var Collection<int, Department> */
     private Collection $departments;
 
     /**
-     * @return array{lecturers: int, created: int, updated: int, linked: int, placeholder_email: int, other_staff: int, retired: int, errors: list<string>, committed: bool}
+     * @return array{dosen: int, tendik: int, created: int, updated: int, linked: int, placeholder_email: int, retired: int, errors: list<string>, committed: bool}
      */
     public function import(User $actor, string $path, bool $commit): array
     {
         abort_unless($actor->isStudentAffairs(), 403);
         $this->departments = Department::all();
-        $summary = ['lecturers' => 0, 'created' => 0, 'updated' => 0, 'linked' => 0, 'placeholder_email' => 0, 'other_staff' => 0, 'retired' => 0, 'errors' => [], 'committed' => $commit];
+        $summary = ['dosen' => 0, 'tendik' => 0, 'created' => 0, 'updated' => 0, 'linked' => 0, 'placeholder_email' => 0, 'retired' => 0, 'errors' => [], 'committed' => $commit];
         $rows = $this->read($path);
         $work = function () use ($actor, $rows, $commit, &$summary) {
             $seenEmail = [];
@@ -39,7 +37,7 @@ class LecturerImportService extends DomainService
                 $this->row($row, $commit, $summary, $seenEmail);
             }
             if ($commit) {
-                $this->audit($actor, 'lecturers.imported', $actor, ['rows' => $summary['lecturers']]);
+                $this->audit($actor, 'employees.imported', $actor, ['dosen' => $summary['dosen'], 'tendik' => $summary['tendik']]);
             }
         };
         $commit ? DB::transaction($work) : $work();
@@ -50,9 +48,9 @@ class LecturerImportService extends DomainService
     /**
      * "Asisten Ahli" is a lecturer's functional rank, even where the DUK leaves out the word Dosen.
      */
-    public function isLecturer(string $position): bool
+    public function kind(string $position): string
     {
-        return preg_match('/\bdosen\b|^\s*asisten ahli\b/i', $position) === 1;
+        return preg_match('/\bdosen\b|^\s*asisten ahli\b/i', $position) === 1 ? 'dosen' : 'tendik';
     }
 
     /**
@@ -62,42 +60,40 @@ class LecturerImportService extends DomainService
      */
     private function row(array $row, bool $commit, array &$summary, array &$seenEmail): void
     {
-        if (! $this->isLecturer($row['position'])) {
-            $summary['other_staff']++;
-
-            return;
-        }
         if (mb_strtolower($row['placement']) === 'pensiun') {
             $summary['retired']++;
 
             return;
         }
         $nip = preg_replace('/\D/', '', $row['nip']);
+        $row['name'] = ltrim($row['name'], '-. ');
         if (strlen($nip) !== 18 || $row['name'] === '') {
             $summary['errors'][] = 'Baris dengan NIP "'.$nip.'" dilewati: NIP atau nama tidak valid.';
 
             return;
         }
-        $summary['lecturers']++;
+        $kind = $this->kind($row['position']);
+        $summary[$kind]++;
 
         $emails = collect([$row['official'], $row['personal']])->map(fn (string $email) => mb_strtolower(trim($email)))
             ->filter(fn (string $email) => filter_var($email, FILTER_VALIDATE_EMAIL) && mb_strlen($email) <= 190 && ($seenEmail[$email] ?? $nip) === $nip)->values();
         $byNip = User::where('username', $nip)->first();
-        $staff = $byNip ? null : User::whereNull('nim')->whereIn('email', $emails)->whereDoesntHave('lecturer')->first();
+        $staff = $byNip ? null : User::whereNull('nim')->whereIn('email', $emails)->whereDoesntHave('employee')->first();
         $account = $byNip ?? $staff;
         $email = $account?->email_verified_at ? $account->email : $this->availableEmail($emails, $account);
-        $seenEmail[$email] = $nip;
-        if (str_ends_with($email ?? '', '.invalid') || $email === null) {
+        if ($email === null) {
             $summary['placeholder_email']++;
-            $email = $nip.'@'.self::PLACEHOLDER_DOMAIN;
+            $email = $nip.'@'.$kind.'.brudel.invalid';
         }
+        $seenEmail[$email] = $nip;
         $summary[$staff ? 'linked' : ($byNip ? 'updated' : 'created')]++;
         if (! $commit) {
             return;
         }
 
         $user = $this->account($account, $staff !== null, $nip, $row['name'], $email);
-        Lecturer::updateOrCreate(['user_id' => $user->id], [
+        Employee::updateOrCreate(['user_id' => $user->id], [
+            'kind' => $kind,
             'department_id' => $this->department($row['placement'])?->id,
             'unit' => Str::limit($row['placement'], 120, '') ?: null,
             'rank' => Str::limit($row['rank'], 20, '') ?: null,
@@ -107,7 +103,7 @@ class LecturerImportService extends DomainService
     }
 
     /**
-     * A new dosen starts inactive with the NIP as password. Someone already here keeps their password and status:
+     * A new employee starts inactive with the NIP as password. Someone already here keeps their password and status:
      * a staff account with the same email just gains the NIP, and a repeat import only refreshes what they have not set.
      */
     private function account(?User $account, bool $isStaff, string $nip, string $name, string $email): User

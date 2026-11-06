@@ -138,7 +138,7 @@ class PortalController extends Controller
         if ($all) {
             $tasks[] = ['Pengajuan event menunggu', Event::where('status', 'submitted')->count(), '/kelola/event'];
             $tasks[] = ['Prestasi menunggu verifikasi', AwardResult::where('status', 'pending')->count(), '/kelola/prestasi'];
-            $tasks[] = ['Dosen menunggu aktivasi', User::where('active', false)->has('lecturer')->count(), '/kelola/master/dosen'];
+            $tasks[] = ['Dosen & tendik menunggu aktivasi', User::where('active', false)->has('employee')->count(), '/kelola/master/dosen'];
         }
         if ($user->isLeadership()) {
             $tasks[] = ['Usulan delegasi menunggu keputusan', Delegation::where('status', 'submitted')->count(), '/delegasi'];

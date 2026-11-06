@@ -16,12 +16,14 @@
     <p>Akun mahasiswa menurut jurusan, status masuk, serta ketua dan pengurusnya.</p>
     <span class="badge status-accepted">{{ number_format($students, 0, ',', '.') }} mahasiswa</span>
 </a>
-<a class="feature-card master-card" href="/kelola/master/dosen">
-    <span class="icon-tile teal"><x-icon name="book"/></span>
-    <h3>Dosen</h3>
-    <p>Akun dosen dari Daftar Urut Kepangkatan. Dosen baru dapat masuk setelah diaktifkan.</p>
-    <span class="badge status-accepted">{{ $lecturers }} dosen</span>@if($waitingLecturers) <span class="badge status-submitted">{{ $waitingLecturers }} menunggu aktivasi</span>@endif
+@foreach(\App\Models\Employee::KINDS as $kind => $label)
+<a class="feature-card master-card" href="/kelola/master/{{ $kind }}">
+    <span class="icon-tile teal"><x-icon :name="$kind === 'dosen' ? 'book' : 'user'"/></span>
+    <h3>{{ $label }}</h3>
+    <p>Akun {{ strtolower($label) }} dari Daftar Urut Kepangkatan, baru dapat masuk setelah diaktifkan.</p>
+    <span class="badge status-accepted">{{ (int) ($employees[$kind]->total ?? 0) }} akun</span>@if($employees[$kind]->waiting ?? 0) <span class="badge status-submitted">{{ (int) $employees[$kind]->waiting }} menunggu aktivasi</span>@endif
 </a>
+@endforeach
 <a class="feature-card master-card" href="/kelola/pengaturan#prodi">
     <span class="icon-tile blue"><x-icon name="book"/></span>
     <h3>Jurusan &amp; program studi</h3>

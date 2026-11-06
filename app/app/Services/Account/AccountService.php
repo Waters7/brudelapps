@@ -191,17 +191,17 @@ class AccountService extends DomainService
     }
 
     /**
-     * Dosen accounts stay closed until kemahasiswaan direktorat opens them.
+     * Dosen and tendik accounts stay closed until kemahasiswaan direktorat opens them.
      *
      * @param  list<int>  $ids
      */
-    public function activateLecturers(User $actor, array $ids): int
+    public function activateEmployees(User $actor, array $ids): int
     {
         abort_unless($actor->isStudentAffairs(), 403);
-        $lecturers = User::whereIn('id', $ids)->where('active', false)->has('lecturer')->get();
-        $lecturers->each(fn (User $lecturer) => $this->setStatus($actor, $lecturer, true, 'Diaktifkan super admin'));
+        $employees = User::whereIn('id', $ids)->where('active', false)->has('employee')->get();
+        $employees->each(fn (User $employee) => $this->setStatus($actor, $employee, true, 'Diaktifkan super admin'));
 
-        return $lecturers->count();
+        return $employees->count();
     }
 
     public function setStatus(User $actor, User $student, bool $active, string $reason): void

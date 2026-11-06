@@ -46,9 +46,9 @@ class User extends Authenticatable
         return $this->belongsTo(Program::class);
     }
 
-    public function lecturer(): HasOne
+    public function employee(): HasOne
     {
-        return $this->hasOne(Lecturer::class);
+        return $this->hasOne(Employee::class);
     }
 
     public function memberships(): HasMany

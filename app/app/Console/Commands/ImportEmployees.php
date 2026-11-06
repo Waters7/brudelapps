@@ -3,22 +3,25 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
-use App\Services\Account\LecturerImportService;
+use App\Services\Account\EmployeeImportService;
 use Illuminate\Console\Command;
 
 /**
- * Server-side import of dosen from the Laporan DUK workbook.
+ * Server-side import of dosen and tendik from the Laporan DUK workbook.
  */
-class ImportLecturers extends Command
+class ImportEmployees extends Command
 {
-    protected $signature = 'brudel:impor-dosen
+    protected $signature = 'brudel:impor-pegawai
         {file : Berkas Laporan DUK (.xlsx)}
         {--commit : Simpan ke database (tanpa opsi ini hanya pratinjau)}
         {--admin= : Email kemahasiswaan direktorat yang tercatat di audit}';
 
-    protected $description = 'Impor dosen dari Laporan DUK; akun nonaktif sampai diaktifkan super admin, sandi pertama = NIP';
+    protected $description = 'Impor dosen dan tendik dari Laporan DUK; akun nonaktif sampai diaktifkan super admin, sandi pertama = NIP';
 
-    public function handle(LecturerImportService $lecturers): int
+    /** @var list<string> */
+    protected $aliases = ['brudel:impor-dosen'];
+
+    public function handle(EmployeeImportService $employees): int
     {
         $admin = $this->option('admin')
             ? User::where('email', $this->option('admin'))->first()
@@ -34,10 +37,10 @@ class ImportLecturers extends Command
             return self::FAILURE;
         }
 
-        $report = $lecturers->import($admin, $this->argument('file'), (bool) $this->option('commit'));
-        $this->line(($report['committed'] ? 'IMPOR' : 'PRATINJAU (belum disimpan)').": {$report['lecturers']} dosen: {$report['created']} akun baru (nonaktif), "
+        $report = $employees->import($admin, $this->argument('file'), (bool) $this->option('commit'));
+        $this->line(($report['committed'] ? 'IMPOR' : 'PRATINJAU (belum disimpan)').": {$report['dosen']} dosen dan {$report['tendik']} tendik: {$report['created']} akun baru (nonaktif), "
             ."{$report['updated']} diperbarui, {$report['linked']} ditautkan ke akun staf yang ada, {$report['placeholder_email']} tanpa email unik (email sementara).");
-        $this->line("Dilewati: {$report['other_staff']} pegawai bukan dosen, {$report['retired']} pensiun.");
+        $this->line("Dilewati: {$report['retired']} pensiun.");
         foreach ($report['errors'] as $error) {
             $this->warn($error);
         }

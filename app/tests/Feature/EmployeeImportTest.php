@@ -3,16 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\Department;
-use App\Models\Lecturer;
+use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use ZipArchive;
 
 /**
- * Dosen from the Laporan DUK workbook: closed accounts that kemahasiswaan direktorat opens one by one or in bulk.
+ * Dosen and tendik from the Laporan DUK workbook: closed accounts that kemahasiswaan direktorat opens one by one or in bulk.
  */
-class LecturerImportTest extends DemoTestCase
+class EmployeeImportTest extends DemoTestCase
 {
     private const NIP = '198001012005012001';
 
@@ -58,49 +58,59 @@ class LecturerImportTest extends DemoTestCase
 
     private function import(string $file): void
     {
-        $this->artisan('brudel:impor-dosen', ['file' => $file, '--commit' => true])->assertSuccessful();
+        $this->artisan('brudel:impor-pegawai', ['file' => $file, '--commit' => true])->assertSuccessful();
     }
 
-    private function lecturer(string $nip = self::NIP): User
+    private function account(string $nip = self::NIP): User
     {
         return User::where('username', $nip)->firstOrFail();
     }
 
-    public function test_only_dosen_are_imported_and_their_accounts_stay_closed(): void
+    public function test_dosen_and_tendik_are_imported_and_their_accounts_stay_closed(): void
     {
         $file = $this->workbook([
             ['Dr. DOSEN UJI, M.Kes', self::NIP, 'Dosen Lektor (JFT)', 'Keperawatan', 'pribadi.uji@contoh.test', 'resmi.uji@kemkes.go.id', 'Ketua Jurusan'],
             ['ASISTEN UJI, S.ST', self::SECOND_NIP, 'Asisten Ahli (JFT)', 'Gizi', 'asisten.uji@contoh.test'],
-            ['TENDIK UJI', '197001012000012003', 'Penata Layanan Operasional (JFU)', 'Keperawatan', 'tendik.uji@contoh.test'],
+            ['-. TENDIK UJI', '197001012000012003', 'Penata Layanan Operasional (JFU)', 'Keperawatan', 'tendik.uji@contoh.test'],
             ['PENSIUN UJI', '196001012000012004', 'Dosen Lektor (JFT)', 'Pensiun', 'pensiun.uji@contoh.test'],
         ]);
 
-        $this->artisan('brudel:impor-dosen', ['file' => $file])->expectsOutputToContain('2 dosen: 2 akun baru')->assertSuccessful();
-        $this->assertSame(0, Lecturer::count(), 'Pratinjau tidak menulis data.');
-        $this->artisan('brudel:impor-dosen', ['file' => $file, '--commit' => true])->expectsOutputToContain('1 pegawai bukan dosen, 1 pensiun')->assertSuccessful();
+        $this->artisan('brudel:impor-pegawai', ['file' => $file])->expectsOutputToContain('2 dosen dan 1 tendik: 3 akun baru')->assertSuccessful();
+        $this->assertSame(0, Employee::count(), 'Pratinjau tidak menulis data.');
+        $this->artisan('brudel:impor-pegawai', ['file' => $file, '--commit' => true])->expectsOutputToContain('1 pensiun')->assertSuccessful();
 
-        $lecturer = $this->lecturer();
-        $this->assertSame(2, Lecturer::count());
+        $lecturer = $this->account();
+        $this->assertSame(3, Employee::count());
+        $this->assertFalse(User::where('email', 'pensiun.uji@contoh.test')->exists(), 'Pegawai pensiun tidak dibuatkan akun.');
         $this->assertFalse($lecturer->active);
         $this->assertTrue($lecturer->must_change_password);
         $this->assertNull($lecturer->nim, 'Dosen bukan akun mahasiswa.');
         $this->assertTrue(Hash::check(self::NIP, $lecturer->password));
         $this->assertSame('resmi.uji@kemkes.go.id', $lecturer->email, 'Email Kemenkes diutamakan.');
-        $this->assertSame(['KEP', 'Ketua Jurusan', 'III/c'], [$lecturer->lecturer->department->code, $lecturer->lecturer->structural_position, $lecturer->lecturer->rank]);
-        $this->assertSame(Department::where('code', 'GIZ')->value('id'), $this->lecturer(self::SECOND_NIP)->lecturer->department_id);
+        $this->assertSame(['KEP', 'Ketua Jurusan', 'III/c'], [$lecturer->employee->department->code, $lecturer->employee->structural_position, $lecturer->employee->rank]);
+        $this->assertSame(Department::where('code', 'GIZ')->value('id'), $this->account(self::SECOND_NIP)->employee->department_id);
+
+        $tendik = $this->account('197001012000012003');
+        $this->assertSame(['tendik', 'TENDIK UJI'], [$tendik->employee->kind, $tendik->name], 'Tanda sisa gelar depan dibersihkan.');
+        $this->assertFalse($tendik->active);
+        $this->assertTrue(Hash::check('197001012000012003', $tendik->password));
+        $this->assertSame('dosen', $lecturer->employee->kind);
+
+        $this->actingAs($this->user('admin'))->get('/kelola/master/tendik')->assertOk()->assertSee('TENDIK UJI')->assertDontSee('ASISTEN UJI');
+        $this->get('/kelola/master/dosen')->assertOk()->assertSee('ASISTEN UJI')->assertDontSee('TENDIK UJI');
     }
 
     public function test_a_dosen_signs_in_only_after_the_super_admin_activates_the_account(): void
     {
         $this->import($this->workbook([['DOSEN UJI', self::NIP, 'Dosen Lektor (JFT)', 'Keperawatan', 'dosen.uji@contoh.test']]));
-        $lecturer = $this->lecturer();
+        $lecturer = $this->account();
 
         $this->post('/login', ['email' => self::NIP, 'password' => self::NIP])->assertSessionHasErrors('email');
         $this->post('/login', ['email' => 'dosen.uji@contoh.test', 'password' => self::NIP])->assertSessionHasErrors('email');
         $this->assertGuest();
 
-        $this->actingAs($this->user('admin'))->get('/')->assertSee('Dosen menunggu aktivasi');
-        $this->post('/kelola/master/dosen/aktifkan', ['lecturers' => [$lecturer->id]])->assertSessionHasNoErrors();
+        $this->actingAs($this->user('admin'))->get('/')->assertSee('Dosen & tendik menunggu aktivasi');
+        $this->post('/kelola/master/pegawai/aktifkan', ['employees' => [$lecturer->id]])->assertSessionHasNoErrors();
         $this->assertTrue($lecturer->fresh()->active);
         $this->post('/logout');
 
@@ -117,12 +127,12 @@ class LecturerImportTest extends DemoTestCase
     public function test_only_the_super_admin_opens_the_list_and_activates(): void
     {
         $this->import($this->workbook([['DOSEN UJI', self::NIP, 'Dosen Lektor (JFT)', 'Keperawatan', 'dosen.uji@contoh.test']]));
-        $id = $this->lecturer()->id;
+        $id = $this->account()->id;
         foreach (['jurusan', 'pengurus', 'mahasiswa'] as $role) {
             $this->actingAs($this->user($role))->get('/kelola/master/dosen')->assertForbidden();
-            $this->post('/kelola/master/dosen/aktifkan', ['lecturers' => [$id]])->assertForbidden();
+            $this->post('/kelola/master/pegawai/aktifkan', ['employees' => [$id]])->assertForbidden();
         }
-        $this->assertFalse($this->lecturer()->active);
+        $this->assertFalse($this->account()->active);
     }
 
     public function test_bulk_activation_touches_only_waiting_dosen(): void
@@ -137,29 +147,29 @@ class LecturerImportTest extends DemoTestCase
         $this->actingAs($this->user('admin'))->get('/kelola/master/dosen')->assertOk()->assertSee('DOSEN SATU')->assertSee('Direktorat / Unit')
             ->assertViewHas('counts', fn ($counts) => $counts['waiting'] === 2);
         $this->get('/kelola/master/dosen?jurusan=unit')->assertSee('DOSEN DUA')->assertDontSee('DOSEN SATU');
-        $this->post('/kelola/master/dosen/aktifkan', ['lecturers' => [$this->lecturer()->id, $this->lecturer(self::SECOND_NIP)->id, $student->id]])->assertSessionHasNoErrors();
+        $this->post('/kelola/master/pegawai/aktifkan', ['employees' => [$this->account()->id, $this->account(self::SECOND_NIP)->id, $student->id]])->assertSessionHasNoErrors();
 
-        $this->assertTrue($this->lecturer()->active);
-        $this->assertTrue($this->lecturer(self::SECOND_NIP)->active);
+        $this->assertTrue($this->account()->active);
+        $this->assertTrue($this->account(self::SECOND_NIP)->active);
         $this->assertFalse($student->fresh()->active, 'Hanya akun dosen yang diaktifkan dari menu ini.');
-        $this->assertDatabaseHas('audit_logs', ['action' => 'account.activated_by_admin', 'subject_id' => $this->lecturer()->id]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'account.activated_by_admin', 'subject_id' => $this->account()->id]);
     }
 
     public function test_importing_again_makes_no_duplicates_and_leaves_signed_in_dosen_alone(): void
     {
         $file = $this->workbook([['DOSEN UJI', self::NIP, 'Dosen Lektor (JFT)', 'Keperawatan', 'dosen.uji@contoh.test']]);
         $this->import($file);
-        $lecturer = $this->lecturer();
+        $lecturer = $this->account();
         $lecturer->forceFill(['active' => true, 'email' => 'aktif.uji@contoh.test', 'password' => 'SandiDosen2026', 'email_verified_at' => now(), 'must_change_password' => false])->save();
         $password = $lecturer->fresh()->password;
 
         $this->import($this->workbook([['NAMA BARU', self::NIP, 'Dosen Lektor Kepala (JFT)', 'Farmasi', 'dosen.uji@contoh.test']]));
 
         $this->assertSame(1, User::where('username', self::NIP)->count());
-        $this->assertSame(1, Lecturer::count());
+        $this->assertSame(1, Employee::count());
         $fresh = $lecturer->fresh();
         $this->assertSame(['DOSEN UJI', 'aktif.uji@contoh.test', $password, true], [$fresh->name, $fresh->email, $fresh->password, $fresh->active]);
-        $this->assertSame('Dosen Lektor Kepala (JFT)', $fresh->lecturer->position, 'Data kepegawaian tetap mengikuti DUK.');
+        $this->assertSame('Dosen Lektor Kepala (JFT)', $fresh->employee->position, 'Data kepegawaian tetap mengikuti DUK.');
     }
 
     public function test_a_shared_email_falls_back_and_a_staff_account_is_linked_not_duplicated(): void
@@ -171,12 +181,12 @@ class LecturerImportTest extends DemoTestCase
             ['STAF JURUSAN, S.Kep', '197505052000012005', 'Dosen Lektor (JFT)', 'Keperawatan', $staff->email],
         ]));
 
-        $this->assertSame('bersama.uji@contoh.test', $this->lecturer()->email);
-        $this->assertSame(self::SECOND_NIP.'@dosen.brudel.invalid', $this->lecturer(self::SECOND_NIP)->email);
+        $this->assertSame('bersama.uji@contoh.test', $this->account()->email);
+        $this->assertSame(self::SECOND_NIP.'@dosen.brudel.invalid', $this->account(self::SECOND_NIP)->email);
 
         $linked = $staff->fresh();
         $this->assertSame('197505052000012005', $linked->username);
-        $this->assertNotNull($linked->lecturer);
+        $this->assertNotNull($linked->employee);
         $this->assertTrue($linked->active, 'Akun staf yang sudah aktif tidak dinonaktifkan.');
         $this->assertTrue(Hash::check('BrudelDemo!2026', $linked->password), 'Sandi akun staf tidak diganti NIP.');
     }
@@ -188,6 +198,6 @@ class LecturerImportTest extends DemoTestCase
         $this->files[] = $path;
 
         $this->expectException(ValidationException::class);
-        $this->withoutExceptionHandling()->artisan('brudel:impor-dosen', ['file' => $path])->run();
+        $this->withoutExceptionHandling()->artisan('brudel:impor-pegawai', ['file' => $path])->run();
     }
 }
