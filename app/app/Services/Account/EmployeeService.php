@@ -32,37 +32,39 @@ class EmployeeService extends DomainService
     }
 
     /**
-     * Activates whoever is still closed and, when a task is chosen, assigns it to everyone selected. Someone who
-     * already holds the task is reported, not treated as an error, so one person never blocks the rest.
+     * Activates whoever is still closed and gives every chosen task to everyone selected, so one person can guide
+     * several organizations. Someone who already holds a task is reported, not treated as an error, so one person
+     * never blocks the rest.
      *
      * @param  list<int>  $ids
+     * @param  list<string>  $tasks
      * @return array{activated: int, assigned: int, already: list<string>}
      */
-    public function apply(User $actor, array $ids, ?string $task, ?string $endsAt): array
+    public function apply(User $actor, array $ids, array $tasks, ?string $endsAt): array
     {
         abort_unless($actor->isStudentAffairs(), 403);
         $people = User::whereIn('id', $ids)->whereKeyNot($actor->id)->has('employee')->get();
         $result = ['activated' => 0, 'assigned' => 0, 'already' => []];
 
-        DB::transaction(function () use ($actor, $people, $task, $endsAt, &$result) {
+        DB::transaction(function () use ($actor, $people, $tasks, $endsAt, &$result) {
             $result['activated'] = $this->accounts->activateEmployees($actor, $people->pluck('id')->all());
-            if (! $task) {
-                return;
-            }
-            [$role, $scope] = explode(':', $task, 2);
-            foreach ($people as $person) {
-                try {
-                    $this->assignments->grant($actor, [
-                        'user' => $person->username, 'role' => $role, 'scope_id' => $role === 'pimpinan' ? null : (int) $scope,
-                        'position' => $role === 'pimpinan' ? $scope : null,
-                        'starts_at' => Wita::input(now()), 'ends_at' => (string) $endsAt,
-                    ]);
-                    $result['assigned']++;
-                } catch (ValidationException) {
-                    $result['already'][] = $person->name;
+            foreach ($tasks as $task) {
+                [$role, $scope] = explode(':', $task, 2);
+                foreach ($people as $person) {
+                    try {
+                        $this->assignments->grant($actor, [
+                            'user' => $person->username, 'role' => $role, 'scope_id' => $role === 'pimpinan' ? null : (int) $scope,
+                            'position' => $role === 'pimpinan' ? $scope : null,
+                            'starts_at' => Wita::input(now()), 'ends_at' => (string) $endsAt,
+                        ]);
+                        $result['assigned']++;
+                    } catch (ValidationException) {
+                        $result['already'][] = $person->name;
+                    }
                 }
             }
         });
+        $result['already'] = array_values(array_unique($result['already']));
 
         return $result;
     }

@@ -53,15 +53,16 @@ class EmployeeController extends Controller
         $data = $request->validate([
             'employees' => 'required|array|min:1|max:200',
             'employees.*' => 'integer',
-            'task' => ['nullable', 'string', Rule::in(array_keys(Arr::collapse($this->employees->tasks())))],
-            'ends_at' => 'required_with:task|nullable|date|after:now',
+            'tasks' => 'nullable|array|max:40',
+            'tasks.*' => ['string', Rule::in(array_keys(Arr::collapse($this->employees->tasks())))],
+            'ends_at' => 'required_with:tasks|nullable|date|after:now',
         ]);
-        $result = $this->employees->apply($request->user(), $data['employees'], $data['task'] ?? null, $data['ends_at'] ?? null);
+        $result = $this->employees->apply($request->user(), $data['employees'], $data['tasks'] ?? [], $data['ends_at'] ?? null);
 
         return back()->with('success', collect([
             $result['activated'] ? $result['activated'].' akun diaktifkan' : null,
-            $result['assigned'] ? $result['assigned'].' akun ditugaskan' : null,
-            $result['already'] ? 'sudah memiliki tugas itu: '.implode(', ', $result['already']) : null,
+            $result['assigned'] ? $result['assigned'].' tugas diberikan' : null,
+            $result['already'] ? 'sudah memiliki tugas yang dipilih: '.implode(', ', $result['already']) : null,
         ])->filter()->join('; ') ?: 'Tidak ada perubahan.');
     }
 }

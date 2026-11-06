@@ -15,7 +15,7 @@
 @endif
 
 <form method="post" action="/login" data-loader class="space-y-1">@csrf
-    <label>NIM/NIP, email, atau username<input type="text" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="NIM, email, atau username" autofocus></label>
+    <label>NIM/NIP, email, atau username<input type="text" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="NIM/NIP, email, atau username" autofocus></label>
     <label>Kata sandi
         <span class="relative mt-2 block [&_input]:mt-0!">
             <input type="password" name="password" id="password" required autocomplete="current-password" placeholder="Masukkan kata sandi" class="pr-12!">

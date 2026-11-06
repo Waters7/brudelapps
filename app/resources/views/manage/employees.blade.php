@@ -18,9 +18,13 @@
 <form id="aktivasi-pegawai" method="post" action="/kelola/master/pegawai/aktifkan" onsubmit="return confirm('Terapkan ke akun yang dicentang? Akun nonaktif menjadi aktif dan pemiliknya dapat masuk memakai NIP.')">@csrf</form>
 <section class="panel">
     <h2>Aktifkan dan tugaskan</h2>
-    <p class="muted">Centang nama di tabel, pilih tugasnya, lalu terapkan. Pilih User biasa bila akun hanya perlu diaktifkan. Akun yang sudah aktif juga bisa dicentang untuk ditugaskan. Peran lain ada di <a class="text-link" href="/kelola/penugasan">Penugasan Peran</a>.</p>
+    <p class="muted">Centang nama di tabel, centang tugasnya, lalu terapkan. Tugas boleh lebih dari satu, misalnya mendampingi beberapa UKM. Tanpa tugas yang dicentang, akun aktif sebagai user biasa. Akun yang sudah aktif juga bisa ditugaskan. Peran lain ada di <a class="text-link" href="/kelola/penugasan">Penugasan Peran</a>.</p>
+    @foreach($tasks as $group => $options)
+    <details @if($loop->first) open @endif><summary class="text-link">{{ $group }}</summary>
+        <div class="inline-actions">@foreach($options as $value => $option)<label class="checkbox-label"><input type="checkbox" name="tasks[]" value="{{ $value }}" form="aktivasi-pegawai" @checked(in_array($value, old('tasks', []), true))><span>{{ $option }}</span></label>@endforeach</div>
+    </details>
+    @endforeach
     <div class="form-grid">
-        <label>Aktifkan sebagai<select name="task" form="aktivasi-pegawai"><option value="">User biasa (tanpa tugas)</option>@foreach($tasks as $group => $options)<optgroup label="{{ $group }}">@foreach($options as $value => $option)<option value="{{ $value }}" @selected(old('task') === $value)>{{ $option }}</option>@endforeach</optgroup>@endforeach</select></label>
         <label>Tugas berlaku sampai (WITA)<input type="datetime-local" name="ends_at" form="aktivasi-pegawai" value="{{ old('ends_at', \App\Services\Wita::input(now()->addYear())) }}"></label>
     </div>
     <button class="button primary" form="aktivasi-pegawai">Terapkan ke yang dicentang</button>

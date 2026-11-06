@@ -26,11 +26,11 @@ class EmployeeActivationTest extends DemoTestCase
     }
 
     /**
-     * @return array{employees: list<int>, task: string, ends_at: string}
+     * @return array{employees: list<int>, tasks: list<string>, ends_at: string}
      */
-    private function request(array $people, string $task): array
+    private function request(array $people, string ...$tasks): array
     {
-        return ['employees' => array_map(fn (User $person) => $person->id, $people), 'task' => $task, 'ends_at' => Wita::input(now()->addYear())];
+        return ['employees' => array_map(fn (User $person) => $person->id, $people), 'tasks' => $tasks, 'ends_at' => Wita::input(now()->addYear())];
     }
 
     private function sports(): Club
@@ -44,7 +44,7 @@ class EmployeeActivationTest extends DemoTestCase
         $dosen = $this->employee('dosen', '198001012005012001', 'Dosen Pendamping Uji');
 
         $this->actingAs($this->user('admin'))->get('/kelola/master/dosen')->assertOk()->assertSee('Aktifkan dan tugaskan')->assertSee('UKM Olahraga');
-        $this->post(self::URL, $this->request([$dosen], 'pembina:'.$club->id))->assertSessionHasNoErrors()->assertSessionHas('success', '1 akun diaktifkan; 1 akun ditugaskan');
+        $this->post(self::URL, $this->request([$dosen], 'pembina:'.$club->id))->assertSessionHasNoErrors()->assertSessionHas('success', '1 akun diaktifkan; 1 tugas diberikan');
 
         $dosen = $dosen->fresh();
         $this->assertTrue($dosen->active);
@@ -52,6 +52,25 @@ class EmployeeActivationTest extends DemoTestCase
         $this->assertTrue($dosen->notifications()->get()->contains(fn ($n) => $n->data['title'] === 'Penugasan baru'));
         $this->get('/kelola/master/dosen')->assertSee('Pendamping UKM Olahraga');
         $this->get('/ukm/'.$club->id)->assertSee('Dosen Pendamping Uji');
+    }
+
+    public function test_one_person_can_guide_several_organizations(): void
+    {
+        $sports = $this->sports();
+        $arts = Club::where('category', 'ukm')->whereKeyNot($sports->id)->firstOrFail();
+        $dosen = $this->employee('dosen', '198001012005012001', 'Dosen Bimbingan Uji');
+
+        $this->actingAs($this->user('admin'))->post(self::URL, $this->request([$dosen], 'pembina:'.$sports->id, 'pembina:'.$arts->id))
+            ->assertSessionHasNoErrors()->assertSessionHas('success', '1 akun diaktifkan; 2 tugas diberikan');
+        $this->get('/kelola/master/dosen')->assertSee('Pendamping UKM Olahraga')->assertSee('Pendamping '.$arts->name);
+
+        $third = Club::where('category', 'ukm')->whereKeyNot($sports->id)->whereKeyNot($arts->id)->firstOrFail();
+        $this->post(self::URL, $this->request([$dosen], 'pembina:'.$third->id))->assertSessionHasNoErrors()->assertSessionHas('success', '1 tugas diberikan');
+
+        $dosen->fresh()->forceFill(['email' => 'dosen.bimbingan@contoh.test', 'phone' => '081234567890', 'must_change_password' => false, 'email_verified_at' => now()])->save();
+        $coached = Club::coachedBy($dosen->fresh())->pluck('id');
+        $this->assertEqualsCanonicalizing([$sports->id, $arts->id, $third->id], $coached->all());
+        $this->actingAs($dosen->fresh())->get('/kelola/ukm')->assertOk()->assertSee('UKM Olahraga')->assertSee($arts->name)->assertSee($third->name);
     }
 
     public function test_a_pendamping_runs_the_ukm_after_completing_the_account(): void
@@ -70,7 +89,7 @@ class EmployeeActivationTest extends DemoTestCase
         $department = Department::where('code', 'GIZ')->firstOrFail();
         $tendik = $this->employee('tendik', '197001012000012003', 'Tendik Uji', active: true);
 
-        $this->actingAs($this->user('admin'))->post(self::URL, $this->request([$tendik], 'jurusan:'.$department->id))->assertSessionHasNoErrors()->assertSessionHas('success', '1 akun ditugaskan');
+        $this->actingAs($this->user('admin'))->post(self::URL, $this->request([$tendik], 'jurusan:'.$department->id))->assertSessionHasNoErrors()->assertSessionHas('success', '1 tugas diberikan');
         $this->assertSame([$department->id], $tendik->fresh()->scopeIds('jurusan', 'department_id')->all());
 
         $wadir = $this->employee('dosen', '197501012000012005', 'Pimpinan Uji');
@@ -86,7 +105,7 @@ class EmployeeActivationTest extends DemoTestCase
         $this->actingAs($this->user('admin'))->post(self::URL, $this->request([$first], 'pembina:'.$club->id))->assertSessionHasNoErrors();
 
         $this->post(self::URL, $this->request([$first, $second], 'pembina:'.$club->id))->assertSessionHasNoErrors()
-            ->assertSessionHas('success', '1 akun diaktifkan; 1 akun ditugaskan; sudah memiliki tugas itu: Dosen Satu');
+            ->assertSessionHas('success', '1 akun diaktifkan; 1 tugas diberikan; sudah memiliki tugas yang dipilih: Dosen Satu');
         $this->assertSame(2, Assignment::where('role', 'pembina')->where('club_id', $club->id)->whereIn('user_id', [$first->id, $second->id])->count());
         $this->assertTrue($second->fresh()->active);
     }
@@ -94,7 +113,7 @@ class EmployeeActivationTest extends DemoTestCase
     public function test_activating_needs_no_task_and_a_task_needs_an_end_date(): void
     {
         $dosen = $this->employee('dosen', '198001012005012001', 'Dosen Uji');
-        $this->actingAs($this->user('admin'))->post(self::URL, ['employees' => [$dosen->id], 'task' => 'pembina:'.$this->sports()->id, 'ends_at' => ''])->assertSessionHasErrors('ends_at');
+        $this->actingAs($this->user('admin'))->post(self::URL, ['employees' => [$dosen->id], 'tasks' => ['pembina:'.$this->sports()->id], 'ends_at' => ''])->assertSessionHasErrors('ends_at');
         $this->assertFalse($dosen->fresh()->active);
 
         $this->post(self::URL, ['employees' => [$dosen->id]])->assertSessionHasNoErrors();
@@ -108,7 +127,7 @@ class EmployeeActivationTest extends DemoTestCase
         $task = 'pembina:'.$this->sports()->id;
 
         $this->actingAs($this->user('jurusan'))->post(self::URL, $this->request([$dosen], $task))->assertForbidden();
-        $this->actingAs($this->user('admin'))->post(self::URL, $this->request([$dosen], 'kemahasiswaan:0'))->assertSessionHasErrors('task');
+        $this->actingAs($this->user('admin'))->post(self::URL, $this->request([$dosen], 'kemahasiswaan:0'))->assertSessionHasErrors('tasks.0');
         $this->assertFalse($dosen->fresh()->active);
 
         $student = $this->user('anggota');
