@@ -81,6 +81,6 @@ class UserDirectoryController extends Controller
     {
         return $department
             ? User::whereNotNull('nim')->whereHas('program', fn ($q) => $q->where('department_id', $department->id))
-            : User::whereNotIn('id', CompetitionAccount::select('user_id'))->where(fn ($q) => $q->whereNull('nim')->orWhereDoesntHave('program', fn ($p) => $p->whereNotNull('department_id')));
+            : User::whereNotIn('id', CompetitionAccount::select('user_id'))->whereDoesntHave('lecturer')->where(fn ($q) => $q->whereNull('nim')->orWhereDoesntHave('program', fn ($p) => $p->whereNotNull('department_id')));
     }
 }

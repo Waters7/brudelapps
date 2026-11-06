@@ -8,7 +8,8 @@
     $managesCompetition = $has('kemahasiswaan', 'admin_event', 'pengelola_lomba');
     $coach = $has('kemahasiswaan', 'pembina', 'pengurus', 'jurusan');
     $unread = $me->unreadNotifications()->count();
-    $roleLabel = $staff ? ($me->activeAssignments()->first()?->roleLabel() ?? 'Pengelola') : 'Mahasiswa aktif';
+    $lecturerOnly = ! $staff && ! $me->nim && $me->lecturer !== null;
+    $roleLabel = $staff ? ($me->activeAssignments()->first()?->roleLabel() ?? 'Pengelola') : ($lecturerOnly ? 'Dosen' : 'Mahasiswa aktif');
     $sections = $leadershipOnly ? [
         'PIMPINAN' => [
             ['/', 'grid', 'Dashboard pimpinan'],
@@ -61,6 +62,7 @@
         'MASTER DATA' => $has('kemahasiswaan') ? [
             ['/kelola/master', 'grid', 'Ringkasan Master Data', null, true],
             ['/kelola/master/pengguna', 'users', 'Pengguna per Jurusan'],
+            ['/kelola/master/dosen', 'book', 'Dosen'],
             ...collect(\App\Services\Campus\MasterData::TYPES)->map(fn ($spec, $type) => ['/kelola/master/'.$type, $spec['icon'], $spec['label']])->values()->all(),
             ['/kelola/pengaturan#prodi', 'book', 'Jurusan & Prodi'],
         ] : [],
@@ -78,7 +80,7 @@
 <div class="mobile-shade" x-show="menu" x-cloak @click="menu=false"></div>
 <aside class="sidebar" :class="menu && 'is-open'">
     <a class="brand" href="/"><img src="/brand/logo-mark.svg" alt="Logo BRUDEL"><span><strong>BRUDEL<span class="brand-dot">.</span></strong><small>POLTEKKES KEMENKES MANADO</small></span></a>
-    <div class="workspace-label"><span class="dot"></span> {{ $leadershipOnly ? 'Ruang pimpinan' : ($staff ? 'Ruang pengelola' : 'Ruang mahasiswa') }}</div>
+    <div class="workspace-label"><span class="dot"></span> {{ $leadershipOnly ? 'Ruang pimpinan' : ($staff ? 'Ruang pengelola' : ($lecturerOnly ? 'Ruang dosen' : 'Ruang mahasiswa')) }}</div>
     <nav aria-label="Navigasi utama">
         @foreach($sections as $caption => $items)
             @continue(empty($items))

@@ -16,6 +16,12 @@
     <p>Akun mahasiswa menurut jurusan, status masuk, serta ketua dan pengurusnya.</p>
     <span class="badge status-accepted">{{ number_format($students, 0, ',', '.') }} mahasiswa</span>
 </a>
+<a class="feature-card master-card" href="/kelola/master/dosen">
+    <span class="icon-tile teal"><x-icon name="book"/></span>
+    <h3>Dosen</h3>
+    <p>Akun dosen dari Daftar Urut Kepangkatan. Dosen baru dapat masuk setelah diaktifkan.</p>
+    <span class="badge status-accepted">{{ $lecturers }} dosen</span>@if($waitingLecturers) <span class="badge status-submitted">{{ $waitingLecturers }} menunggu aktivasi</span>@endif
+</a>
 <a class="feature-card master-card" href="/kelola/pengaturan#prodi">
     <span class="icon-tile blue"><x-icon name="book"/></span>
     <h3>Jurusan &amp; program studi</h3>

@@ -1,4 +1,4 @@
-<x-guest title="Masuk" heading="Selamat datang kembali." intro="Masuk dengan NIM, email, atau username untuk melanjutkan perjalananmu.">
+<x-guest title="Masuk" heading="Selamat datang kembali." intro="Masuk dengan NIM, NIP, email, atau username untuk melanjutkan perjalananmu.">
 @if($announcements->isNotEmpty())
 <x-slot:story>
     <h2 class="flex items-center gap-2 text-sm font-bold tracking-[0.16em] text-white/80 [&_.icon]:text-brand-lime"><x-icon name="megaphone"/> PENGUMUMAN KEMAHASISWAAN</h2>
@@ -15,7 +15,7 @@
 @endif
 
 <form method="post" action="/login" data-loader class="space-y-1">@csrf
-    <label>NIM, email, atau username<input type="text" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="NIM, email, atau username" autofocus></label>
+    <label>NIM/NIP, email, atau username<input type="text" name="email" required autocomplete="username" value="{{ old('email') }}" placeholder="NIM, email, atau username" autofocus></label>
     <label>Kata sandi
         <span class="relative mt-2 block [&_input]:mt-0!">
             <input type="password" name="password" id="password" required autocomplete="current-password" placeholder="Masukkan kata sandi" class="pr-12!">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Campus;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\Lecturer;
 use App\Models\MasterOption;
 use App\Models\PaymentAccount;
 use App\Models\Program;
@@ -33,6 +34,8 @@ class MasterDataController extends Controller
             'departments' => Department::count(),
             'accounts' => PaymentAccount::where('active', true)->count(),
             'students' => User::whereNotNull('nim')->count(),
+            'lecturers' => Lecturer::count(),
+            'waitingLecturers' => User::where('active', false)->has('lecturer')->count(),
         ]);
     }
 

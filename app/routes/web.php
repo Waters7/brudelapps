@@ -9,6 +9,7 @@ use App\Http\Controllers\Achievement\AchievementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Campus\GuidelineController;
 use App\Http\Controllers\Campus\LandingSlideController;
+use App\Http\Controllers\Campus\LecturerController;
 use App\Http\Controllers\Campus\MasterDataController;
 use App\Http\Controllers\Campus\SettingsController;
 use App\Http\Controllers\Campus\SystemSettingsController;
@@ -245,6 +246,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/kelola/sistem/uji-email', [SystemSettingsController::class, 'testMail'])->middleware('throttle:account-link');
     Route::get('/kelola/master', [MasterDataController::class, 'index']);
     Route::get('/kelola/master/pengguna', [UserDirectoryController::class, 'index']);
+    Route::get('/kelola/master/dosen', [LecturerController::class, 'index']);
+    Route::post('/kelola/master/dosen/aktifkan', [LecturerController::class, 'activate']);
     Route::get('/kelola/master/{type}', [MasterDataController::class, 'show'])->whereIn('type', array_keys(MasterData::TYPES));
     Route::post('/kelola/master/{type}', [MasterDataController::class, 'store'])->whereIn('type', array_keys(MasterData::TYPES));
     Route::post('/kelola/master/{type}/{option}', [MasterDataController::class, 'update'])->whereIn('type', array_keys(MasterData::TYPES));

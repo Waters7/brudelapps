@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
@@ -43,6 +44,11 @@ class User extends Authenticatable
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function lecturer(): HasOne
+    {
+        return $this->hasOne(Lecturer::class);
     }
 
     public function memberships(): HasMany

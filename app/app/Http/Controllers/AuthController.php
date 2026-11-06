@@ -32,12 +32,12 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $data = $request->validate(['email' => 'required|string|max:190', 'password' => 'required|string', 'cf-turnstile-response' => [new Turnstile]]);
-        // Students may sign in with their NIM and staff with a username; the account is still found by its email.
+        // Students sign in with their NIM, dosen with their NIP (the username) and staff with a username; the account is still found by its email.
         $identifier = trim($data['email']);
         $email = str_contains($identifier, '@') ? mb_strtolower($identifier)
             : User::where('nim', $identifier)->orWhere('username', mb_strtolower($identifier))->value('email');
         if (! $email || ! Auth::attempt(['email' => $email, 'password' => $data['password'], 'active' => true])) {
-            throw ValidationException::withMessages(['email' => 'Email/NIM atau kata sandi tidak sesuai, atau akun nonaktif.']);
+            throw ValidationException::withMessages(['email' => 'Email/NIM/NIP atau kata sandi tidak sesuai, atau akun nonaktif.']);
         }
         $user = $request->user();
         if (! $user->email_verified_at && ! $user->must_change_password) {
