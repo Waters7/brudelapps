@@ -1,7 +1,7 @@
 <x-layout :title="'Kelola '.$club->name">
 <a class="back-link" href="/kelola/ukm">← Kelola UKM</a>
 <div class="page-heading"><div><p class="eyebrow">DASHBOARD {{ strtoupper($club->categoryShort()) }}@if($club->field) · {{ strtoupper($club->field) }}@endif</p><h1>{{ $club->name }}</h1><p>Keanggotaan dipisahkan dari jabatan pengurus. Pergantian ketua tidak menghapus riwayat anggota.</p></div>
-<div class="inline-actions"><a class="button primary" href="/ruang/{{ $club->id }}">Ruang organisasi</a><a class="button outline" href="/ukm/{{ $club->id }}">Lihat profil publik</a><a class="button outline" href="/kelola/ukm/{{ $club->id }}/ekspor">CSV anggota ↓</a><a class="button outline" href="/tinjauan">Tinjau pendaftar</a>@if($club->isUkm())<a class="button outline" href="/ruang/{{ $club->id }}?tab=anggota">Undangan & permintaan</a>@endif</div></div>
+<div class="inline-actions"><a class="button primary" href="/ruang/{{ $club->id }}">Ruang organisasi</a>@unless($club->isUkm())<a class="button outline" href="/kelola/ukm/{{ $club->id }}/rekrutmen-pengurus">Rekrutmen pengurus</a>@endunless<a class="button outline" href="/ukm/{{ $club->id }}">Lihat profil publik</a><a class="button outline" href="/kelola/ukm/{{ $club->id }}/ekspor">CSV anggota ↓</a><a class="button outline" href="/tinjauan">Tinjau pendaftar</a>@if($club->isUkm())<a class="button outline" href="/ruang/{{ $club->id }}?tab=anggota">Undangan & permintaan</a>@endif</div></div>
 
 <div class="kpi-grid">
     @foreach(config('brudel.membership_statuses') as $key => $label)<div class="kpi"><span>{{ $label }}</span><strong>{{ $counts[$key] ?? 0 }}</strong></div>@endforeach

@@ -20,7 +20,7 @@ Semua akun memakai kata sandi **BrudelDemo!2026**, hanya pada database demo loka
 
 Data demo lain: 7 jurusan resmi; 22 organisasi resmi dari migrasi (BEM, MPM, 7 HIMAJU, 13 UKM), 6 UKM di antaranya diberi deskripsi demo dan rekrutmen terbuka; mahasiswa demo belum menjadi anggota HIMAJU (bergabung lewat permintaan atau undangan); Michelle Sumual anggota BEM terpilih; event Pekan Prestasi (6 nomor lomba: gratis/berbayar, individu/tim, gugur/rubrik, live publik/khusus login; Debat memakai 2 juri otomatis); pengajuan event UKM Olahraga yang menunggu keputusan; event seleksi delegasi; 3 kegiatan UKM Olahraga (latihan yang sedang berlangsung, persahabatan mendatang, meeting yang menunggu notulen); 2 prestasi terverifikasi (1 tim lintas jurusan, 1 individu) dan 1 menunggu verifikasi. **Tidak ada rekening atau pembayaran yang dibuat**; tambahkan rekening uji berlabel jelas lewat Pengaturan Kampus bila ingin mencoba pembayaran.
 
-Simulasi lomba: `php artisan db:seed --class=SimulationSeeder` mengisi contoh setiap proses lomba memakai mahasiswa yang sudah ada, tanpa akun mahasiswa baru: pengajuan event (menunggu, revisi, ditolak), pendaftaran tim di setiap status termasuk persetujuan jurusan dan bukti bayar, penilaian juri yang belum selesai, penilaian lomba menyanyi yang sudah lengkap dan siap disahkan, bagan gugur tunggal (8 peserta, satu semifinal sedang berlangsung) dan grup (4 tim), serta lomba selesai dengan hasil resmi, prestasi, dan sertifikat. Daftar halamannya tercetak saat seeder selesai. Hanya berjalan di `local`/`testing`, membuat satu rekening fiktif, dan menjalankannya lagi tidak mengubah apa pun.
+Simulasi lomba: `php artisan db:seed --class=SimulationSeeder` mengisi contoh setiap proses lomba memakai mahasiswa yang sudah ada, tanpa akun mahasiswa baru: pengajuan event (menunggu, revisi, ditolak), Proposal & LPJ di setiap status, rekrutmen pengurus BEM dengan kandidat menunggu dan ditolak, pendaftaran tim di setiap status termasuk persetujuan jurusan dan bukti bayar, penilaian juri yang belum selesai, penilaian lomba menyanyi yang sudah lengkap dan siap disahkan, bagan gugur tunggal (8 peserta, satu semifinal sedang berlangsung) dan grup (4 tim), serta lomba selesai dengan hasil resmi, prestasi, dan sertifikat. Daftar halamannya tercetak saat seeder selesai. Hanya berjalan di `local`/`testing`, membuat satu rekening fiktif, dan menjalankannya lagi tidak mengubah apa pun.
 
 ### Skenario tahap ketiga (browser)
 
@@ -72,13 +72,13 @@ npm run build
 php artisan view:cache
 ```
 
-Hasil 6 November 2026 (228 tes):
+Hasil 6 November 2026 (246 tes):
 
 | Database | Hasil |
 |---|---|
-| PostgreSQL 17.11 (database uji `brudel_test`) | **228 lulus, 3.735 assertions**, termasuk 4 tes konkurensi dua proses |
+| PostgreSQL 17.11 (database uji `brudel_test`) | **246 lulus, 3.885 assertions**, termasuk 4 tes konkurensi dua proses |
 | MySQL 8.4.3 (Laragon, database uji `brudel_test`) | **108 lulus, 4 dilewati, 2.503 assertions** pada suite 112 tes (sebelum `DepartmentAccessTest` dan tes perintah impor ketua); seluruh migrasi terpasang, tes konkurensi grup `pgsql` hanya untuk PostgreSQL |
-| SQLite `:memory:` (bawaan `phpunit.xml`) | **224 lulus, 4 dilewati, 3.690 assertions** |
+| SQLite `:memory:` (bawaan `phpunit.xml`) | **242 lulus, 4 dilewati, 3.840 assertions** |
 
 Tes konkurensi mengandalkan dua proses yang tertahan bersamaan pada row lock. Pada mesin yang sedang sibuk, salah satu worker kadang tiba terlambat sehingga tes gagal dengan pesan "Setiap worker harus tertahan bersamaan". Jalankan ulang `--group=pgsql` sebelum menyimpulkan ada regresi.
 

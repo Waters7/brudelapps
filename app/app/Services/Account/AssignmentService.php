@@ -172,6 +172,29 @@ class AssignmentService extends DomainService
         });
     }
 
+    /**
+     * Installs a validated candidate for a new term. The candidate's own running term ends when the new one starts,
+     * and so does the outgoing holder's for a post with one holder, such as Ketua or Sekretaris.
+     */
+    public function scheduleOfficer(User $actor, Club $club, User $successor, string $position, string $period, CarbonInterface $start, CarbonInterface $end): Assignment
+    {
+        $master = app(MasterData::class);
+        $single = in_array($position, array_merge($master->chairPositions(), $master->officerManagers()), true);
+        $reason = 'Digantikan kepengurusan periode '.$period;
+
+        return DB::transaction(function () use ($actor, $club, $successor, $position, $period, $start, $end, $single, $reason) {
+            $running = Assignment::where('role', 'pengurus')->where('club_id', $club->id)->where('starts_at', '<', $start)->where('ends_at', '>', $start)
+                ->where(fn ($q) => $q->where('user_id', $successor->id)->when($single, fn ($holder) => $holder->orWhere('position', $position)))->get();
+            foreach ($running as $assignment) {
+                $assignment->update(['ends_at' => $start, 'ended_reason' => $reason]);
+                $this->audit($actor, 'role.ended', $assignment, ['reason' => $reason]);
+            }
+
+            return $this->grant($actor, ['user' => $successor->nim, 'role' => 'pengurus', 'scope_id' => $club->id, 'position' => $position, 'period' => $period,
+                'starts_at' => Wita::input($start), 'ends_at' => Wita::input($end)]);
+        });
+    }
+
     public function end(User $actor, Assignment $assignment, string $reason, ?CarbonInterface $at = null): void
     {
         abort_unless($this->mayManage($actor, $assignment->role, $assignment->club_id ?? $assignment->competition_id ?? $assignment->event_id), 403);

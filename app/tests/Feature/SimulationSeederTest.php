@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assignment;
 use App\Models\AwardResult;
 use App\Models\Certificate;
+use App\Models\ClubSubmission;
 use App\Models\DepartmentApproval;
 use App\Models\Event;
 use App\Models\Matchup;
+use App\Models\OfficerRecruitment;
 use App\Models\Participant;
 use App\Models\PaymentProof;
 use App\Models\Program;
@@ -113,6 +116,20 @@ class SimulationSeederTest extends DemoTestCase
         $this->actingAs($admin)->get('/kelola/lomba/'.$singing->id)->assertOk();
         app(ResultService::class)->publish($admin, $singing);
         $this->assertNotNull($singing->fresh()->results_published_at);
+    }
+
+    public function test_proposals_and_the_officer_recruitment_have_examples(): void
+    {
+        $this->simulate();
+
+        $this->assertEqualsCanonicalizing(['submitted', 'revision', 'accepted', 'rejected'], ClubSubmission::where('title', 'like', 'Simulasi%')->pluck('status')->all());
+        $recruitment = OfficerRecruitment::where('title', SimulationSeeder::OFFICER_RECRUITMENT)->firstOrFail();
+        $this->assertEqualsCanonicalizing(['submitted', 'submitted', 'rejected'], $recruitment->candidates()->pluck('status')->all());
+        $this->assertFalse(Assignment::where('role', 'pengurus')->whereIn('user_id', $recruitment->candidates()->select('user_id'))->where('period', 'Simulasi')->exists(), 'Simulasi tidak mengangkat mahasiswa nyata.');
+
+        $this->actingAs($this->user('admin'));
+        $this->get('/proposal')->assertOk()->assertSee('Simulasi Proposal Perlu Perbaikan');
+        $this->get('/kelola/rekrutmen-pengurus/'.$recruitment->id)->assertOk()->assertSee('Belum pernah menjadi panitia kegiatan.');
     }
 
     public function test_each_process_opens_on_its_own_page(): void

@@ -181,6 +181,7 @@
 @endif
 <div class="detail-columns">
 <section class="panel"><h2>Pengurus</h2>
+    @unless($club->isUkm())<a class="text-link" href="/kelola/ukm/{{ $club->id }}/rekrutmen-pengurus">Rekrutmen pengurus →</a>@endunless
     <ul class="plain-list">@forelse($officers as $officer)<li><div class="person"><x-avatar :user="$officer->user"/><span>{{ $officer->user->name }}<small>{{ $officer->position }}{{ $officer->period ? ' · '.$officer->period : '' }}</small></span></div></li>@empty<li class="muted">Belum ditetapkan.</li>@endforelse</ul>
 </section>
 <section class="panel"><h2>Anggota aktif <span class="count-pill">{{ $members->total() }}</span></h2>

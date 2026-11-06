@@ -41,6 +41,11 @@ class ClubSubmission extends Model
         return $this->belongsTo(Department::class);
     }
 
+    public function activity(): BelongsTo
+    {
+        return $this->belongsTo(ClubActivity::class, 'club_activity_id');
+    }
+
     public function submitter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
@@ -59,6 +64,23 @@ class ClubSubmission extends Model
     public function typeLabel(): string
     {
         return self::TYPES[$this->type] ?? $this->type;
+    }
+
+    /**
+     * Where the document stands, as [stage, detail, finished]. The revision stage appears once a reviewer has asked for it.
+     *
+     * @return list<array{0: string, 1: string, 2: bool}>
+     */
+    public function stages(): array
+    {
+        $decided = in_array($this->status, ['accepted', 'rejected'], true);
+
+        return array_values(array_filter([
+            ['Diajukan', 'Versi '.$this->version.' ke '.$this->targetLabel(), true],
+            ['Ditinjau', $this->status === 'submitted' ? 'Menunggu keputusan peninjau' : 'Sudah ditinjau', $this->status !== 'submitted'],
+            $this->status === 'revision' || $this->version > 1 ? ['Perbaikan', $this->status === 'revision' ? 'Perbaiki sesuai catatan lalu kirim ulang' : 'Perbaikan sudah dikirim', $this->status !== 'revision'] : null,
+            ['Selesai', $decided ? config('brudel.status_labels')[$this->status] : 'Belum ada keputusan akhir', $decided],
+        ]));
     }
 
     public function targetLabel(): string

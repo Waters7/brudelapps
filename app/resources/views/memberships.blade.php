@@ -1,5 +1,24 @@
 <x-layout title="UKM Saya">
 <div class="page-heading"><div><p class="eyebrow">TEMAN BERTUMBUH, RUANG BERKARYA</p><h1>Komunitas pilihanmu.</h1><p>Keanggotaan yang diterima beserta divisi dan riwayat statusnya.</p></div><a class="button primary" href="/ukm">Jelajahi UKM →</a></div>
+@if($officerRecruitments->isNotEmpty())
+<section class="section-block"><h2>Rekrutmen pengurus dibuka <span class="count-pill">{{ $officerRecruitments->count() }}</span></h2>
+@foreach($officerRecruitments as $recruitment)
+<a class="panel list-row" href="/ukm/{{ $recruitment->club_id }}"><div><strong>{{ $recruitment->club->name }}</strong><small>{{ $recruitment->title }} · ditutup {{ \App\Services\Wita::show($recruitment->closes_at, 'd M Y') }}</small></div><span class="text-link">Lihat kriteria →</span></a>
+@endforeach
+</section>
+@endif
+@if($officerCandidates->isNotEmpty())
+<section class="section-block"><h2>Pengajuan pengurus</h2>
+@foreach($officerCandidates as $candidate)
+<article class="panel">
+    <div class="section-heading"><div><h3>{{ $candidate->recruitment->club->name }}</h3><small class="muted">{{ $candidate->position }} · periode {{ $candidate->recruitment->period }}</small></div><x-status :value="$candidate->status"/></div>
+    @if($candidate->review_note)<div class="alert {{ $candidate->status === 'rejected' ? 'error' : 'success' }}"><strong>Catatan pengurus:</strong> {{ $candidate->review_note }}</div>@endif
+    @if($candidate->status === 'accepted')<p class="muted">Masa jabatan mulai {{ \App\Services\Wita::show($candidate->recruitment->term_starts_at, 'd M Y') }}.</p>@endif
+    <x-history :items="$candidate->histories"/>
+</article>
+@endforeach
+</section>
+@endif
 @if($pending->isNotEmpty())
 <section class="section-block"><h2>Menunggu <span class="count-pill">{{ $pending->count() }}</span></h2>
 <div class="catalog-grid">

@@ -3,6 +3,7 @@
 namespace App\Services\Club;
 
 use App\Models\Club;
+use App\Models\ClubActivity;
 use App\Models\ClubSubmission;
 use App\Models\Department;
 use App\Models\User;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Proposals and accountability reports from officers. A submission goes to kemahasiswaan jurusan or direktorat, who
+ * Proposals and accountability reports from whoever runs an organization. A submission goes to kemahasiswaan jurusan or direktorat, who
  * accept it, reject it, or send it back for revision; a revised document returns to the same reviewer as a new version.
  */
 class ClubSubmissionService extends DomainService
@@ -26,7 +27,7 @@ class ClubSubmissionService extends DomainService
 
     public function canSubmit(User $user, Club $club): bool
     {
-        return $user->assigned('pengurus', $club->id);
+        return $user->assigned('pengurus', $club->id) || $user->assigned('pembina', $club->id) || $user->administersClub($club->id);
     }
 
     public function canReview(User $user, ClubSubmission $submission): bool
@@ -41,7 +42,7 @@ class ClubSubmissionService extends DomainService
     }
 
     /**
-     * @param  array{type: string, title: string, summary?: ?string, target: string, department_id?: ?int}  $data
+     * @param  array{type: string, title: string, summary?: ?string, target: string, department_id?: ?int, club_activity_id?: ?int, period?: ?string}  $data
      */
     public function submit(User $actor, Club $club, array $data, UploadedFile $document): ClubSubmission
     {
@@ -50,13 +51,16 @@ class ClubSubmissionService extends DomainService
         $department = $data['target'] === 'jurusan' ? Department::find($data['department_id'] ?? 0) : null;
         $this->ensure($data['target'] === 'direktorat' || $department !== null, 'Pilih tujuan pengajuan.');
         $this->ensure($club->category !== 'himaju' || $department === null || $department->id === $club->department_id, 'HIMAJU mengajukan ke jurusannya sendiri.');
+        $activity = $data['type'] === 'lpj_kegiatan' ? ($data['club_activity_id'] ?? null) : null;
+        $this->ensure($activity === null || ClubActivity::whereKey($activity)->where('club_id', $club->id)->exists(), 'Kegiatan tidak ditemukan pada organisasi ini.');
+        $period = $data['type'] === 'lpj_kepengurusan' ? ($data['period'] ?? $actor->activeAssignments()->firstWhere('club_id', $club->id)?->period) : null;
 
         [$path, $disk] = $this->files->storeDocument($document, 'club-submissions');
         try {
-            return DB::transaction(function () use ($actor, $club, $data, $department, $path, $disk) {
+            return DB::transaction(function () use ($actor, $club, $data, $department, $activity, $period, $path, $disk) {
                 $submission = ClubSubmission::create([
                     'club_id' => $club->id, 'type' => $data['type'], 'title' => trim($data['title']), 'summary' => $data['summary'] ?? null,
-                    'target' => $data['target'], 'department_id' => $department?->id, 'file_path' => $path, 'file_disk' => $disk,
+                    'target' => $data['target'], 'department_id' => $department?->id, 'club_activity_id' => $activity, 'period' => $period, 'file_path' => $path, 'file_disk' => $disk,
                     'submitted_by' => $actor->id, 'submitted_at' => now(),
                 ]);
                 $this->history($submission, null, 'submitted', $actor);

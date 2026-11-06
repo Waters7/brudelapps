@@ -30,6 +30,7 @@
 @endif
 </div>
 <div>
+@if($officerRecruitment)@include('clubs._officer-apply')@endif
 @include('clubs._join')
 @if($club->category === 'lembaga')
 <section class="panel"><h2>Anggota terpilih</h2><p>Anggota {{ $club->name }} ditetapkan oleh kemahasiswaan atau ketua organisasi dari hasil pemilihan mahasiswa. Setiap mahasiswa aktif dapat terpilih.</p></section>

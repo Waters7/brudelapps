@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Assignment;
 use App\Models\Club;
+use App\Models\ClubActivity;
 use App\Models\ClubSubmission;
 use App\Models\Department;
 use App\Models\User;
@@ -104,12 +105,13 @@ class ClubSubmissionTest extends DemoTestCase
         $this->post('/proposal/'.$toNutrition->id.'/tinjau', ['decision' => 'accepted'])->assertSessionHasNoErrors();
     }
 
-    public function test_only_officers_submit_and_members_cannot_read(): void
+    public function test_only_those_who_run_the_organization_submit_and_members_cannot_read(): void
     {
         $data = ['club_id' => $this->sports()->id, 'type' => 'proposal', 'title' => 'Proposal Anggota', 'target' => 'direktorat', 'document' => $this->pdf()];
         $this->actingAs($this->user('atlet1'))->get('/proposal')->assertForbidden();
         $this->post('/proposal', $data)->assertForbidden();
-        $this->actingAs($this->user('pembina'))->post('/proposal', $data)->assertForbidden();
+        $this->actingAs($this->user('jurusan'))->post('/proposal', $data)->assertForbidden();
+        $this->actingAs($this->user('pembina'))->post('/proposal', $data)->assertSessionHasNoErrors();
 
         $submission = $this->submit();
         $this->actingAs($this->user('pembina'))->get('/proposal/'.$submission->id)->assertOk();
@@ -132,6 +134,40 @@ class ClubSubmissionTest extends DemoTestCase
         $own = ClubSubmission::latest('id')->firstOrFail();
         $own->update(['submitted_by' => $this->user('jurusan')->id]);
         $this->actingAs($this->user('jurusan'))->post('/proposal/'.$own->id.'/tinjau', ['decision' => 'accepted'])->assertForbidden();
+    }
+
+    public function test_an_lpj_names_the_activity_or_the_running_period_it_accounts_for(): void
+    {
+        $club = $this->sports();
+        $officer = $this->user('pengurus');
+        $activity = ClubActivity::create(['club_id' => $club->id, 'type' => 'latihan', 'title' => 'Latihan Bersama', 'location' => 'Lapangan', 'starts_at' => now()->subDay(), 'ends_at' => now()->subDay()->addHours(2), 'created_by' => $officer->id]);
+        $other = ClubActivity::create(['club_id' => Club::where('category', 'ukm')->whereKeyNot($club->id)->value('id'), 'type' => 'latihan', 'title' => 'Latihan Lain', 'location' => 'Aula', 'starts_at' => now()->subDay(), 'ends_at' => now()->subDay()->addHours(2), 'created_by' => $officer->id]);
+        $data = ['club_id' => $club->id, 'title' => 'LPJ Uji Coba', 'target' => 'direktorat'];
+
+        $this->actingAs($officer)->post('/proposal', $data + ['type' => 'lpj_kegiatan', 'club_activity_id' => $other->id, 'document' => $this->pdf()])->assertSessionHasErrors('action');
+        $this->post('/proposal', $data + ['type' => 'lpj_kegiatan', 'club_activity_id' => $activity->id, 'document' => $this->pdf()])->assertSessionHasNoErrors();
+        $this->get('/proposal/'.ClubSubmission::latest('id')->value('id'))->assertOk()->assertSee('Latihan Bersama');
+
+        $this->post('/proposal', $data + ['type' => 'lpj_kepengurusan', 'period' => '2025/2026', 'document' => $this->pdf()])->assertSessionHasNoErrors();
+        $this->get('/proposal/'.ClubSubmission::latest('id')->value('id'))->assertOk()->assertSee('2025/2026');
+    }
+
+    public function test_the_stages_follow_a_document_through_revision(): void
+    {
+        $submission = $this->submit();
+        $finished = fn () => array_column($submission->fresh()->stages(), 2);
+        $this->assertSame([true, false, false], $finished());
+
+        $this->actingAs($this->user('admin'))->post('/proposal/'.$submission->id.'/tinjau', ['decision' => 'revision', 'note' => 'Lengkapi anggaran.'])->assertSessionHasNoErrors();
+        $this->assertSame([true, true, false, false], $finished());
+        $this->actingAs($this->user('pengurus'))->get('/proposal')->assertOk()->assertSee('Lengkapi anggaran.');
+
+        $this->post('/proposal/'.$submission->id.'/perbaiki', ['document' => $this->pdf()])->assertSessionHasNoErrors();
+        $this->assertSame([true, false, true, false], $finished());
+        $this->get('/proposal/'.$submission->id)->assertDontSee('Catatan peninjau:')->assertSee('Lengkapi anggaran.');
+
+        $this->actingAs($this->user('admin'))->post('/proposal/'.$submission->id.'/tinjau', ['decision' => 'accepted'])->assertSessionHasNoErrors();
+        $this->assertSame([true, true, true, true], $finished());
     }
 
     public function test_only_pdf_or_docx_documents_are_accepted(): void

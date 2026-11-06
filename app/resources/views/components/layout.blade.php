@@ -109,6 +109,7 @@
             <a href="/profil"><x-icon name="user"/> Profil & foto</a>
             <a href="/profil#kontak"><x-icon name="bell"/> Email & nomor HP</a>
             <a href="/profil#ubah-sandi"><x-icon name="shield"/> Ubah kata sandi</a>
+            <a href="/panduan"><x-icon name="book"/> Cara Penggunaan</a>
             <hr>
             <form action="/logout" method="post">@csrf<button type="submit"><x-icon name="logout"/> Keluar</button></form>
         </div>

@@ -16,6 +16,8 @@ use App\Models\Event;
 use App\Models\LandingSlide;
 use App\Models\Membership;
 use App\Models\MembershipRequest;
+use App\Models\OfficerCandidate;
+use App\Models\OfficerRecruitment;
 use App\Models\Participant;
 use App\Models\PaymentAccount;
 use App\Models\PaymentProof;
@@ -28,6 +30,7 @@ use App\Services\Campus\CalendarService;
 use App\Services\Club\ActivityService;
 use App\Services\Club\BroadcastService;
 use App\Services\Club\MembershipRequestService;
+use App\Services\Club\OfficerRecruitmentService;
 use App\Services\Club\SpaceService;
 use App\Services\Match\LiveScoreService;
 use App\Services\Report\ReportService;
@@ -172,6 +175,7 @@ class PortalController extends Controller
             'awards' => fn ($q) => $q->latest('awarded_on')->limit(6),
             'clubActivities' => fn ($q) => $q->confirmed()->where('is_public', true)->where('status', '!=', 'cancelled')->where('ends_at', '>', now())->orderBy('starts_at')->limit(5),
         ])->findOrFail($id);
+        $recruitment = OfficerRecruitment::with('club')->open()->where('club_id', $club->id)->first();
 
         return view('club', [
             'club' => $club,
@@ -181,6 +185,9 @@ class PortalController extends Controller
             'isMember' => app(SpaceService::class)->isMember(auth()->user(), $club),
             'pendingJoin' => MembershipRequest::where('club_id', $club->id)->where('user_id', auth()->id())->pending()->first(),
             'joinBlocked' => app(MembershipRequestService::class)->blockedReason(auth()->user(), $club),
+            'officerRecruitment' => $recruitment,
+            'officerCandidate' => $recruitment ? $recruitment->candidates()->where('user_id', auth()->id())->first() : null,
+            'officerBlocked' => $recruitment ? app(OfficerRecruitmentService::class)->blockedReason(auth()->user(), $recruitment) : null,
         ]);
     }
 
@@ -218,6 +225,9 @@ class PortalController extends Controller
         return view('memberships', [
             'memberships' => Membership::with('club', 'histories')->where('user_id', $request->user()->id)->orderByRaw("status = 'active' desc")->latest('joined_at')->get(),
             'pending' => MembershipRequest::with('club', 'creator')->where('user_id', $request->user()->id)->pending()->latest('id')->get(),
+            'officerCandidates' => OfficerCandidate::with('recruitment.club', 'histories')->where('user_id', $request->user()->id)->where('status', '!=', 'cancelled')->latest('id')->get(),
+            'officerRecruitments' => OfficerRecruitment::with('club.department')->open()->whereDoesntHave('candidates', fn ($q) => $q->where('user_id', $request->user()->id)->where('status', '!=', 'cancelled'))->get()
+                ->filter(fn (OfficerRecruitment $recruitment) => app(OfficerRecruitmentService::class)->blockedReason($request->user(), $recruitment) === null)->values(),
         ]);
     }
 

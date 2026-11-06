@@ -8,6 +8,7 @@ use App\Http\Controllers\Account\StudentController;
 use App\Http\Controllers\Achievement\AchievementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Campus\EmployeeController;
+use App\Http\Controllers\Campus\GuideController;
 use App\Http\Controllers\Campus\GuidelineController;
 use App\Http\Controllers\Campus\LandingSlideController;
 use App\Http\Controllers\Campus\MasterDataController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Club\ClubManageController;
 use App\Http\Controllers\Club\ClubSubmissionController;
 use App\Http\Controllers\Club\CompanionController;
 use App\Http\Controllers\Club\MembershipRequestController;
+use App\Http\Controllers\Club\OfficerRecruitmentController;
 use App\Http\Controllers\Club\SpaceController;
 use App\Http\Controllers\Delegation\DelegationController;
 use App\Http\Controllers\Delegation\PerjadinController;
@@ -94,11 +96,14 @@ Route::middleware('auth')->group(function () {
 
     /* Ruang organisasi: pengumuman, obrolan, quest, peringkat */
     Route::post('/ukm/{club}/minta-gabung', [MembershipRequestController::class, 'store']);
+    Route::post('/rekrutmen-pengurus/{recruitment}/ajukan', [OfficerRecruitmentController::class, 'apply']);
+    Route::post('/kandidat-pengurus/{candidate}/batal', [OfficerRecruitmentController::class, 'cancel']);
     Route::post('/ruang/{club}/undang', [MembershipRequestController::class, 'invite']);
     Route::post('/ruang/{club}/anggota', [MembershipRequestController::class, 'add']);
     Route::post('/undangan-organisasi/{invitation}', [MembershipRequestController::class, 'respond']);
     Route::post('/permintaan-gabung/{joinRequest}', [MembershipRequestController::class, 'decide']);
     Route::post('/permintaan-gabung/{item}/batal', [MembershipRequestController::class, 'cancel']);
+    Route::get('/panduan', GuideController::class);
     Route::get('/pedoman', [GuidelineController::class, 'index']);
     Route::post('/pedoman', [GuidelineController::class, 'store']);
     Route::get('/pedoman/{guideline}/unduh', [GuidelineController::class, 'download']);
@@ -169,6 +174,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/kelola/ukm/{club}', [ClubManageController::class, 'show']);
     Route::post('/kelola/ukm/{club}', [ClubManageController::class, 'update']);
     Route::post('/kelola/ukm/{club}/rekrutmen/{recruitment?}', [ClubManageController::class, 'saveRecruitment']);
+    Route::get('/kelola/ukm/{club}/rekrutmen-pengurus', [OfficerRecruitmentController::class, 'index']);
+    Route::post('/kelola/ukm/{club}/rekrutmen-pengurus', [OfficerRecruitmentController::class, 'store']);
+    Route::get('/kelola/rekrutmen-pengurus/{recruitment}', [OfficerRecruitmentController::class, 'show']);
+    Route::post('/kelola/rekrutmen-pengurus/{recruitment}', [OfficerRecruitmentController::class, 'update']);
+    Route::post('/kelola/kandidat-pengurus/{candidate}', [OfficerRecruitmentController::class, 'decide']);
     Route::post('/kelola/ukm/{club}/anggota', [ClubManageController::class, 'appointMember']);
     Route::post('/kelola/ukm/{club}/ganti-pengurus', [ClubManageController::class, 'replaceOfficer']);
     Route::get('/proposal', [ClubSubmissionController::class, 'index']);

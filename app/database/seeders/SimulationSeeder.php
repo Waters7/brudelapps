@@ -4,10 +4,13 @@ namespace Database\Seeders;
 
 use App\Models\Assignment;
 use App\Models\Club;
+use App\Models\ClubSubmission;
 use App\Models\Competition;
 use App\Models\DepartmentApproval;
 use App\Models\Event;
 use App\Models\Matchup;
+use App\Models\OfficerCandidate;
+use App\Models\OfficerRecruitment;
 use App\Models\Participant;
 use App\Models\PaymentAccount;
 use App\Models\PaymentProof;
@@ -28,7 +31,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Fictional competitions with an example of every process, from event proposals through registration, jurusan approval,
+ * Fictional competitions with an example of every process, from event proposals, Proposal & LPJ and officer recruitment
+ * through registration, jurusan approval,
  * payment, judging, brackets and live score to published results, awards and a certificate. It uses students already in
  * the database, creates no student account, and labels everything "Simulasi". Seeding again changes nothing.
  */
@@ -45,6 +49,8 @@ class SimulationSeeder extends Seeder
     public const RUBRIC = 'Simulasi Poster Kesehatan';
 
     public const SINGING = 'Simulasi Lomba Menyanyi Solo';
+
+    public const OFFICER_RECRUITMENT = 'Simulasi Rekrutmen Pengurus';
 
     public const FINISHED = 'Simulasi Tenis Meja Selesai';
 
@@ -81,6 +87,16 @@ class SimulationSeeder extends Seeder
     private const MINIMUM_STUDENTS = 20;
 
     private const SINGERS = 5;
+
+    /** @var list<array{0: string, 1: string, 2: string, 3: ?string}> */
+    private const SUBMISSIONS = [
+        ['proposal', 'Simulasi Proposal Menunggu Tinjauan', 'submitted', null],
+        ['proposal', 'Simulasi Proposal Perlu Perbaikan', 'revision', 'Lengkapi rincian anggaran dan jadwal kegiatan.'],
+        ['lpj_kegiatan', 'Simulasi LPJ Kegiatan Diterima', 'accepted', null],
+        ['lpj_kepengurusan', 'Simulasi LPJ Kepengurusan Ditolak', 'rejected', 'Laporan keuangan belum terlampir.'],
+    ];
+
+    private const SUBMISSION_FILE = 'simulasi/dokumen-pengajuan.pdf';
 
     /** @var list<array{name: string, weight: int}> */
     private const SINGING_CRITERIA = [
@@ -127,6 +143,8 @@ class SimulationSeeder extends Seeder
         ]);
 
         $this->proposals();
+        $this->submissions();
+        $officers = $this->officerRecruitment($students);
         $single = $this->singleBracket($event, $students);
         $team = $this->teamBracket($event, $students);
         $flow = $this->registrationFlow($event, $students);
@@ -140,6 +158,8 @@ class SimulationSeeder extends Seeder
 
         $this->command?->table(['Proses', 'Buka di'], [
             ['Pengajuan event: menunggu, revisi, ditolak', '/kelola/event'],
+            ['Proposal dan LPJ tiap status', '/proposal'],
+            ['Rekrutmen pengurus dan validasi kandidat', $officers ? '/kelola/rekrutmen-pengurus/'.$officers->id : 'Belum ada BEM atau MPM aktif'],
             ['Pendaftaran tiap status', '/kelola/lomba/'.$flow->id],
             ['Persetujuan jurusan', '/jurusan?jurusan='.DepartmentApproval::where('status', 'pending')->whereIn('registration_id', $flow->registrations()->select('id'))->value('department_id')],
             ['Verifikasi pembayaran', '/pembayaran'],
@@ -295,6 +315,71 @@ class SimulationSeeder extends Seeder
     }
 
     /**
+     * One Proposal & LPJ document per status, from the first UKM that has an officer.
+     */
+    private function submissions(): void
+    {
+        $officer = Assignment::with('club', 'user')->where('role', 'pengurus')->where('starts_at', '<=', now())->where('ends_at', '>', now())
+            ->whereHas('club', fn ($q) => $q->where('category', 'ukm'))->orderBy('id')->first();
+        if (! $officer) {
+            return;
+        }
+        $disk = config('brudel.document_disk');
+        Storage::disk($disk)->put(self::SUBMISSION_FILE, self::PDF);
+        foreach (self::SUBMISSIONS as [$type, $title, $status, $note]) {
+            $decided = $status !== 'submitted';
+            $submission = ClubSubmission::firstOrCreate(['club_id' => $officer->club_id, 'title' => $title], [
+                'type' => $type, 'summary' => 'Dokumen fiktif untuk simulasi validasi.', 'target' => 'direktorat', 'status' => $status, 'file_path' => self::SUBMISSION_FILE, 'file_disk' => $disk,
+                'period' => $type === 'lpj_kepengurusan' ? 'Simulasi' : null, 'review_note' => $note, 'submitted_by' => $officer->user_id, 'submitted_at' => now()->subDays(2),
+                'reviewed_by' => $decided ? $this->admin->id : null, 'reviewed_at' => $decided ? now()->subDay() : null,
+            ]);
+            if (! $submission->wasRecentlyCreated) {
+                continue;
+            }
+            $this->history($submission, null, 'submitted', $officer->user);
+            if ($decided) {
+                $this->history($submission, 'submitted', $status, $this->admin, $note);
+            }
+        }
+    }
+
+    /**
+     * An open call for BEM officers with two candidates waiting and one rejected. Nobody is accepted here, because
+     * that would give a real student a future assignment; accept a candidate by hand to see that step.
+     *
+     * @param  Collection<int, User>  $students
+     */
+    private function officerRecruitment(Collection $students): ?OfficerRecruitment
+    {
+        $club = Club::where('category', 'lembaga')->where('active', true)->orderBy('id')->first();
+        if (! $club) {
+            return null;
+        }
+        $recruitment = OfficerRecruitment::firstOrCreate(['club_id' => $club->id, 'title' => self::OFFICER_RECRUITMENT], [
+            'period' => 'Simulasi', 'description' => 'Rekrutmen fiktif untuk simulasi.', 'positions' => ['Ketua', 'Sekretaris', 'Anggota pengurus'],
+            'criteria' => ['Mahasiswa aktif minimal semester 3', 'Pernah menjadi panitia kegiatan', 'Bersedia aktif selama masa jabatan'],
+            'opens_at' => now()->subDay(), 'closes_at' => now()->addWeeks(2), 'term_starts_at' => now()->addMonth(), 'term_ends_at' => now()->addMonth()->addYear(), 'created_by' => $this->admin->id,
+        ]);
+        if (! $recruitment->wasRecentlyCreated) {
+            return $recruitment;
+        }
+        $entries = [['Ketua', 'submitted', null], ['Sekretaris', 'submitted', null], ['Anggota pengurus', 'rejected', 'Belum pernah menjadi panitia kegiatan.']];
+        foreach ($entries as $index => [$position, $status, $note]) {
+            $student = $students[$index];
+            $candidate = OfficerCandidate::create([
+                'officer_recruitment_id' => $recruitment->id, 'user_id' => $student->id, 'position' => $position, 'statement' => 'Pernyataan fiktif untuk simulasi rekrutmen pengurus.', 'status' => $status,
+                'met_criteria' => $note ? [0, 2] : null, 'review_note' => $note, 'reviewed_by' => $note ? $this->admin->id : null, 'reviewed_at' => $note ? now() : null,
+            ]);
+            $this->history($candidate, null, 'submitted', $student);
+            if ($note) {
+                $this->history($candidate, 'submitted', 'rejected', $this->admin, $note);
+            }
+        }
+
+        return $recruitment;
+    }
+
+    /**
      * A singing contest judged in full by its generated juri accounts, so the ranking is complete and ready to publish.
      *
      * @param  Collection<int, User>  $students
@@ -388,7 +473,7 @@ class SimulationSeeder extends Seeder
         }
     }
 
-    private function history(Event|Registration $subject, ?string $from, string $to, User $actor, ?string $reason = null): void
+    private function history(Event|Registration|ClubSubmission|OfficerCandidate $subject, ?string $from, string $to, User $actor, ?string $reason = null): void
     {
         StatusHistory::create(['subject_type' => $subject->getTable(), 'subject_id' => $subject->getKey(), 'from_status' => $from, 'to_status' => $to, 'reason' => $reason, 'user_id' => $actor->id]);
     }
