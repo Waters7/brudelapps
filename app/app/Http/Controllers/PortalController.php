@@ -13,6 +13,7 @@ use App\Models\Competition;
 use App\Models\Delegation;
 use App\Models\DepartmentApproval;
 use App\Models\Event;
+use App\Models\GameReward;
 use App\Models\LandingSlide;
 use App\Models\Membership;
 use App\Models\MembershipRequest;
@@ -21,12 +22,14 @@ use App\Models\OfficerRecruitment;
 use App\Models\Participant;
 use App\Models\PaymentAccount;
 use App\Models\PaymentProof;
+use App\Models\QuestSubmission;
 use App\Models\Recruitment;
 use App\Models\Registration;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Achievement\AchievementService;
 use App\Services\Campus\CalendarService;
+use App\Services\Campus\StorageMonitor;
 use App\Services\Club\ActivityService;
 use App\Services\Club\BroadcastService;
 use App\Services\Club\MembershipRequestService;
@@ -76,6 +79,9 @@ class PortalController extends Controller
         $uid = $user->id;
 
         return view('dashboard', [
+            'storageAlert' => $user->isStudentAffairs() ? app(StorageMonitor::class)->disk() : null,
+            'gamePoints' => $user->isCompetitionAccount() ? 0 : (int) GameReward::where('user_id', $uid)->sum('points'),
+            'questPoints' => $user->isCompetitionAccount() ? 0 : (int) QuestSubmission::where('user_id', $uid)->where('status', 'approved')->sum('points_awarded'),
             'calendar' => $calendar->month($calendar->resolveMonth($request->query('kalender')), $user),
             'broadcasts' => app(BroadcastService::class)->forUser($user),
             'clubs' => Club::listedFor($user)->where('active', true)->withCount(['memberships' => fn ($q) => $q->where('status', 'active')])
@@ -248,6 +254,7 @@ class PortalController extends Controller
     public function profile(Request $request): View
     {
         return view('profile', [
+            'gameRewards' => GameReward::where('user_id', $request->user()->id)->orderBy('earned_at')->get(),
             'user' => $request->user()->load('program.department'),
             'managedAccount' => $request->user()->isCompetitionAccount(),
             'googleEnabled' => filled(config('services.google.client_id')),

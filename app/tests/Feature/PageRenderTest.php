@@ -15,7 +15,7 @@ class PageRenderTest extends DemoTestCase
         $event = Event::where('name', 'Pekan Prestasi Mahasiswa 2026 · Demo')->first();
         $tennis = $this->competition('Tenis Meja Tunggal');
         $poster = $this->competition('Lomba Poster Kesehatan');
-        $common = ['/', '/ukm', '/lomba', '/live', '/live/'.$tennis->id, '/delegasi', '/notifikasi', '/rekomendasi', '/profil', '/pedoman', '/ukm/'.$club->id, '/lomba/'.$tennis->id];
+        $common = ['/', '/ukm', '/lomba', '/live', '/live/'.$tennis->id, '/delegasi', '/notifikasi', '/profil', '/pedoman', '/ukm/'.$club->id, '/lomba/'.$tennis->id];
         $pages = [
             'mahasiswa' => ['/pendaftaran', '/ukm-saya', '/sertifikat', '/prestasi'],
             'pengurus' => ['/tinjauan', '/kelola/ukm', '/kelola/ukm/'.$club->id, '/kelola/event', '/kelola/event/'.Event::where('club_id', $club->id)->first()->id, '/laporan'],

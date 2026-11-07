@@ -12,13 +12,16 @@ connectionState();
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Front-page banner: auto-advancing, swipeable slides; only the visible video plays.
+// Front-page banner: plays on its own every 6 seconds, also with reduced motion (it then jumps instead of sliding).
+// It waits while someone drags, swipes or uses the keyboard on it, and the pause button stops it for good.
 document.querySelectorAll('[data-slider]').forEach((slider) => {
     const track = slider.querySelector('[data-slider-track]');
     const slides = Array.from(track.children);
     const dots = slider.querySelector('[data-slider-dots]');
     let index = 0;
     let timer = null;
+    let paused = false;
+    const toggle = slider.querySelector('[data-slider-toggle]');
     if (slides.length < 2) slider.classList.add('is-single');
 
     const update = () => {
@@ -26,14 +29,14 @@ document.querySelectorAll('[data-slider]').forEach((slider) => {
         slides.forEach((slide, i) => {
             const video = slide.querySelector('video');
             if (!video) return;
-            if (i === index && !reducedMotion) video.play().catch(() => {});
+            if (i === index && !paused) video.play().catch(() => {});
             else video.pause();
         });
     };
     const stop = () => clearInterval(timer);
     const start = () => {
         stop();
-        if (!reducedMotion && slides.length > 1) timer = setInterval(() => go(index + 1), 7000);
+        if (!paused && slides.length > 1) timer = setInterval(() => go(index + 1), 6000);
     };
     const go = (target, byUser = false) => {
         index = (target + slides.length) % slides.length;
@@ -63,9 +66,22 @@ document.querySelectorAll('[data-slider]').forEach((slider) => {
             }
         }, 120);
     }, { passive: true });
-    slider.addEventListener('mouseenter', stop);
-    slider.addEventListener('mouseleave', start);
-    slider.addEventListener('focusin', stop);
+    track.addEventListener('pointerdown', stop);
+    track.addEventListener('pointerup', start);
+    track.addEventListener('touchend', start, { passive: true });
+    slider.addEventListener('focusin', (event) => { if (event.target !== toggle) stop(); });
+    slider.addEventListener('focusout', start);
+    if (toggle) {
+        if (slides.length < 2) toggle.hidden = true;
+        toggle.addEventListener('click', () => {
+            paused = !paused;
+            toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+            toggle.setAttribute('aria-label', paused ? 'Putar slide otomatis' : 'Jeda slide otomatis');
+            toggle.textContent = paused ? '▶' : '❚❚';
+            if (paused) stop(); else start();
+            update();
+        });
+    }
     document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
     update();
     start();

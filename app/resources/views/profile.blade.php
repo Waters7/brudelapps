@@ -4,6 +4,22 @@
 
 <div class="detail-columns">
 <section class="panel">
+    @if($gameRewards->isNotEmpty())
+    <div class="alert success"><strong>{{ $gameRewards->sum('points') }} poin mini game BRUDEL</strong>
+        @foreach($gameRewards as $reward)<p>🏅 {{ $reward->badge }}</p>@endforeach
+        <a class="text-link" href="/games/hkn-62">Lihat permainan dan peringkat →</a>
+    </div>
+    @if($gameRewards->contains('game', 'hkn-62-v1'))
+    <div class="panel" style="margin-bottom:20px">
+        <h3>Frame eksklusif HKN ke-62</h3>
+        <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">
+            <img src="/games/hkn62/frame.svg" width="110" height="110" alt="Frame toska dan kuning limau, HKN ke-62, Sehat untuk Semua">
+            <div><p>Frame sudah terbuka karena kamu finis 62 km. Foto aslimu tetap tersimpan.</p>
+            <form method="post" action="/games/hkn-62/frame">@csrf<input type="hidden" name="enabled" value="{{ $user->profile_frame === 'hkn-62-v1' ? '0' : '1' }}"><button class="button primary">{{ $user->profile_frame === 'hkn-62-v1' ? 'Lepas frame HKN' : 'Pasang frame HKN ke-62' }}</button></form></div>
+        </div>
+    </div>
+    @endif
+    @endif
     <div class="profile-top"><x-avatar :user="$user" size="big"/><div><h2>{{ $user->name }}</h2><x-status value="active"/></div></div>
     <dl><dt>NIM</dt><dd>{{ $user->nim ?? 'Akun pegawai' }}</dd>@if($user->username)<dt>Username</dt><dd>{{ $user->username }}</dd>@endif<dt>Email</dt><dd>{{ $user->email }}</dd><dt>Nomor HP</dt><dd>{{ $user->phone ?? '—' }}</dd>
     <dt>Jurusan · program studi</dt><dd>{{ $user->program ? ($user->program->department?->name ?? '—').' · '.$user->program->name : 'Tidak berlaku' }}</dd><dt>Zona waktu</dt><dd>WITA · Asia/Makassar</dd>

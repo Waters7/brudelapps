@@ -14,8 +14,27 @@
 <section class="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
 <div class="relative overflow-hidden rounded-[28px] bg-brand-deep shadow-2xl shadow-brand-deep/25" data-slider aria-roledescription="carousel" aria-label="Sorotan BRUDEL">
     <div class="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-slider-track>
+        <article class="relative flex min-h-[520px] w-full shrink-0 snap-start items-center overflow-hidden bg-gradient-to-br from-brand-deep via-brand-teal to-brand-bright lg:min-h-[600px]" aria-roledescription="slide" aria-label="HKN Run, Hari Kesehatan Nasional ke-62">
+            <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+                <span class="absolute -right-24 -top-24 size-96 animate-float rounded-full bg-white/10 blur-2xl"></span>
+                <span class="absolute -bottom-32 left-1/3 size-80 animate-float-slow rounded-full bg-brand-lime/20 blur-3xl"></span>
+                <span class="absolute right-[12%] top-1/2 hidden size-72 -translate-y-1/2 rounded-full border border-white/15 md:block"></span>
+                <span class="absolute right-[16%] top-1/2 hidden size-52 -translate-y-1/2 animate-spin-slow rounded-full border-2 border-dashed border-white/25 md:block"></span>
+                <img src="/games/hkn62/frame.svg" alt="" class="absolute right-[16%] top-1/2 hidden size-52 -translate-y-1/2 animate-float md:block">
+                <img src="/brand/logo-mark.svg" alt="" class="absolute bottom-8 right-8 hidden w-20 opacity-90 drop-shadow-xl lg:block">
+            </div>
+            <div class="relative w-full max-w-3xl p-7 pb-32 sm:p-12 sm:pb-36">
+                <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold tracking-[0.16em] text-white/90 backdrop-blur"><span class="size-2 animate-pulse rounded-full bg-brand-lime"></span> MINI GAME · HARI KESEHATAN NASIONAL KE-62</span>
+                <h1 class="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">HKN Run: 62 km untuk semangat sehat.</h1>
+                <p class="mt-4 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg">Lompati hambatan, jawab trivia kesehatan, dan kejar waktu terbaik. Finis pertama membuka 62 poin, badge, dan frame foto profil HKN ke-62.</p>
+                <div class="mt-7 flex flex-wrap items-center gap-3">
+                    <a class="group inline-flex items-center gap-2 rounded-full bg-brand-lime px-6 py-3.5 text-sm font-bold text-brand-ink shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:shadow-xl" href="/games/hkn-62">Masuk dan main <x-icon name="arrow" class="transition group-hover:translate-x-1"/></a>
+                    <a class="inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-sm font-semibold text-white ring-1 ring-white/30 transition hover:bg-white/10" href="/live">Live score <span aria-hidden="true">↗</span></a>
+                </div>
+            </div>
+        </article>
     @forelse($slides as $slide)
-        <article class="relative flex min-h-[520px] w-full shrink-0 snap-start items-end lg:min-h-[600px]" aria-roledescription="slide" aria-label="{{ $loop->iteration }} dari {{ $loop->count }}">
+        <article class="relative flex min-h-[520px] w-full shrink-0 snap-start items-end lg:min-h-[600px]" aria-roledescription="slide" aria-label="{{ $loop->iteration + 1 }} dari {{ $loop->count + 1 }}">
             @if(! $slide->hasMedia())<div class="absolute inset-0 bg-linear-to-br from-brand-teal via-brand-deep to-brand-ink" aria-hidden="true"><div class="absolute -right-24 -top-24 size-96 animate-float-slow rounded-full bg-brand-lime/20 blur-3xl"></div></div>
             @elseif($slide->isVideo())<video class="absolute inset-0 size-full object-cover" src="{{ $slide->mediaUrl() }}" muted loop playsinline preload="metadata" aria-hidden="true"></video>
             @else<img class="absolute inset-0 size-full object-cover" src="{{ $slide->mediaUrl() }}" alt="">@endif
@@ -32,7 +51,7 @@
         </article>
     @empty
         @foreach($defaults as $slide)
-        <article class="relative flex min-h-[520px] w-full shrink-0 snap-start items-center overflow-hidden bg-gradient-to-br {{ $slide['gradient'] }} lg:min-h-[600px]" aria-roledescription="slide" aria-label="{{ $loop->iteration }} dari {{ $loop->count }}">
+        <article class="relative flex min-h-[520px] w-full shrink-0 snap-start items-center overflow-hidden bg-gradient-to-br {{ $slide['gradient'] }} lg:min-h-[600px]" aria-roledescription="slide" aria-label="{{ $loop->iteration + 1 }} dari {{ $loop->count + 1 }}">
             <div class="pointer-events-none absolute inset-0" aria-hidden="true">
                 <span class="absolute -right-24 -top-24 size-96 animate-float rounded-full bg-white/10 blur-2xl"></span>
                 <span class="absolute -bottom-32 left-1/3 size-80 animate-float-slow rounded-full bg-brand-lime/20 blur-3xl"></span>
@@ -58,6 +77,7 @@
         <button type="button" class="flex size-10 items-center justify-center rounded-full bg-white/15 text-xl text-white backdrop-blur transition hover:bg-white/30" data-slider-prev aria-label="Slide sebelumnya">‹</button>
         <div class="flex items-center gap-2 [&>button]:h-2.5 [&>button]:w-2.5 [&>button]:rounded-full [&>button]:bg-white/40 [&>button]:transition-all [&>button[aria-current=true]]:w-8 [&>button[aria-current=true]]:bg-brand-lime" data-slider-dots></div>
         <button type="button" class="flex size-10 items-center justify-center rounded-full bg-white/15 text-xl text-white backdrop-blur transition hover:bg-white/30" data-slider-next aria-label="Slide berikutnya">›</button>
+        <button type="button" class="flex size-10 items-center justify-center rounded-full bg-white/15 text-xs text-white backdrop-blur transition hover:bg-white/30" data-slider-toggle aria-pressed="false" aria-label="Jeda slide otomatis">❚❚</button>
     </div>
 </div>
 </section>

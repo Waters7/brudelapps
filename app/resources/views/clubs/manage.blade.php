@@ -22,6 +22,9 @@
             <label>Pembina<input name="mentor" required maxlength="120" value="{{ $club->mentor }}"></label>
             <label class="span-2">Kontak resmi<input name="contact" required maxlength="190" value="{{ $club->contact }}"></label>
         </div>
+        <fieldset><legend>Ikon organisasi</legend>
+            <div class="inline-actions">@foreach(config('brudel.club_symbols') as $value => $label)<label class="checkbox-label"><input type="radio" name="symbol" value="{{ $value }}" @checked($club->symbol === $value)><span class="large-icon {{ $club->tone() }}"><x-icon :name="$value"/></span><span>{{ $label }}</span></label>@endforeach</div>
+        </fieldset>
         <label>Deskripsi<textarea name="description" required maxlength="3000" rows="3">{{ $club->description }}</textarea></label>
         <label>Kegiatan rutin<textarea name="activities" maxlength="3000" rows="3" placeholder="Jadwal latihan, kegiatan tahunan, dsb.">{{ $club->activities }}</textarea></label>
         @if(auth()->user()->isStudentAffairs())<label class="checkbox-label"><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" @checked($club->active)><span>Aktif menerima anggota</span></label>@endif

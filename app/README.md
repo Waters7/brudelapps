@@ -38,7 +38,7 @@ Pada komputer ini semuanya telah diinstal. Dari folder induk jalankan `./Start-B
 
 Login `mahasiswa@demo.brudel.test` / `BrudelDemo!2026`. Akun untuk kesembilan peran (kemahasiswaan, pengurus, admin event, prodi, penilai, pembina, pimpinan, operator) berada di [panduan pengujian](docs/TESTING.md). Data demo sengaja diberi label; tidak ada rekening atau pembayaran yang dibuat; DemoSeeder menolak produksi dan DatabaseSeeder tidak memuat fixture.
 
-Menu **Status Fitur** di aplikasi merangkum fitur yang berjalan, yang belum diverifikasi operasional, dan pekerjaan tersisa.
+Ringkasan fitur dan pekerjaan tersisa ada di [docs/STATUS.md](docs/STATUS.md); pengguna membaca panduan singkat lewat menu akun **Cara Penggunaan**.
 
 ## Validasi
 
@@ -48,7 +48,7 @@ npm run build
 php artisan view:cache
 ```
 
-246 tes lulus di PostgreSQL 17.11 (termasuk uji konkurensi dua proses); di SQLite 242 lulus dan 4 tes khusus PostgreSQL dilewati (6 November 2026); MySQL 8.4.3 lulus pada suite 112 tes sebelumnya. Hasil, cara menjalankan di PostgreSQL, trial lokal dengan `TrialSeeder`, serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
+265 tes lulus di PostgreSQL 17.11 (termasuk uji konkurensi dua proses); di SQLite 261 lulus dan 4 tes khusus PostgreSQL dilewati (7 November 2026); MySQL 8.4.3 lulus pada suite 112 tes sebelumnya. Hasil, cara menjalankan di PostgreSQL, trial lokal dengan `TrialSeeder`, serta batas pengujian dijelaskan pada [TESTING.md](docs/TESTING.md). S3 nyata, email, Docker/VPS dan instalasi PWA perangkat belum diverifikasi.
 
 ## Dokumentasi
 

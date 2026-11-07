@@ -56,9 +56,13 @@
         ] : [],
         'PENGATURAN' => $has('kemahasiswaan') ? [
             ['/kelola/pengguna', 'user', 'Pengguna Login'],
-            ['/kelola/audit', 'file', 'Audit Log'],
             ['/kelola/pengaturan', 'spark', 'Pengaturan Kampus'],
-            ['/kelola/sistem', 'shield', 'Pengaturan Sistem'],
+        ] : [],
+        'PENGELOLAAN SISTEM' => $has('kemahasiswaan') ? [
+            ['/kelola/sistem', 'shield', 'Pengaturan Sistem', null, true],
+            ['/kelola/sistem/penyimpanan', 'grid', 'Penyimpanan'],
+            ['/kelola/sistem/backup', 'download', 'Backup & Restore'],
+            ['/kelola/audit', 'file', 'Audit Log'],
         ] : [],
         'MASTER DATA' => $has('kemahasiswaan') ? [
             ['/kelola/master', 'grid', 'Ringkasan Master Data', null, true],
@@ -70,9 +74,9 @@
         ] : [],
     ];
     $sections['LAINNYA'] = [
+        ...($me->isCompetitionAccount() ? [] : [['/games/hkn-62', 'trophy', 'HKN ke-62 · Run']]),
         ['/notifikasi', 'bell', 'Notifikasi', $unread ? (string) min($unread, 99) : null],
         ['/bantuan', 'chat', $has('kemahasiswaan', 'jurusan') ? 'Kotak Bantuan' : 'Bantuan'],
-        ['/rekomendasi', 'spark', 'Status Fitur'],
         ['/profil', 'user', 'Profil & Kata Sandi'],
     ];
 @endphp

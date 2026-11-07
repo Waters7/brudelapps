@@ -4,6 +4,7 @@
 @if($broadcasts->isNotEmpty())
 <section class="mb-6" aria-label="Pengumuman Kemahasiswaan Direktorat"><div class="grid grid-cols-1 gap-3 {{ [1 => 'lg:grid-cols-1', 2 => 'lg:grid-cols-2', 3 => 'lg:grid-cols-3'][min($broadcasts->count(), 3)] }}">@foreach($broadcasts as $broadcast)<x-broadcast-card :broadcast="$broadcast"/>@endforeach</div></section>
 @endif
+@if($storageAlert && $storageAlert['level'] !== 'ok')<div class="alert {{ $storageAlert['level'] === 'critical' ? 'error' : 'warning' }}"><strong>Penyimpanan server {{ strtolower(\App\Services\Campus\StorageMonitor::LEVELS[$storageAlert['level']]) }}:</strong> disk terpakai {{ $storageAlert['percent'] }}%. <a class="text-link" href="/kelola/sistem/penyimpanan">Periksa penyimpanan →</a></div>@endif
 @if($tasks)
 <section class="panel tasks-panel"><div class="section-heading"><div><h2>Tugas menunggu</h2><p>Sesuai penugasan aktif Anda.</p></div></div>
 <div class="kpi-grid">@foreach($tasks as [$label, $count, $url])<a class="kpi {{ $count ? 'has-task' : '' }}" href="{{ $url }}"><span>{{ $label }}</span><strong>{{ $count }}</strong></a>@endforeach</div></section>
@@ -13,6 +14,13 @@
 <a href="{{ $url }}" class="stat-card"><div class="stat-top"><span class="icon-tile {{ $color }}"><x-icon :name="$icon"/></span><span class="stat-arrow">↗</span></div><div class="stat-number">{{ str_pad($count,2,'0',STR_PAD_LEFT) }} <span>{{ $label }}</span></div><p>{{ $caption }}</p></a>
 @endforeach
 </div>
+@unless(auth()->user()->isCompetitionAccount())
+<section class="panel mt-6" aria-label="Poin dan mini game BRUDEL"><div class="section-heading">
+    <div style="display:flex;align-items:center;gap:16px"><img src="/games/hkn62/logo-hkn62-kecil.png" alt="Logo HKN ke-62" width="72" height="67" style="object-fit:contain">
+    <div><p class="eyebrow">PENCAPAIAN SAYA · HKN KE-62</p><h2>{{ number_format($gamePoints + $questPoints, 0, ',', '.') }} poin BRUDEL</h2><p class="muted">{{ number_format($gamePoints, 0, ',', '.') }} poin mini game · {{ number_format($questPoints, 0, ',', '.') }} poin quest organisasi yang disetujui. Selesaikan HKN Run 62 km untuk badge dan frame foto profil.</p></div></div>
+    <a class="button primary" href="/games/hkn-62">Main HKN Run <x-icon name="arrow"/></a>
+</div></section>
+@endunless
 <div class="mt-6"><x-event-calendar :calendar="$calendar" title="Kalender lomba, kegiatan & tanggal merah"/></div>
 <div class="dashboard-columns"><div><section class="section-block"><div class="section-heading"><div><h2>Kesempatan untuk bersinar</h2><p>Kompetisi yang sedang membuka pendaftaran.</p></div><a href="/lomba" class="text-link">Semua lomba <span>↗</span></a></div><div class="competition-list">
 @forelse($competitions as $c)<a class="competition-row" href="/lomba/{{ $c->id }}"><div class="competition-emblem {{ strtolower($c->field) }}"><x-icon :name="$c->field==='Olahraga'?'racket':($c->field==='Seni'?'spark':'book')"/></div><div class="competition-info"><div class="row-badges"><span class="category">{{ $c->field }}</span><span class="tiny-dot">·</span><span>{{ $c->level }}</span></div><h3>{{ $c->name }}</h3><p><x-icon name="calendar"/>Tutup {{ $c->closes_at->timezone('Asia/Makassar')->locale('id')->translatedFormat('d M Y') }} <span>·</span> {{ $c->format==='team'?'Tim':'Individu' }}</p></div><div class="competition-end"><span class="badge status-accepted">{{ $c->fee===0?'Gratis':'Berbayar' }}</span><x-icon name="arrow"/></div></a>@empty<div class="empty">Belum ada lomba yang dibuka.</div>@endforelse

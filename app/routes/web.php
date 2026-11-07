@@ -13,6 +13,7 @@ use App\Http\Controllers\Campus\GuidelineController;
 use App\Http\Controllers\Campus\LandingSlideController;
 use App\Http\Controllers\Campus\MasterDataController;
 use App\Http\Controllers\Campus\SettingsController;
+use App\Http\Controllers\Campus\SystemMaintenanceController;
 use App\Http\Controllers\Campus\SystemSettingsController;
 use App\Http\Controllers\Campus\UserDirectoryController;
 use App\Http\Controllers\Certificate\CertificateController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Department\DepartmentController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\Event\CompetitionAccountController;
 use App\Http\Controllers\Event\EventManageController;
+use App\Http\Controllers\Game\HknGameController;
 use App\Http\Controllers\Match\CompetitionOpsController;
 use App\Http\Controllers\Match\LiveController;
 use App\Http\Controllers\Payment\PaymentController;
@@ -68,6 +70,11 @@ Route::get('/banner/{club}', [ClubManageController::class, 'showBanner'])->middl
 Route::get('/slide/{slide}', [LandingSlideController::class, 'media'])->middleware('throttle:banner');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/games/hkn-62', [HknGameController::class, 'index']);
+    Route::post('/games/hkn-62/frame', [HknGameController::class, 'frame'])->middleware('throttle:20,1');
+    Route::get('/games/hkn-62/peringkat', [HknGameController::class, 'standings'])->middleware('throttle:60,1');
+    Route::post('/games/hkn-62/mulai', [HknGameController::class, 'start'])->middleware('throttle:10,1');
+    Route::post('/games/hkn-62/finis', [HknGameController::class, 'finish'])->middleware('throttle:10,1');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     /* Ruang mahasiswa */
@@ -78,7 +85,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/lomba/{competition}/akses-hasil', [LiveController::class, 'setAccess']);
     Route::get('/pendaftaran', [PortalController::class, 'applications'])->name('applications');
     Route::get('/ukm-saya', [PortalController::class, 'memberships'])->name('memberships');
-    Route::get('/rekomendasi', fn () => view('recommendations'))->name('recommendations');
     Route::get('/profil', [PortalController::class, 'profile'])->name('profile');
     Route::post('/profil', [PortalController::class, 'saveProfile']);
     Route::post('/profil/sandi', [ProfileController::class, 'password'])->middleware('throttle:account-token');
@@ -266,6 +272,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/kelola/audit', [SignedInUserController::class, 'audit']);
     Route::get('/kelola/sistem', [SystemSettingsController::class, 'index']);
     Route::post('/kelola/sistem', [SystemSettingsController::class, 'update']);
+    Route::get('/kelola/sistem/penyimpanan', [SystemMaintenanceController::class, 'storage']);
+    Route::post('/kelola/sistem/penyimpanan', [SystemMaintenanceController::class, 'thresholds']);
+    Route::get('/kelola/sistem/backup', [SystemMaintenanceController::class, 'backups']);
+    Route::post('/kelola/sistem/backup', [SystemMaintenanceController::class, 'createBackup']);
+    Route::post('/kelola/sistem/backup/unggah', [SystemMaintenanceController::class, 'uploadBackup']);
+    Route::get('/kelola/sistem/backup/{name}/unduh', [SystemMaintenanceController::class, 'download']);
+    Route::post('/kelola/sistem/backup/{name}/pulihkan', [SystemMaintenanceController::class, 'restore'])->middleware('throttle:5,10');
+    Route::post('/kelola/sistem/backup/{name}/hapus', [SystemMaintenanceController::class, 'destroy']);
     Route::post('/kelola/sistem/uji-email', [SystemSettingsController::class, 'testMail'])->middleware('throttle:account-link');
     Route::get('/kelola/master', [MasterDataController::class, 'index']);
     Route::get('/kelola/master/pengguna', [UserDirectoryController::class, 'index']);
